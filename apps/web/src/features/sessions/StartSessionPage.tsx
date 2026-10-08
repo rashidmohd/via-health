@@ -1,8 +1,10 @@
-import { Search } from 'lucide-react'
+import { Mic, Search } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Link } from 'react-router-dom'
 import { useClients } from '../../api/clients'
+import { Initials } from '../../design/Initials'
+import { ListSkeleton } from '../../design/ListSkeleton'
 import { db } from '../../recorder/db'
 import { useLocal } from '../../recorder/useLocal'
 import { cacheConsent } from './cacheConsent'
@@ -38,11 +40,15 @@ export function StartSessionPage() {
 
   return (
     <section className="page narrow">
-      <h1>{t('sessions.start')}</h1>
-      <p className="muted">{t('sessions.chooseClient')}</p>
+      <header className="page-header">
+        <div>
+          <h1>{t('sessions.start')}</h1>
+          <p className="muted">{t('sessions.chooseClient')}</p>
+        </div>
+      </header>
       {isError && cached && <p className="banner warning">{t('sessions.offlineList')}</p>}
 
-      {!choices && <p className="muted">{t('common.loading')}</p>}
+      {!choices && <ListSkeleton rows={4} />}
       {choices && choices.length === 0 && (
         <div className="empty">
           <p>{t('clients.empty')}</p>
@@ -68,13 +74,22 @@ export function StartSessionPage() {
               <li key={choice.id}>
                 {choice.ready ? (
                   <Link to={`/sessions/record/${choice.id}`} className="client-row picker-row">
-                    <span className="client-name">{choice.name}</span>
+                    <span className="cell-person">
+                      <Initials name={choice.name} />
+                      <span className="client-name">{choice.name}</span>
+                    </span>
                     <span className="badge info">{t('consent.ready')}</span>
+                    <Mic className="icon picker-mic" aria-hidden="true" />
                   </Link>
                 ) : (
                   <div className="client-row picker-row disabled" aria-disabled="true">
-                    <span className="client-name">{choice.name}</span>
-                    <Link to={`/clients/${choice.id}/consent`}>{t('consent.record')}</Link>
+                    <span className="cell-person">
+                      <Initials name={choice.name} />
+                      <span className="client-name">{choice.name}</span>
+                    </span>
+                    <Link to={`/clients/${choice.id}/consent`} className="small">
+                      {t('consent.record')}
+                    </Link>
                   </div>
                 )}
               </li>
