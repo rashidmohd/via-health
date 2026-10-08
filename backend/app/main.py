@@ -1,7 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.api import auth, clients, health
+from app.api import auth, clients, health, sessions
 from app.api.errors import install_error_handlers
 from app.api.origin import origin_check
 from app.core.config import get_settings
@@ -18,13 +18,14 @@ def create_app() -> FastAPI:
         CORSMiddleware,
         allow_origins=[settings.web_origin],
         allow_credentials=True,
-        allow_methods=["GET", "POST", "PATCH", "DELETE"],
-        allow_headers=["Content-Type"],
+        allow_methods=["GET", "POST", "PUT", "PATCH", "DELETE"],
+        allow_headers=["Content-Type", "X-Content-SHA256"],
     )
     install_error_handlers(app)
     app.include_router(health.router)
     app.include_router(auth.router)
     app.include_router(clients.router)
+    app.include_router(sessions.router)
     return app
 
 

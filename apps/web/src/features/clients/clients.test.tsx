@@ -156,6 +156,7 @@ describe('clients', () => {
     }
     const calls = mockApi((url) => {
       if (url.endsWith('/auth/me')) return { status: 200, body: ME }
+      if (url.includes('/sessions')) return { status: 200, body: [] }
       if (url.endsWith('/withdraw')) {
         return {
           status: 200,
@@ -183,7 +184,13 @@ describe('clients', () => {
 
   it('shows German labels', async () => {
     await i18n.changeLanguage('de')
-    mockApi((url) => (url.endsWith('/auth/me') ? { status: 200, body: ME } : { status: 200, body: clientDetail() }))
+    mockApi((url) =>
+      url.endsWith('/auth/me')
+        ? { status: 200, body: ME }
+        : url.includes('/sessions')
+          ? { status: 200, body: [] }
+          : { status: 200, body: clientDetail() },
+    )
     renderApp('/clients/c1')
     expect(await screen.findByText('Einwilligung fehlt')).toBeInTheDocument()
     expect(screen.getByRole('link', { name: 'Einwilligung erfassen' })).toBeInTheDocument()

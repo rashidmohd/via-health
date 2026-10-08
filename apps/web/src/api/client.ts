@@ -12,14 +12,32 @@ export class ApiError extends Error {
   }
 }
 
-export async function api<T>(path: string, init: { method?: string; body?: unknown } = {}): Promise<T> {
+export interface ApiInit {
+  method?: string
+  /** JSON body. */
+  body?: unknown
+  /** Binary body (sent as-is), e.g. an encrypted audio chunk. */
+  bytes?: Uint8Array
+  headers?: Record<string, string>
+}
+
+export async function api<T>(path: string, init: ApiInit = {}): Promise<T> {
+  const headers: Record<string, string> = { ...init.headers }
+  let body: BodyInit | undefined
+  if (init.bytes !== undefined) {
+    headers['Content-Type'] = 'application/octet-stream'
+    body = init.bytes as Uint8Array<ArrayBuffer>
+  } else if (init.body !== undefined) {
+    headers['Content-Type'] = 'application/json'
+    body = JSON.stringify(init.body)
+  }
   let response: Response
   try {
     response = await fetch(`${API_URL}${path}`, {
       method: init.method ?? 'GET',
       credentials: 'include',
-      headers: init.body === undefined ? undefined : { 'Content-Type': 'application/json' },
-      body: init.body === undefined ? undefined : JSON.stringify(init.body),
+      headers,
+      body,
     })
   } catch {
     throw new ApiError('network_error', 0)

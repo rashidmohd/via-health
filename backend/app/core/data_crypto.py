@@ -21,21 +21,22 @@ class DecryptionError(Exception):
     """Wrong key, wrong row/field, or tampered data. Carries no data."""
 
 
-def _cipher() -> AESGCM:
-    return AESGCM(bytes.fromhex(get_settings().client_data_key))
+def _cipher(key: bytes | None) -> AESGCM:
+    return AESGCM(key if key is not None else bytes.fromhex(get_settings().client_data_key))
 
 
-def encrypt_bytes(plaintext: bytes, aad: str) -> bytes:
+def encrypt_bytes(plaintext: bytes, aad: str, *, key: bytes | None = None) -> bytes:
+    """Encrypt under `key`, or CLIENT_DATA_KEY when not given."""
     nonce = os.urandom(NONCE_BYTES)
-    return VERSION + nonce + _cipher().encrypt(nonce, plaintext, aad.encode())
+    return VERSION + nonce + _cipher(key).encrypt(nonce, plaintext, aad.encode())
 
 
-def decrypt_bytes(blob: bytes, aad: str) -> bytes:
+def decrypt_bytes(blob: bytes, aad: str, *, key: bytes | None = None) -> bytes:
     if len(blob) < 1 + NONCE_BYTES or blob[:1] != VERSION:
         raise DecryptionError("unsupported format")
     nonce, ciphertext = blob[1 : 1 + NONCE_BYTES], blob[1 + NONCE_BYTES :]
     try:
-        return _cipher().decrypt(nonce, ciphertext, aad.encode())
+        return _cipher(key).decrypt(nonce, ciphertext, aad.encode())
     except InvalidTag:
         raise DecryptionError("authentication failed") from None
 

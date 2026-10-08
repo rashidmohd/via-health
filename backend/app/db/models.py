@@ -154,6 +154,7 @@ class Session(Base):
     duration_ms: Mapped[int | None] = mapped_column(BigInteger)
     template_id: Mapped[uuid.UUID | None]
     retention_deadline: Mapped[datetime]
+    mime_type: Mapped[str | None] = mapped_column(Text)
 
     __table_args__ = (
         CheckConstraint(
@@ -250,3 +251,14 @@ class AuthSession(Base):
     __table_args__ = (
         CheckConstraint("expires_at <= created_at + interval '12 hours'", name="max_lifetime"),
     )
+
+
+class ObjectBlob(Base):
+    """Interim encrypted object storage until GCS (plan 0004). Ciphertext only."""
+
+    __tablename__ = "object_blobs"
+
+    key: Mapped[str] = mapped_column(Text, primary_key=True)
+    session_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("sessions.id"), index=True)
+    data: Mapped[bytes]
+    created_at: Mapped[datetime] = _created_at()

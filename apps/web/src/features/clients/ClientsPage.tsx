@@ -1,16 +1,21 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Link } from 'react-router-dom'
 import { useClients } from '../../api/clients'
 import { ApiError } from '../../api/client'
 import { errorMessage } from '../../i18n/errors'
 import { formatDate } from '../format'
+import { cacheConsent } from '../sessions/cacheConsent'
 import { ReadinessBadge } from './ConsentBadge'
 
 export function ClientsPage() {
   const { t, i18n } = useTranslation()
   const { data: clients, isPending, error } = useClients()
   const [query, setQuery] = useState('')
+
+  useEffect(() => {
+    if (clients) void cacheConsent(clients)
+  }, [clients])
 
   const visible = (clients ?? []).filter((c) =>
     c.name.toLocaleLowerCase().includes(query.trim().toLocaleLowerCase()),

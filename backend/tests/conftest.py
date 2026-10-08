@@ -15,6 +15,12 @@ import pytest
 from alembic import command
 from alembic.config import Config
 from fastapi.testclient import TestClient
+
+from app.core.config import Settings
+
+# Tests must not depend on a developer's .env / .env.local (real secrets, prod origins).
+# Set before anything creates Settings (app.main does at import).
+Settings.model_config["env_file"] = None
 from sqlalchemy import Connection, Engine, create_engine, make_url, text
 from sqlalchemy.pool import NullPool
 

@@ -37,6 +37,12 @@
     "consent_already_given": "This consent has already been given.",
     "consent_text_missing": "The consent text is missing in this language.",
     "consent_not_found": "This consent could not be found.",
+    "session_conflict": "This session does not match the data on the server.",
+    "key_conflict": "The session key does not match the one on the server.",
+    "key_missing": "The session key is missing on this device.",
+    "chunk_too_large": "A part of the recording is too large to upload.",
+    "checksum_mismatch": "A part of the recording was damaged during upload and will be sent again.",
+    "chunk_out_of_range": "A part of the recording does not belong to this session.",
     "unknown": "Something went wrong. Please try again."
   },
   "language": {
@@ -125,6 +131,62 @@
       "outdated": "New text, consent needed again",
       "withdrawn": "Withdrawn",
       "missing": "Not given"
+    }
+  },
+  "today": {
+    "morning": "Good morning, {{name}}",
+    "afternoon": "Good afternoon, {{name}}",
+    "evening": "Good evening, {{name}}"
+  },
+  "sync": {
+    "allSynced": "All audio uploaded",
+    "uploading": "Uploading audio…",
+    "offline": "Offline – saving locally",
+    "problem": "Upload problem ({{count}})"
+  },
+  "recovery": {
+    "message": "A recording with {{name}} ({{time}}) was interrupted. The audio saved so far is safe on this device.",
+    "action": "Finish and upload"
+  },
+  "sessions": {
+    "start": "Start session",
+    "chooseClient": "Choose the client. Only clients who have given consent can be recorded.",
+    "offlineList": "Offline: showing the consent status last saved on this device.",
+    "none": "No sessions yet.",
+    "minutes": "{{count}} min",
+    "local": {
+      "recording": "Recording on this device",
+      "uploading": "Saved on this device, uploading"
+    },
+    "status": {
+      "recording": "Upload incomplete",
+      "uploaded": "Uploaded",
+      "processing": "Processing",
+      "draft_ready": "Draft ready",
+      "signed": "Signed",
+      "failed": "Failed"
+    }
+  },
+  "record": {
+    "start": "Start recording",
+    "stop": "Stop recording",
+    "recording": "Recording",
+    "elapsed": "Recording time",
+    "stopConfirm": "Stop the recording now?",
+    "hint": "Audio is encrypted on this device and uploaded in the background. Recording continues without internet.",
+    "savedLocally": "Saved encrypted on this device every 10 seconds.",
+    "saved": "Recording saved.",
+    "uploaded": "Everything is uploaded.",
+    "uploading": "Uploading in the background ({{count}} parts left). You can close this screen.",
+    "toClient": "Back to client",
+    "otherActive": "Another recording is running. Stop it first.",
+    "problem": {
+      "unsupported": "This browser cannot record audio. Please use a current version of Chrome, Edge, Firefox or Safari.",
+      "mic_denied": "No access to the microphone. Please allow microphone access in the browser settings.",
+      "mic_lost": "The microphone was disconnected. Recording has no sound. Reconnect it, stop and start a new recording.",
+      "storage_low": "Not enough free storage on this device (at least 500 MB needed). Free up space, then try again.",
+      "storage_full": "The device storage is full. The recording was stopped; everything saved so far is kept.",
+      "write_failed": "Audio could not be saved on this device. The recording was stopped; everything saved so far is kept."
     }
   }
 }

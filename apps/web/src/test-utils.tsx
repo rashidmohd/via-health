@@ -11,10 +11,11 @@ export function mockApi(handler: Handler) {
   vi.stubGlobal(
     'fetch',
     vi.fn(async (url: string, init: RequestInit = {}) => {
-      const body = init.body ? JSON.parse(String(init.body)) : undefined
+      const body = typeof init.body === 'string' ? JSON.parse(init.body) : init.body
       calls.push({ url, method: init.method ?? 'GET', body })
       const result = handler(url, init)
-      return new Response(result.body === undefined ? null : JSON.stringify(result.body), {
+      const noBody = result.body === undefined || result.status === 204
+      return new Response(noBody ? null : JSON.stringify(result.body), {
         status: result.status,
         headers: { 'Content-Type': 'application/json' },
       })

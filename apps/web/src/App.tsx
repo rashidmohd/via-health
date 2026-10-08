@@ -1,3 +1,4 @@
+import { useEffect } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Navigate, NavLink, Route, Routes } from 'react-router-dom'
 import { useLogout, useMe } from './api/auth'
@@ -10,11 +11,21 @@ import { ConsentPage } from './features/clients/ConsentPage'
 import { NewClientPage } from './features/clients/NewClientPage'
 import { NameStep } from './features/auth/NameStep'
 import { NAV_ITEMS } from './features/nav'
+import { RecordPage } from './features/sessions/RecordPage'
+import { RecoveryBanner } from './features/sessions/RecoveryBanner'
+import { SessionsPage } from './features/sessions/SessionsPage'
+import { StartSessionPage } from './features/sessions/StartSessionPage'
+import { SyncBadge } from './features/sessions/SyncBadge'
+import { TodayPage } from './features/today/TodayPage'
+import { startSync } from './recorder/sync'
 
 export default function App() {
   const { t } = useTranslation()
   const { data: me, isPending, isError, refetch } = useMe()
   const logout = useLogout()
+  const loggedIn = Boolean(me)
+
+  useEffect(() => (loggedIn ? startSync() : undefined), [loggedIn])
 
   if (isPending) {
     return <p className="center muted">{t('common.loading')}</p>
@@ -56,6 +67,7 @@ export default function App() {
           ))}
         </ul>
         <div className="sidebar-footer">
+          <SyncBadge />
           <div className="user-name">{me.display_name}</div>
           <LanguageSwitch />
           <button className="link" onClick={() => logout.mutate()} disabled={logout.isPending}>
@@ -64,8 +76,13 @@ export default function App() {
         </div>
       </nav>
       <main>
+        <RecoveryBanner />
         <Routes>
-          {NAV_ITEMS.filter((item) => item.key !== 'clients').map((item) => (
+          <Route path="/" element={<TodayPage />} />
+          <Route path="/sessions" element={<SessionsPage />} />
+          <Route path="/sessions/new" element={<StartSessionPage />} />
+          <Route path="/sessions/record/:clientId" element={<RecordPage />} />
+          {NAV_ITEMS.filter((item) => !['today', 'clients', 'sessions'].includes(item.key)).map((item) => (
             <Route key={item.key} path={item.path} element={<PlaceholderPage navKey={item.key} />} />
           ))}
           <Route path="/clients" element={<ClientsPage />} />

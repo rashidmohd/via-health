@@ -23,6 +23,12 @@ export const ERROR_CODES = [
   'consent_already_given',
   'consent_text_missing',
   'consent_not_found',
+  'session_conflict',
+  'key_conflict',
+  'key_missing',
+  'chunk_too_large',
+  'checksum_mismatch',
+  'chunk_out_of_range',
 ] as const
 
 export type ErrorCode = (typeof ERROR_CODES)[number]

@@ -39,6 +39,8 @@ ignore = ["S101"]
 [tool.ruff.lint.per-file-ignores]
 "app/adapters/**" = ["TID251"]
 "tests/**" = ["S"]
+# conftest disables .env loading before importing the app.
+"tests/conftest.py" = ["S", "E402"]
 
 [tool.mypy]
 python_version = "3.12"

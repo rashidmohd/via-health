@@ -540,3 +540,175 @@ select {
   justify-content: space-between;
   align-items: center;
 }
+
+/* Banners */
+.banner {
+  margin: 0;
+  padding: 12px 16px;
+  border-radius: var(--radius);
+  border: 1px solid;
+}
+
+.banner.warning {
+  background: #fbf4e6;
+  border-color: var(--warning);
+  color: #6e5017;
+}
+
+.banner.danger {
+  background: #fbebe8;
+  border-color: var(--danger);
+  color: #8a2a1c;
+  font-weight: 600;
+}
+
+main > .banner {
+  margin-bottom: 20px;
+}
+
+.banner-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+/* Sync badge (sidebar) */
+.sync-badge {
+  font-size: 0.85rem;
+}
+
+.sync-badge.info {
+  color: var(--info);
+}
+
+.sync-badge.warning {
+  color: #8a6420;
+  font-weight: 600;
+}
+
+.sync-badge.danger {
+  color: var(--danger);
+  font-weight: 600;
+}
+
+/* Today */
+.today {
+  justify-items: start;
+}
+
+.button.large {
+  font-size: 1.1rem;
+  padding: 14px 24px;
+}
+
+/* Client picker */
+.picker-row {
+  grid-template-columns: minmax(0, 1fr) auto;
+}
+
+.picker-row.disabled {
+  color: #6b6a63;
+}
+
+.picker-row.disabled:hover {
+  background: none;
+}
+
+/* Record screen */
+.record-panel {
+  display: grid;
+  justify-items: center;
+  gap: 16px;
+  text-align: center;
+  padding: 32px 16px;
+  background: #fff;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-card);
+}
+
+.record-panel p {
+  margin: 0;
+}
+
+.record-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 1.2rem;
+  font-weight: 600;
+  padding: 18px 32px;
+  border-radius: 999px;
+  border: 0;
+  background: var(--olive-700);
+  color: #fff;
+}
+
+.record-button .dot,
+.recording-indicator .dot {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: var(--danger);
+  display: inline-block;
+}
+
+.record-button .dot {
+  background: #fff;
+}
+
+.record-button.stop {
+  background: #fff;
+  color: var(--danger);
+  border: 2px solid var(--danger);
+}
+
+.recording-indicator {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  color: var(--danger);
+  font-weight: 600;
+  font-size: 1.1rem;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .recording-indicator .dot {
+    animation: pulse 1.6s ease-in-out infinite;
+  }
+}
+
+@keyframes pulse {
+  50% {
+    opacity: 0.35;
+  }
+}
+
+.timer {
+  font-size: 3rem;
+  font-variant-numeric: tabular-nums;
+  font-weight: 300;
+}
+
+.done {
+  font-size: 1.2rem;
+  font-weight: 600;
+}
+
+/* Session lists */
+.session-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 12px;
+}
+
+.session-list li {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+}

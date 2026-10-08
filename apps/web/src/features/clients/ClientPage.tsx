@@ -11,6 +11,7 @@ import {
 } from '../../api/clients'
 import { errorMessage } from '../../i18n/errors'
 import { formatDate } from '../format'
+import { SessionList } from '../sessions/SessionList'
 import { ClientForm } from './ClientForm'
 import { ReadinessBadge } from './ConsentBadge'
 
@@ -54,6 +55,11 @@ export function ClientPage() {
         <h1>{client.name}</h1>
         <ReadinessBadge client={client} />
       </header>
+      {client.ready_to_record && (
+        <Link className="button primary" to={`/sessions/record/${client.id}`}>
+          {t('sessions.start')}
+        </Link>
+      )}
 
       <div className="card">
         <h2>{t('clients.details')}</h2>
@@ -151,6 +157,11 @@ export function ClientPage() {
             </ul>
           </>
         )}
+      </div>
+
+      <div className="card">
+        <h2>{t('nav.sessions')}</h2>
+        <SessionList clientId={client.id} showClient={false} />
       </div>
 
       {mutationError && (
