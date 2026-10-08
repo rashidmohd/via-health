@@ -7,7 +7,11 @@
     "keys": "Keys",
     "settings": "Settings"
   },
-  "common": { "comingSoon": "Not built yet." },
+  "common": {
+    "comingSoon": "Not built yet.",
+    "loading": "Loading…",
+    "retry": "Try again"
+  },
   "errors": {
     "client_not_found": "This client could not be found.",
     "client_not_active": "This client is restricted or archived. New recordings are not possible.",
@@ -20,6 +24,34 @@
     "chunk_conflict": "A part of the recording was uploaded twice with different content.",
     "consent_texts_immutable": "Published consent texts cannot be changed.",
     "audit_log_immutable": "The audit log cannot be changed.",
+    "not_authenticated": "Please sign in again.",
+    "code_invalid": "This code is not valid. It may be wrong or expired. Request a new code if needed.",
+    "too_many_requests": "Too many codes requested. Please wait a while and try again.",
+    "email_failed": "The email could not be sent. Please try again in a moment.",
+    "invalid_input": "Please check your entries.",
+    "origin_not_allowed": "This request was blocked for security reasons.",
+    "network_error": "No connection to the server. Please check your internet connection.",
     "unknown": "Something went wrong. Please try again."
+  },
+  "language": {
+    "label": "Language"
+  },
+  "auth": {
+    "loginTitle": "Sign in",
+    "signupTitle": "Create account",
+    "nameTitle": "What should we call you?",
+    "name": "Your name",
+    "email": "Email address",
+    "code": "6-digit code",
+    "sendCode": "Send code",
+    "codeSent": "We sent a code to {{email}}. It is valid for 10 minutes.",
+    "signIn": "Sign in",
+    "createAccount": "Create account",
+    "resend": "Send a new code",
+    "changeEmail": "Use a different email",
+    "noAccount": "New here?",
+    "haveAccount": "Already have an account?",
+    "continue": "Continue",
+    "signOut": "Sign out"
   }
 }

@@ -1,6 +1,6 @@
 import type { TFunction } from 'i18next'
 
-// Must match backend/app/db/errors.py DB_ERROR_CODES.
+// Must cover backend/app/db/errors.py DB_ERROR_CODES and the API error codes.
 export const ERROR_CODES = [
   'client_not_found',
   'client_not_active',
@@ -13,6 +13,13 @@ export const ERROR_CODES = [
   'chunk_conflict',
   'consent_texts_immutable',
   'audit_log_immutable',
+  'not_authenticated',
+  'code_invalid',
+  'too_many_requests',
+  'email_failed',
+  'invalid_input',
+  'origin_not_allowed',
+  'network_error',
 ] as const
 
 export type ErrorCode = (typeof ERROR_CODES)[number]

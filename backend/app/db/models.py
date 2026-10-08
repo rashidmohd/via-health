@@ -75,7 +75,10 @@ class User(Base):
     key_fingerprints: Mapped[dict[str, Any] | None]
     created_at: Mapped[datetime] = _created_at()
 
-    __table_args__ = (CheckConstraint(_in("ui_language", LANGUAGES), name="ui_language"),)
+    __table_args__ = (
+        CheckConstraint(_in("ui_language", LANGUAGES), name="ui_language"),
+        CheckConstraint("email = lower(email)", name="email_lowercase"),
+    )
 
 
 class Client(Base):
@@ -214,3 +217,36 @@ class AuditLog(Base):
     entity: Mapped[str] = mapped_column(Text)
     entity_id: Mapped[str | None] = mapped_column(Text)
     meta: Mapped[dict[str, Any] | None]
+
+
+class LoginCode(Base):
+    """One-time email code. Holds only HMACs, no user data, so no RLS."""
+
+    __tablename__ = "login_codes"
+
+    id: Mapped[uuid.UUID] = _uuid_pk()
+    email_hash: Mapped[str] = mapped_column(Text, index=True)
+    code_hash: Mapped[str] = mapped_column(Text)
+    ip_hash: Mapped[str | None] = mapped_column(Text, index=True)
+    created_at: Mapped[datetime] = _created_at()
+    expires_at: Mapped[datetime]
+    attempts: Mapped[int] = mapped_column(Integer, server_default="0")
+    consumed_at: Mapped[datetime | None]
+
+
+class AuthSession(Base):
+    """A login session of a user (therapist). Not a therapy `Session`."""
+
+    __tablename__ = "auth_sessions"
+
+    id: Mapped[uuid.UUID] = _uuid_pk()
+    user_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("users.id"), index=True)
+    token_hash: Mapped[str] = mapped_column(Text, unique=True)
+    created_at: Mapped[datetime] = _created_at()
+    last_seen_at: Mapped[datetime] = _created_at()
+    expires_at: Mapped[datetime]
+    revoked_at: Mapped[datetime | None]
+
+    __table_args__ = (
+        CheckConstraint("expires_at <= created_at + interval '12 hours'", name="max_lifetime"),
+    )

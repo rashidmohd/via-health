@@ -73,3 +73,173 @@ main {
     padding: 24px 16px;
   }
 }
+
+/* Buttons and forms */
+button {
+  font: inherit;
+  cursor: pointer;
+}
+
+button:disabled {
+  cursor: default;
+  opacity: 0.6;
+}
+
+.primary {
+  background: var(--olive-700);
+  color: #fff;
+  border: 0;
+  border-radius: var(--radius);
+  padding: 10px 16px;
+  font-weight: 600;
+}
+
+.secondary {
+  background: #fff;
+  color: var(--olive-700);
+  border: 1px solid var(--olive-300);
+  border-radius: var(--radius);
+  padding: 8px 14px;
+}
+
+.link {
+  background: none;
+  border: 0;
+  padding: 0;
+  color: var(--olive-700);
+  text-decoration: underline;
+}
+
+a {
+  color: var(--olive-700);
+}
+
+label {
+  display: grid;
+  gap: 6px;
+  font-size: 0.95rem;
+}
+
+input {
+  font: inherit;
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: #fff;
+  color: var(--charcoal);
+}
+
+input:focus-visible {
+  border-color: var(--olive-500);
+}
+
+.muted {
+  color: #6b6a63;
+}
+
+.center {
+  display: grid;
+  place-items: center;
+  gap: 12px;
+  min-height: 100vh;
+  margin: 0;
+}
+
+.form-error {
+  color: var(--danger);
+  margin: 0;
+}
+
+/* Login / signup */
+.auth-page {
+  display: grid;
+  place-items: center;
+  min-height: 100vh;
+  padding: 24px 16px;
+}
+
+.auth-card {
+  width: 100%;
+  max-width: 400px;
+  background: #fff;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-card);
+  padding: 32px;
+  display: grid;
+  gap: 16px;
+}
+
+.auth-card form {
+  display: grid;
+  gap: 16px;
+}
+
+.auth-card h1 {
+  margin: 0;
+  font-size: 1.4rem;
+}
+
+.auth-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.auth-top .brand {
+  color: var(--olive-700);
+  font-weight: 600;
+}
+
+.auth-links {
+  display: flex;
+  justify-content: space-between;
+}
+
+.auth-switch {
+  margin: 0;
+  font-size: 0.95rem;
+}
+
+/* Sidebar footer */
+.sidebar {
+  display: flex;
+  flex-direction: column;
+}
+
+.sidebar-footer {
+  margin-top: auto;
+  padding: 24px 12px 0;
+  display: grid;
+  gap: 10px;
+  justify-items: start;
+}
+
+.user-name {
+  font-weight: 600;
+}
+
+.language-switch {
+  display: inline-flex;
+  border: 1px solid var(--olive-300);
+  border-radius: var(--radius);
+  overflow: hidden;
+}
+
+.language-switch button {
+  background: #fff;
+  border: 0;
+  padding: 4px 10px;
+  color: var(--olive-700);
+  font-size: 0.85rem;
+}
+
+.language-switch button[aria-pressed='true'] {
+  background: var(--olive-100);
+  font-weight: 600;
+}
+
+@media (max-width: 480px) {
+  .auth-card {
+    padding: 24px 16px;
+  }
+}

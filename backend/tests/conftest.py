@@ -7,13 +7,15 @@ import socket
 import subprocess
 import tempfile
 import time
+import uuid
 from collections.abc import Iterator
 from pathlib import Path
 
 import pytest
 from alembic import command
 from alembic.config import Config
-from sqlalchemy import Connection, Engine, create_engine
+from sqlalchemy import Connection, Engine, create_engine, make_url, text
+from sqlalchemy.pool import NullPool
 
 BACKEND_DIR = Path(__file__).resolve().parents[1]
 
@@ -121,3 +123,41 @@ def conn(owner_engine: Engine) -> Iterator[Connection]:
             yield connection
         finally:
             transaction.rollback()
+
+
+def _server_engine(url: str) -> Engine:
+    """Connection to the maintenance DB, autocommit (for CREATE/DROP DATABASE)."""
+    return create_engine(
+        make_url(url).set(database="postgres"), isolation_level="AUTOCOMMIT", poolclass=NullPool
+    )
+
+
+@pytest.fixture(scope="session")
+def template_db_url(pg_url: str) -> Iterator[str]:
+    """A migrated database used as a template for per-test databases."""
+    name = "sessio_template"
+    server = _server_engine(pg_url)
+    with server.connect() as c:
+        c.execute(text(f"DROP DATABASE IF EXISTS {name}"))
+        c.execute(text(f"CREATE DATABASE {name}"))
+    url = make_url(pg_url).set(database=name).render_as_string(hide_password=False)
+    command.upgrade(alembic_config(url), "head")
+    yield url
+    with server.connect() as c:
+        c.execute(text(f"DROP DATABASE IF EXISTS {name} WITH (FORCE)"))
+    server.dispose()
+
+
+@pytest.fixture
+def fresh_db_url(template_db_url: str) -> Iterator[str]:
+    """An empty, fully migrated database for one test (tests that commit)."""
+    name = f"sessio_t_{uuid.uuid4().hex[:12]}"
+    server = _server_engine(template_db_url)
+    with server.connect() as c:
+        c.execute(text(f"CREATE DATABASE {name} TEMPLATE sessio_template"))
+    try:
+        yield make_url(template_db_url).set(database=name).render_as_string(hide_password=False)
+    finally:
+        with server.connect() as c:
+            c.execute(text(f"DROP DATABASE IF EXISTS {name} WITH (FORCE)"))
+        server.dispose()

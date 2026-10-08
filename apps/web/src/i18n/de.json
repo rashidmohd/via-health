@@ -7,7 +7,11 @@
     "keys": "Schlüssel",
     "settings": "Einstellungen"
   },
-  "common": { "comingSoon": "Noch nicht umgesetzt." },
+  "common": {
+    "comingSoon": "Noch nicht umgesetzt.",
+    "loading": "Wird geladen…",
+    "retry": "Erneut versuchen"
+  },
   "errors": {
     "client_not_found": "Diese Klient:in wurde nicht gefunden.",
     "client_not_active": "Diese Klient:in ist eingeschränkt oder archiviert. Neue Aufnahmen sind nicht möglich.",
@@ -20,6 +24,34 @@
     "chunk_conflict": "Ein Teil der Aufnahme wurde zweimal mit unterschiedlichem Inhalt hochgeladen.",
     "consent_texts_immutable": "Veröffentlichte Einwilligungstexte können nicht geändert werden.",
     "audit_log_immutable": "Das Audit-Protokoll kann nicht geändert werden.",
+    "not_authenticated": "Bitte melden Sie sich erneut an.",
+    "code_invalid": "Dieser Code ist nicht gültig. Er ist falsch oder abgelaufen. Fordern Sie bei Bedarf einen neuen Code an.",
+    "too_many_requests": "Zu viele Codes angefordert. Bitte warten Sie etwas und versuchen Sie es erneut.",
+    "email_failed": "Die E-Mail konnte nicht gesendet werden. Bitte versuchen Sie es gleich noch einmal.",
+    "invalid_input": "Bitte prüfen Sie Ihre Eingaben.",
+    "origin_not_allowed": "Diese Anfrage wurde aus Sicherheitsgründen blockiert.",
+    "network_error": "Keine Verbindung zum Server. Bitte prüfen Sie Ihre Internetverbindung.",
     "unknown": "Etwas ist schiefgelaufen. Bitte versuchen Sie es erneut."
+  },
+  "language": {
+    "label": "Sprache"
+  },
+  "auth": {
+    "loginTitle": "Anmelden",
+    "signupTitle": "Konto erstellen",
+    "nameTitle": "Wie dürfen wir Sie nennen?",
+    "name": "Ihr Name",
+    "email": "E-Mail-Adresse",
+    "code": "6-stelliger Code",
+    "sendCode": "Code senden",
+    "codeSent": "Wir haben einen Code an {{email}} gesendet. Er ist 10 Minuten gültig.",
+    "signIn": "Anmelden",
+    "createAccount": "Konto erstellen",
+    "resend": "Neuen Code senden",
+    "changeEmail": "Andere E-Mail verwenden",
+    "noAccount": "Neu hier?",
+    "haveAccount": "Sie haben schon ein Konto?",
+    "continue": "Weiter",
+    "signOut": "Abmelden"
   }
 }

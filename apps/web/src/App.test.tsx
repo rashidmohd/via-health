@@ -1,30 +1,31 @@
-import { fireEvent, render, screen } from '@testing-library/react'
-import { MemoryRouter } from 'react-router-dom'
-import App from './App'
+import { fireEvent, screen } from '@testing-library/react'
 import i18n from './i18n'
+import { ME, mockApi, renderApp } from './test-utils'
 
-function renderApp(path = '/') {
-  return render(
-    <MemoryRouter initialEntries={[path]}>
-      <App />
-    </MemoryRouter>,
-  )
-}
-
-describe('App shell', () => {
+describe('App shell (logged in)', () => {
   beforeEach(async () => {
     await i18n.changeLanguage('en')
+    mockApi(() => ({ status: 200, body: ME }))
+  })
+  afterEach(() => vi.unstubAllGlobals())
+
+  it('shows all six nav items in order', async () => {
+    renderApp()
+    await screen.findByText('Anna')
+    const links = screen.getByRole('navigation').querySelectorAll('a')
+    expect([...links].map((a) => a.textContent)).toEqual([
+      'Today',
+      'Clients',
+      'Sessions',
+      'Reports',
+      'Keys',
+      'Settings',
+    ])
   })
 
-  it('shows all six nav items in order', () => {
+  it('marks the current route as active and navigates', async () => {
     renderApp()
-    const links = screen.getAllByRole('link').map((a) => a.textContent)
-    expect(links).toEqual(['Today', 'Clients', 'Sessions', 'Reports', 'Keys', 'Settings'])
-  })
-
-  it('marks the current route as active and navigates', () => {
-    renderApp()
-    expect(screen.getByRole('link', { name: 'Today' })).toHaveClass('active')
+    expect(await screen.findByRole('link', { name: 'Today' })).toHaveClass('active')
     fireEvent.click(screen.getByRole('link', { name: 'Reports' }))
     expect(screen.getByRole('heading', { name: 'Reports' })).toBeInTheDocument()
   })
@@ -32,6 +33,6 @@ describe('App shell', () => {
   it('renders German labels', async () => {
     await i18n.changeLanguage('de')
     renderApp('/clients')
-    expect(screen.getByRole('heading', { name: 'Klient:innen' })).toBeInTheDocument()
+    expect(await screen.findByRole('heading', { name: 'Klient:innen' })).toBeInTheDocument()
   })
 })

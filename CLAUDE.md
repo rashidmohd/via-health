@@ -46,7 +46,7 @@ without restructuring.
 | LLM (reports) | Gemini on Vertex AI `europe-west4`, behind `LlmProvider` adapter |
 | Keys | Google Cloud KMS `europe-west4` + OpenPGP (therapist keys) |
 | Hosting | Railway, all services pinned to the EU region |
-| Auth | Passkeys (WebAuthn), TOTP fallback |
+| Auth | Email one-time code (Resend, EU region, ADR 0003); passkeys later |
 
 We do **not** self-host any ML model and do not run GPUs.
 
@@ -183,7 +183,7 @@ Navigation: Today · Clients · Sessions · Reports · Keys · Settings.
 - Final product name ("Sessio" is a placeholder).
 - Legal: DPIA, DPAs, §203 contracts, final consent texts — parked, lawyer review pending.
 
-Decided (see `docs/adr/`): GCS `europe-west4` for storage (0001); placeholder consent texts v0 for the prototype (0002).
+Decided (see `docs/adr/`): GCS `europe-west4` for storage (0001); placeholder consent texts v0 for the prototype (0002); email-code login via Resend EU, open signup (0003).
 
 ## 9. Skills index
 
