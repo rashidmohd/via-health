@@ -12,6 +12,7 @@ import { NewClientPage } from './features/clients/NewClientPage'
 import { NameStep } from './features/auth/NameStep'
 import { NAV_ITEMS } from './features/nav'
 import { RecordPage } from './features/sessions/RecordPage'
+import { SessionPage } from './features/sessions/SessionPage'
 import { RecoveryBanner } from './features/sessions/RecoveryBanner'
 import { SessionsPage } from './features/sessions/SessionsPage'
 import { StartSessionPage } from './features/sessions/StartSessionPage'
@@ -82,6 +83,7 @@ export default function App() {
           <Route path="/sessions" element={<SessionsPage />} />
           <Route path="/sessions/new" element={<StartSessionPage />} />
           <Route path="/sessions/record/:clientId" element={<RecordPage />} />
+          <Route path="/sessions/:id" element={<SessionPage />} />
           {NAV_ITEMS.filter((item) => !['today', 'clients', 'sessions'].includes(item.key)).map((item) => (
             <Route key={item.key} path={item.path} element={<PlaceholderPage navKey={item.key} />} />
           ))}

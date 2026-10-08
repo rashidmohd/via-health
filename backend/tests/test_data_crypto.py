@@ -54,6 +54,12 @@ def test_prod_requires_client_data_key() -> None:
         "email_sender": "resend",
         "resend_api_key": "k",
         "llm_provider": "vertex",
+        "object_store": "gcs",
+        "kms_provider": "gcp",
+        "stt_provider": "google",
+        "gcs_bucket": "b",
+        "kms_key_name": "projects/p/locations/europe-west4/keyRings/r/cryptoKeys/k",
+        "gcp_project_id": "p",
     }
     with pytest.raises(ValueError):
         Settings(**base)  # type: ignore[arg-type]

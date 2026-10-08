@@ -21,8 +21,18 @@ class Settings(BaseSettings):
 
     gcp_project_id: str = ""
     gcp_region: str = "europe-west4"
-    object_store: Literal["gcs", "r2"] = "gcs"
+    # Service-account key as JSON text (Railway). Locally GOOGLE_APPLICATION_CREDENTIALS
+    # (a file path) is used by the Google libraries instead.
+    google_application_credentials_json: str = ""
+
+    # Interim implementations (postgres / local / fake) are for local dev and tests only.
+    object_store: Literal["postgres", "gcs"] = "postgres"
+    gcs_bucket: str = ""
+    kms_provider: Literal["local", "gcp"] = "local"
+    kms_key_name: str = ""
+    stt_provider: Literal["fake", "google"] = "fake"
     stt_model: str = "chirp_3"
+    stt_location: str = "eu"  # Chirp 3 is not available in europe-west4 (verified 2026-10-08)
     llm_model: str = ""
     # ADR 0005: the Gemini Developer API is not EU-pinned; dev with test data only.
     llm_provider: Literal["gemini_api", "vertex"] = "gemini_api"
@@ -58,6 +68,20 @@ class Settings(BaseSettings):
             raise ValueError("GCP_REGION must be an EU region")
         return value
 
+    @field_validator("stt_location")
+    @classmethod
+    def stt_location_must_be_eu(cls, value: str) -> str:
+        if value != "eu" and not value.startswith(EU_REGION_PREFIXES):
+            raise ValueError("STT_LOCATION must be in the EU")
+        return value
+
+    @field_validator("kms_key_name")
+    @classmethod
+    def kms_key_must_be_eu(cls, value: str) -> str:
+        if value and "/locations/europe-" not in value:
+            raise ValueError("KMS_KEY_NAME must be in an EU location")
+        return value
+
     @model_validator(mode="after")
     def prod_requires_real_secrets(self) -> "Settings":
         if self.app_env in ("staging", "prod"):
@@ -69,6 +93,17 @@ class Settings(BaseSettings):
                 )
             if self.client_data_key == DEV_CLIENT_DATA_KEY:
                 raise ValueError("CLIENT_DATA_KEY must be set in staging/prod")
+            if (self.object_store, self.kms_provider, self.stt_provider) != (
+                "gcs",
+                "gcp",
+                "google",
+            ):
+                raise ValueError(
+                    "OBJECT_STORE=gcs, KMS_PROVIDER=gcp and STT_PROVIDER=google are required "
+                    "in staging/prod"
+                )
+            if not (self.gcs_bucket and self.kms_key_name and self.gcp_project_id):
+                raise ValueError("GCS_BUCKET, KMS_KEY_NAME and GCP_PROJECT_ID are required")
             if self.app_env == "prod" and self.llm_provider != "vertex":
                 raise ValueError("LLM_PROVIDER=vertex (EU) is required in prod (ADR 0005)")
         return self

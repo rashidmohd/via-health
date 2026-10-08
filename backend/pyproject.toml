@@ -8,6 +8,9 @@ dependencies = [
     "arq>=0.28.0",
     "cryptography>=50.0.2",
     "fastapi>=0.142.2",
+    "google-cloud-kms>=3.18.0",
+    "google-cloud-speech>=2.41.0",
+    "google-cloud-storage>=3.16.0",
     "httpx2>=2.13.1",
     "psycopg[binary]>=3.3.6",
     "pydantic>=2",
@@ -46,6 +49,15 @@ ignore = ["S101"]
 python_version = "3.12"
 strict = true
 plugins = ["pydantic.mypy"]
+
+[[tool.mypy.overrides]]
+module = ["google.*"]
+ignore_missing_imports = true
+
+# Google client libraries are partly untyped; only adapters may call them (rule 15).
+[[tool.mypy.overrides]]
+module = ["app.adapters.*"]
+disallow_untyped_calls = false
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

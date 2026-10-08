@@ -155,12 +155,22 @@ class Session(Base):
     template_id: Mapped[uuid.UUID | None]
     retention_deadline: Mapped[datetime]
     mime_type: Mapped[str | None] = mapped_column(Text)
+    # Stable code (e.g. incomplete_upload, transcription_failed), never free text.
+    failure_reason: Mapped[str | None] = mapped_column(Text)
 
     __table_args__ = (
         CheckConstraint(
             _in(
                 "status",
-                ("recording", "uploaded", "processing", "draft_ready", "signed", "failed"),
+                (
+                    "recording",
+                    "uploaded",
+                    "processing",
+                    "transcribed",
+                    "draft_ready",
+                    "signed",
+                    "failed",
+                ),
             ),
             name="status",
         ),
@@ -261,4 +271,18 @@ class ObjectBlob(Base):
     key: Mapped[str] = mapped_column(Text, primary_key=True)
     session_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("sessions.id"), index=True)
     data: Mapped[bytes]
+    created_at: Mapped[datetime] = _created_at()
+
+
+class Transcript(Base):
+    """Final transcript of a session. Segments are encrypted (interim key, ADR 0004)."""
+
+    __tablename__ = "transcripts"
+
+    session_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("sessions.id"), primary_key=True)
+    segments_enc: Mapped[bytes]
+    # Which speaker label is the therapist, e.g. {"therapist": "1"}; set by the therapist.
+    speaker_roles: Mapped[dict[str, Any] | None]
+    language: Mapped[str] = mapped_column(Text)
+    stt_model: Mapped[str] = mapped_column(Text)
     created_at: Mapped[datetime] = _created_at()

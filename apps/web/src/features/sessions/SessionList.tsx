@@ -1,4 +1,5 @@
 import { useTranslation } from 'react-i18next'
+import { Link } from 'react-router-dom'
 import { useSessions } from '../../api/sessions'
 import { db } from '../../recorder/db'
 import { useLocal } from '../../recorder/useLocal'
@@ -46,7 +47,9 @@ export function SessionList({ clientId, showClient }: { clientId?: string; showC
       {serverOnly.map((s) => (
         <li key={s.id}>
           <div>
-            <strong>{showClient ? s.client_name : formatDate(s.started_at, i18n.language)}</strong>
+            <Link to={`/sessions/${s.id}`}>
+              <strong>{showClient ? s.client_name : formatDate(s.started_at, i18n.language)}</strong>
+            </Link>
             {showClient && <span className="muted small"> · {formatDate(s.started_at, i18n.language)}</span>}
             <span className="muted small"> · {t('sessions.minutes', { count: Number(minutes(s.duration_ms)) || 0 })}</span>
           </div>

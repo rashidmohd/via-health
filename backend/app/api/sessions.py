@@ -13,12 +13,11 @@ from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.orm import Session as DbSession
 
 from app.adapters.kms import KmsProvider, get_kms
-from app.adapters.storage.base import ObjectStore
-from app.adapters.storage.postgres import PostgresObjectStore
+from app.adapters.storage import ObjectStore, make_object_store
 from app.api.deps import CurrentUserId, Db
 from app.api.errors import ApiError
 from app.core.data_crypto import DecryptionError, decrypt_json
-from app.db.models import AudioChunk, AuditLog, Client, Session, WrappedKey
+from app.db.models import AudioChunk, AuditLog, Client, Session, Transcript, WrappedKey
 
 router = APIRouter(tags=["sessions"])
 
@@ -29,7 +28,7 @@ MimeType = Literal["audio/webm;codecs=opus", "audio/webm", "audio/mp4"]
 
 
 def get_object_store(db: Db) -> ObjectStore:
-    return PostgresObjectStore(db)
+    return make_object_store(db)
 
 
 Store = Annotated[ObjectStore, Depends(get_object_store)]
@@ -84,6 +83,7 @@ class SessionOut(BaseModel):
     duration_ms: int | None
     total_chunks: int | None
     uploaded_chunks: int
+    failure_reason: str | None
 
 
 def _key_aad(session_id: uuid.UUID) -> str:
@@ -131,6 +131,7 @@ def _out(db: DbSession, session: Session) -> SessionOut:
         duration_ms=session.duration_ms,
         total_chunks=session.total_chunks,
         uploaded_chunks=_uploaded(db, session.id),
+        failure_reason=session.failure_reason,
     )
 
 
@@ -255,3 +256,83 @@ def list_sessions(
     if client_id is not None:
         query = query.where(Session.client_id == client_id)
     return [_out(db, s) for s in db.scalars(query)]
+
+
+class TranscriptSegment(BaseModel):
+    speaker: str | None
+    start_ms: int
+    end_ms: int
+    text: str
+
+
+class TranscriptOut(BaseModel):
+    session_id: uuid.UUID
+    language: str
+    stt_model: str
+    therapist_speaker: str | None
+    segments: list[TranscriptSegment]
+
+
+class TranscriptUpdate(BaseModel):
+    therapist_speaker: Annotated[str, Field(min_length=1, max_length=10)]
+
+
+def _transcript_out(transcript: Transcript) -> TranscriptOut:
+    data = decrypt_json(transcript.segments_enc, f"transcript:{transcript.session_id}:segments")
+    roles = transcript.speaker_roles or {}
+    return TranscriptOut(
+        session_id=transcript.session_id,
+        language=transcript.language,
+        stt_model=transcript.stt_model,
+        therapist_speaker=roles.get("therapist"),
+        segments=[TranscriptSegment(**segment) for segment in data["segments"]],
+    )
+
+
+@router.get("/sessions/{session_id}")
+def get_session(session_id: uuid.UUID, user_id: CurrentUserId, db: Db) -> SessionOut:
+    return _out(db, _get_session(db, session_id))
+
+
+@router.get("/sessions/{session_id}/transcript")
+def get_transcript(session_id: uuid.UUID, user_id: CurrentUserId, db: Db) -> TranscriptOut:
+    _get_session(db, session_id)
+    transcript = db.get(Transcript, session_id)
+    if transcript is None:
+        raise ApiError("transcript_not_ready", 404)
+    return _transcript_out(transcript)
+
+
+@router.patch("/sessions/{session_id}/transcript")
+def update_transcript(
+    session_id: uuid.UUID, body: TranscriptUpdate, user_id: CurrentUserId, db: Db
+) -> TranscriptOut:
+    """The therapist says which speaker label is them; the other is the client."""
+    _get_session(db, session_id)
+    transcript = db.get(Transcript, session_id)
+    if transcript is None:
+        raise ApiError("transcript_not_ready", 404)
+    transcript.speaker_roles = {"therapist": body.therapist_speaker}
+    db.flush()
+    return _transcript_out(transcript)
+
+
+@router.post("/sessions/{session_id}/retry")
+def retry_session(session_id: uuid.UUID, user_id: CurrentUserId, db: Db) -> SessionOut:
+    session = _get_session(db, session_id)
+    if session.status != "failed":
+        raise ApiError("session_not_failed", 409)
+    if session.audio_state != "present":
+        raise ApiError("audio_not_accepted", 409)
+    session.status = "uploaded"  # the worker picks it up within 15 s
+    session.failure_reason = None
+    db.add(
+        AuditLog(
+            actor_user_id=user_id,
+            action="session_retry",
+            entity="session",
+            entity_id=str(session.id),
+        )
+    )
+    db.flush()
+    return _out(db, session)

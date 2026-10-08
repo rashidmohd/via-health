@@ -58,6 +58,19 @@ Code is deployed from GitHub (`rashidmohd/via-health`, branch `main`).
    VITE_API_URL=https://viaapi.bandi.ae  # baked into the app at build time → redeploy after changing
    ```
 
+## 4b. Google Cloud variables (`api` and `worker`, plan 0005)
+Set up the project first: `docs/google-cloud-setup.md`. Best as **Shared Variables**:
+```
+OBJECT_STORE=gcs
+KMS_PROVIDER=gcp
+STT_PROVIDER=google
+GCP_PROJECT_ID=<project id>
+GCS_BUCKET=<bucket>
+KMS_KEY_NAME=projects/<project id>/locations/europe-west4/keyRings/<ring>/cryptoKeys/<key>
+GOOGLE_APPLICATION_CREDENTIALS_JSON=<whole service-account JSON>
+```
+The `worker` needs the **same** variables as `api` (it validates the same settings).
+
 ## 5. Resend (login emails, ADR 0003)
 1. resend.com → **Domains → Add domain** → `bandi.ae`, **Region: Ireland (eu-west-1)**.
    The region cannot be changed later.

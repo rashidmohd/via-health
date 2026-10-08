@@ -39,6 +39,9 @@ Time: about 30–45 minutes. Do it once for `dev`; `prod` later gets its own pro
 After creating: bucket → **Lifecycle** → **Add a rule** → Action **Delete object**,
 condition **Age = 30 days** → Create. (Hard maximum for audio, rule 6.)
 
+Add a second rule: **Delete object**, **Age = 1 day**, **Object name matches prefix** `stt-tmp/`
+(safety net for the temporary audio copy used by transcription, plan 0005).
+
 ## 4. Key for session keys (Cloud KMS)
 **Security → Key Management → Create key ring**:
 - Key ring name `sessio`, location type **Region** → `europe-west4`.

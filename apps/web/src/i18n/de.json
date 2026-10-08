@@ -43,6 +43,8 @@
     "chunk_too_large": "Ein Teil der Aufnahme ist zu groß zum Hochladen.",
     "checksum_mismatch": "Ein Teil der Aufnahme wurde beim Hochladen beschädigt und wird erneut gesendet.",
     "chunk_out_of_range": "Ein Teil der Aufnahme gehört nicht zu dieser Sitzung.",
+    "transcript_not_ready": "Das Transkript ist noch nicht fertig.",
+    "session_not_failed": "Diese Sitzung muss nicht erneut verarbeitet werden.",
     "unknown": "Etwas ist schiefgelaufen. Bitte versuchen Sie es erneut."
   },
   "language": {
@@ -164,7 +166,8 @@
       "processing": "In Verarbeitung",
       "draft_ready": "Entwurf bereit",
       "signed": "Unterschrieben",
-      "failed": "Fehlgeschlagen"
+      "failed": "Fehlgeschlagen",
+      "transcribed": "Transkript bereit"
     }
   },
   "record": {
@@ -188,5 +191,32 @@
       "storage_full": "Der Gerätespeicher ist voll. Die Aufnahme wurde beendet; alles bisher Gespeicherte bleibt erhalten.",
       "write_failed": "Audiodaten konnten auf diesem Gerät nicht gespeichert werden. Die Aufnahme wurde beendet; alles bisher Gespeicherte bleibt erhalten."
     }
+  },
+  "session": {
+    "title": "Sitzung am {{date}}",
+    "waitingForUpload": "Es fehlen noch Audiodaten vom Aufnahmegerät ({{done}} von {{total}} Teilen). Öffnen Sie die App auf diesem Gerät, damit der Upload abgeschlossen wird.",
+    "transcribing": "Wird transkribiert…",
+    "transcribingHint": "Das dauert meist einige Minuten. Sie können diese Seite verlassen; das Transkript erscheint hier, sobald es fertig ist.",
+    "failure": {
+      "incomplete_upload": "Teile der Aufnahme fehlen, daher konnte sie nicht transkribiert werden. Öffnen Sie die App auf dem Aufnahmegerät, um den Upload abzuschließen.",
+      "chunk_corrupt": "Ein Teil der Aufnahme ist beschädigt und konnte nicht entschlüsselt werden.",
+      "transcription_failed": "Der Transkriptionsdienst hat nicht geantwortet. Bitte versuchen Sie es erneut.",
+      "no_speech": "In der Aufnahme wurde keine Sprache erkannt.",
+      "key_missing": "Der Schlüssel für diese Aufnahme fehlt, daher kann sie nicht entschlüsselt werden.",
+      "audio_not_accepted": "Die Audiodaten dieser Sitzung sind nicht mehr verfügbar.",
+      "consent_missing": "Die Einwilligung dieser Klient:in wurde widerrufen, daher wurde die Sitzung nicht transkribiert.",
+      "unknown": "Die Sitzung konnte nicht transkribiert werden."
+    }
+  },
+  "transcript": {
+    "title": "Transkript",
+    "speaker": "Sprecher:in {{label}}",
+    "therapist": "Therapeut:in",
+    "client": "Klient:in",
+    "whoTitle": "Welche Stimme ist Ihre?",
+    "whoHint": "Das Transkript trennt die Stimmen, weiß aber nicht, wer wer ist. Wählen Sie Ihre Stimme; alle anderen werden als Klient:in angezeigt.",
+    "thatsMe": "Das bin ich",
+    "changeSpeaker": "Zuordnung ändern",
+    "reviewNote": "Automatisches Transkript. Es kann Fehler enthalten – bitte vor der Verwendung prüfen."
   }
 }

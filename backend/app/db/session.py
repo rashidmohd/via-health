@@ -13,15 +13,18 @@ from sqlalchemy.orm import Session
 from app.core.config import get_settings
 
 APP_ROLE = "sessio_app"
+WORKER_ROLE = "sessio_worker"  # processes sessions by id; cannot read client identity
 
 
-def make_engine(url: str) -> Engine:
+def make_engine(url: str, role: str = APP_ROLE) -> Engine:
+    if role not in (APP_ROLE, WORKER_ROLE):
+        raise ValueError("unknown role")
     engine = create_engine(url, pool_pre_ping=True)
 
     @event.listens_for(engine, "connect")
     def _drop_privileges(dbapi_connection: Any, _record: Any) -> None:
         with dbapi_connection.cursor() as cursor:
-            cursor.execute(f"SET ROLE {APP_ROLE}")
+            cursor.execute(f"SET ROLE {role}")
         dbapi_connection.commit()
 
     return engine

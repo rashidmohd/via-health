@@ -29,6 +29,8 @@ export const ERROR_CODES = [
   'chunk_too_large',
   'checksum_mismatch',
   'chunk_out_of_range',
+  'transcript_not_ready',
+  'session_not_failed',
 ] as const
 
 export type ErrorCode = (typeof ERROR_CODES)[number]
