@@ -50,6 +50,8 @@ export interface Statement {
   support: Support | null
   ai_wording: string[]
   wording: string[]
+  /** The AI used another person's name; the note should name roles (ADR 0007). */
+  third_party_name: boolean
   resolved: boolean
   blocking: boolean
 }

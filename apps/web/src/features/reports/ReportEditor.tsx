@@ -26,13 +26,16 @@ function statementFlags(s: Statement): string[] {
   const flags: string[] = []
   if (s.origin === 'ai' && s.support && s.support !== 'supported') flags.push(s.support)
   if (s.wording.length > 0) flags.push('wording')
+  if (s.third_party_name) flags.push('name')
   return flags
 }
 
 /** Blocking as the server computes it, also for edits not saved yet. */
 function blocks(s: Statement): boolean {
   return (
-    s.origin === 'ai' && !s.resolved && (s.support !== 'supported' || s.ai_wording.length > 0)
+    s.origin === 'ai' &&
+    !s.resolved &&
+    (s.support !== 'supported' || s.ai_wording.length > 0 || s.third_party_name)
   )
 }
 
@@ -320,6 +323,7 @@ export function ReportEditor({
                       support: null,
                       ai_wording: [],
                       wording: [],
+                      third_party_name: false,
                       resolved: true,
                       blocking: false,
                     },

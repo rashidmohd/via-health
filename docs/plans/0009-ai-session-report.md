@@ -1,7 +1,12 @@
 # Plan 0009 — AI session report (draft, review, approve)
 
-Status: implemented (2026-10-08), tested with a fake model only — no Gemini key yet.
-Not yet checked against a real model: draft quality, check-pass strictness, German style.
+Status: implemented (2026-10-08). Real-model check 2026-10-09 (gemini-3.8-flash, Gemini API,
+synthetic 3-min German VT session, 6 runs): no names sent; no clinical fields; suicidality
+question and emotion words left out; sources correct. Draft 7–18 s, check 4–42 s.
+Fixes from the check: the model kept `[Person 1]`, which was restored to the real name → prompt
+now forbids placeholders, client/therapist placeholders restore to role words, other names are
+restored but flagged ("Enthält einen Namen", blocking). Check prompt sharpened (v1.3): flags fell
+from 5/12 to ~1 per run, mostly real (added detail, dropped "wenigstens").
 Names are snapshotted per session at start (`sessions.llm_names_enc`) and again on every
 "draft" request, so the worker never reads client identity. Based on docs/research/german-session-reports.md and
 ADRs 0006 (transcript is part of the record), 0007 (plain-text processing, name placeholders),

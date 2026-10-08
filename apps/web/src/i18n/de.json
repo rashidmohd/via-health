@@ -343,12 +343,14 @@
     "flags": {
       "partly": "Nur teilweise im Transkript",
       "unsupported": "Nicht im Transkript gefunden",
-      "wording": "Wortwahl: {{words}}"
+      "wording": "Wortwahl: {{words}}",
+      "name": "Enthält einen Namen"
     },
     "flagHints": {
       "partly": "Das Transkript stützt nur einen Teil dieses Satzes.",
       "unsupported": "Dieser Satz ließ sich dem Transkript nicht zuordnen.",
-      "wording": "Wertende oder Gefühlswörter. Die Klient:in kann diese Dokumentation einsehen (§630g BGB)."
+      "wording": "Wertende oder Gefühlswörter. Die Klient:in kann diese Dokumentation einsehen (§630g BGB).",
+      "name": "Die KI hat den Namen einer anderen Person verwendet. Die Dokumentation sollte Rollen nennen (Partner:in, Chef:in); die Klient:in kann sie einsehen."
     },
     "keep": "Beibehalten",
     "delete": "Löschen",

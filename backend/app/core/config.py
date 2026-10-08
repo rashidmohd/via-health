@@ -11,6 +11,7 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 EU_REGION_PREFIXES = ("europe-",)
 
 DEV_CLIENT_DATA_KEY = "00" * 32
+DEFAULT_LLM_MODEL = "gemini-3.8-flash"
 
 
 class Settings(BaseSettings):
@@ -36,7 +37,7 @@ class Settings(BaseSettings):
     stt_provider: Literal["fake", "google"] = "fake"
     stt_model: str = "chirp_3"
     stt_location: str = "eu"  # Chirp 3 is not available in europe-west4 (verified 2026-10-08)
-    llm_model: str = "gemini-2.5-flash"
+    llm_model: str = DEFAULT_LLM_MODEL
     # ADR 0005: the Gemini Developer API is not EU-pinned; dev/staging with test data only.
     # `fake` writes fixed drafts (tests, local dev without a key).
     llm_provider: Literal["fake", "gemini_api", "vertex"] = "fake"
@@ -65,6 +66,11 @@ class Settings(BaseSettings):
             if value.startswith(prefix):
                 return "postgresql+psycopg://" + value.removeprefix(prefix)
         return value
+
+    @field_validator("llm_model")
+    @classmethod
+    def empty_model_means_default(cls, value: str) -> str:
+        return value.strip() or DEFAULT_LLM_MODEL
 
     @field_validator("gcp_region")
     @classmethod

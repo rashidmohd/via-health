@@ -1,7 +1,7 @@
 import pytest
 from pydantic import ValidationError
 
-from app.core.config import Settings
+from app.core.config import DEFAULT_LLM_MODEL, Settings
 
 SA_JSON = '{"type": "service_account", "client_email": "a@b", "private_key": "k"}'
 
@@ -155,3 +155,7 @@ def test_credentials_json_accepts_real_line_breaks_and_base64() -> None:
     assert parse_service_account_json(encoded)["client_email"] == "a@b"
     with pytest.raises(ValueError, match="neither JSON nor base64"):
         parse_service_account_json("not-json-not-base64!")
+
+
+def test_empty_llm_model_uses_default() -> None:
+    assert Settings(llm_model="  ").llm_model == DEFAULT_LLM_MODEL

@@ -86,6 +86,7 @@ class StatementOut(BaseModel):
     support: str | None
     ai_wording: list[str]
     wording: list[str]  # judgmental / emotion words in the current text
+    third_party_name: bool  # the AI used another person's name (ADR 0007)
     resolved: bool
     blocking: bool
 
@@ -169,6 +170,7 @@ def _statement_out(s: dict[str, Any]) -> StatementOut:
         support=s.get("support"),
         ai_wording=s.get("ai_wording", []),
         wording=wording_hits(s["text"]),
+        third_party_name=bool(s.get("third_party_name")),
         resolved=bool(s.get("resolved")),
         blocking=is_blocking(s),
     )

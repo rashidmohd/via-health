@@ -20,7 +20,7 @@ const TRANSCRIPT = {
 function statement(id: string, text: string, extra: Record<string, unknown> = {}) {
   return {
     id, text, kind: 'reported', origin: 'ai', refs: [[4100, 9000]], notes: [], support: 'supported',
-    ai_wording: [], wording: [], resolved: false, blocking: false, ...extra,
+    ai_wording: [], wording: [], third_party_name: false, resolved: false, blocking: false, ...extra,
   }
 }
 

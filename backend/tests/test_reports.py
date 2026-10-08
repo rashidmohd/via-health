@@ -21,6 +21,7 @@ from app.domain.report_draft import (
     NameMasker,
     Note,
     apply_check,
+    is_blocking,
     parse_draft,
     wording_hits,
 )
@@ -43,7 +44,10 @@ def test_names_are_masked_and_restored() -> None:
         "[Klient:in] sagt, [Person 1] Chef und Frau [Klient:in]; [Klient:in] Mutter. "
         "[Therapeut:in]. Tomate."
     )
-    assert masker.restore("[Klient:in] und [Person 1]") == "Anna Schmidt und Tom Weber"
+    # Client and therapist become role words; other people's names come back (and are flagged).
+    assert masker.restore("[Klient:in], [Therapeut:in] und [Person 1]") == (
+        "Klient:in, Therapeut:in und Tom Weber"
+    )
 
 
 def test_name_particles_and_short_parts_are_not_masked_alone() -> None:
@@ -259,7 +263,7 @@ def test_transcript_is_drafted_automatically_with_names_hidden(
     assert report["status"] == "draft"
     assert report["ai_assisted"] is True and report["llm_model"] == "fake"
     topics = report["content"]["ai"]["topics"]["statements"]
-    assert topics[0]["text"] == "Hallo Anna Schmidt, wie war die Woche?"  # names restored
+    assert topics[0]["text"] == "Hallo Klient:in, wie war die Woche?"  # role, not the name
     assert topics[0]["refs"] == [[0, 1500]]
     assert topics[0]["support"] == "supported" and topics[0]["blocking"] is False
     assert report["content"]["therapist"] == dict.fromkeys(THERAPIST_FIELDS, "")
@@ -519,3 +523,24 @@ def test_session_card_shows_the_note_topics(
     assert listed["report_status"] == "draft"
     assert listed["report_topics"][0] == "Konflikt am Arbeitsplatz"
     assert len(listed["report_topics"][1]) == 80 and listed["report_topics"][1].endswith("…")
+
+
+def test_third_party_placeholder_in_output_is_restored_and_blocks() -> None:
+    masker = NameMasker(NameList(client=["Anna"], others=["Tom Weber"]), "de")
+    raw = {
+        "topics": {
+            "status": "content",
+            "statements": [
+                {"text": "Streit mit [Person 1]", "kind": "reported", "refs": [1], "note_refs": []},
+                {"text": "[Klient:in] berichtet", "kind": "reported", "refs": [1], "note_refs": []},
+            ],
+        }
+    }
+    fields = parse_draft(
+        raw, fields=("topics",), segments=SEGMENTS, notes=[], restore=masker.restore
+    )
+    named, plain = fields["topics"]["statements"]
+    named["support"] = plain["support"] = "supported"
+    assert named["text"] == "Streit mit Tom Weber" and named["third_party_name"] is True
+    assert is_blocking(named)
+    assert plain["text"] == "Klient:in berichtet" and not is_blocking(plain)

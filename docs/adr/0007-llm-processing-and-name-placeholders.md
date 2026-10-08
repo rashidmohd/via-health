@@ -18,7 +18,10 @@ encryption is not possible for the drafting step.
   - matched case-insensitively, whole words, including German genitive "-s";
   - placeholders `[Klient:in]`, `[Therapeut:in]`, `[Person 1]`, `[Person 2]` … (EN:
     `[Client]`, `[Therapist]`, `[Person 1]`);
-  - the worker puts the names back before storing the draft encrypted.
+  - after the call, `[Klient:in]` / `[Therapeut:in]` become the role words (a note names roles,
+    not people); other people's placeholders become their names again but the sentence is
+    flagged and blocks approval until the therapist decides (added 2026-10-09 after the real
+    model kept `[Person 1]` in a draft).
 - The prompt also tells the model to name other people by role ("Partner", "Mutter").
 
 ## Consequences

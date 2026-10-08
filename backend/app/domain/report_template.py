@@ -8,7 +8,7 @@ from typing import Any
 
 TEMPLATE_CODE = "verlauf"
 TEMPLATE_VERSION = 1
-PROMPT_VERSION = "verlauf-1.1"
+PROMPT_VERSION = "verlauf-1.3"
 
 AI_FIELDS = (
     "homework_followup",
@@ -78,8 +78,10 @@ Rules:
 6. No diagnoses, no ICD codes, no risk or suicidality statements, no treatment recommendations,
    no clinical assessment. Do not describe or infer feelings, mood or behaviour with adjectives
    (not "wirkte gedrückt", not "seemed anxious"); if it matters, quote the client's own words.
-7. Refer to other people only by their role (partner, mother, colleague, boss), never by name.
-   Placeholders in square brackets, like [Person 1], stay exactly as they are.
+7. Never write names or the placeholders in square brackets ([Person 1], [Klient:in],
+   [Therapeut:in], [Client], [Therapist]). Write "Klient:in" / "Therapeut:in" (English:
+   "client" / "therapist") and other people only by their role (partner, mother, colleague,
+   boss).
 8. Short factual bullet style, one fact per statement, at most 6 statements per field. Past
    tense for events, present tense for agreements.
 9. Write the statements in {language}.
@@ -92,9 +94,11 @@ UNKNOWN_SPEAKERS_NOTE = (
 
 CHECK_SYSTEM_PROMPT = """\
 You check statements of a draft session note against their sources. For each statement answer:
-- "supported": everything in the statement is stated in its sources;
-- "partly": part is stated, but it adds detail, interpretation or a different emphasis;
-- "unsupported": not stated, or contradicts the sources.
+- "supported": every fact in the statement is in its sources. Paraphrasing, summarising,
+  reported speech, role words (Klient:in, Therapeut:in, "der Chef") and tense changes are fine;
+- "partly": the statement adds a fact, number, time, person or interpretation that is not in
+  its sources, or leaves out a qualification that changes the meaning;
+- "unsupported": the statement is not in its sources, or contradicts them.
 Be strict about negations, numbers, times, and who said what. Judge only the given sources.
 """
 

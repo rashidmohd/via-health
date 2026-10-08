@@ -343,12 +343,14 @@
     "flags": {
       "partly": "Partly in the transcript",
       "unsupported": "Not found in the transcript",
-      "wording": "Wording: {{words}}"
+      "wording": "Wording: {{words}}",
+      "name": "Contains a name"
     },
     "flagHints": {
       "partly": "The transcript supports only part of this sentence.",
       "unsupported": "This sentence could not be matched to the transcript.",
-      "wording": "Judgmental or emotion words. The client can read this note (§630g BGB)."
+      "wording": "Judgmental or emotion words. The client can read this note (§630g BGB).",
+      "name": "The AI used another person's name. Notes should name roles (partner, boss); the client can read the note."
     },
     "keep": "Keep",
     "delete": "Delete",

@@ -54,9 +54,14 @@ class NameList:
         )
 
 
+PERSON_MARK = re.compile(r"\[Person \d+\]")
+
+
 class NameMasker:
     """Replaces known names (full name and each name part) with placeholders, whole words,
-    case-insensitive, also with a German genitive -s. `restore` puts the full names back."""
+    case-insensitive, also with a German genitive -s. `restore` turns the client and therapist
+    placeholders into role words (a note names roles, not people) and other people's
+    placeholders back into their names; the latter are flagged for the therapist."""
 
     def __init__(self, names: NameList, language: str) -> None:
         marks = PLACEHOLDERS.get(language, PLACEHOLDERS["de"])
@@ -65,12 +70,16 @@ class NameMasker:
         groups += [(n, marks["therapist"]) for n in names.therapist]
         groups += [(n, marks["person"].format(n=i)) for i, n in enumerate(names.others, start=1)]
         self._term_to_mark: dict[str, str] = {}
-        self._mark_to_name: dict[str, str] = {}
+        self._mark_to_name: dict[str, str] = {
+            marks["client"]: marks["client"].strip("[]"),
+            marks["therapist"]: marks["therapist"].strip("[]"),
+        }
         for name, mark in groups:
             name = " ".join(name.split())
             if not name:
                 continue
-            self._mark_to_name.setdefault(mark, name)
+            if PERSON_MARK.fullmatch(mark):
+                self._mark_to_name[mark] = name
             terms = [name] + [
                 part
                 for part in re.split(r"[\s\-]+", name)
@@ -235,6 +244,7 @@ def parse_draft(
             kind = item.get("kind") if item.get("kind") in STATEMENT_KINDS else "reported"
             lines = _ints(item.get("refs"), len(segments))
             note_numbers = [n - 1 for n in _ints(item.get("note_refs"), len(notes) + 1) if n > 0]
+            third_party_name = bool(PERSON_MARK.search(text))
             text = restore(text)
             statements.append(
                 {
@@ -247,6 +257,7 @@ def parse_draft(
                     "note_numbers": note_numbers,
                     "support": "unsupported",
                     "ai_wording": wording_hits(text),
+                    "third_party_name": third_party_name,
                     "origin": "ai",
                     "resolved": False,
                 }
@@ -307,7 +318,11 @@ def is_blocking(statement: dict[str, Any]) -> bool:
     return (
         statement.get("origin") == "ai"
         and not statement.get("resolved")
-        and (statement.get("support") != "supported" or bool(statement.get("ai_wording")))
+        and (
+            statement.get("support") != "supported"
+            or bool(statement.get("ai_wording"))
+            or bool(statement.get("third_party_name"))
+        )
     )
 
 

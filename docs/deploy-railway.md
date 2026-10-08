@@ -87,7 +87,7 @@ Staging (test data only, ADR 0005) — Gemini API key on the **paid tier**
 ```
 LLM_PROVIDER=gemini_api
 LLM_API_KEY=<key>
-LLM_MODEL=gemini-2.5-flash   # or the current Flash model
+LLM_MODEL=gemini-3.8-flash   # or the current Flash model
 ```
 Without these the worker uses `LLM_PROVIDER=fake` (fixed demo drafts, no AI).
 Prod: `LLM_PROVIDER=vertex` (EU, `GCP_REGION=europe-west4`), see `docs/google-cloud-setup.md`.
