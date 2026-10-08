@@ -1,0 +1,11 @@
+# Railway service `api`. Dashboard: Settings → Config-as-code → /infra/railway/api.toml
+[build]
+builder = "DOCKERFILE"
+watchPatterns = ["/backend/**"]
+
+[deploy]
+preDeployCommand = ["alembic upgrade head"]
+healthcheckPath = "/healthz"
+healthcheckTimeout = 100
+restartPolicyType = "ON_FAILURE"
+restartPolicyMaxRetries = 5

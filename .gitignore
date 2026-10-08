@@ -1,0 +1,23 @@
+# env / secrets
+.env
+.env.*
+!.env.example
+*.pem
+*-credentials.json
+
+# python
+__pycache__/
+.venv/
+.mypy_cache/
+.ruff_cache/
+.pytest_cache/
+
+# node
+node_modules/
+dist/
+*.tsbuildinfo
+
+# os / editor
+.DS_Store
+.vscode/
+.idea/

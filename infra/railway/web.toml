@@ -1,0 +1,8 @@
+# Railway service `web`. Dashboard: Settings → Config-as-code → /infra/railway/web.toml
+[build]
+builder = "DOCKERFILE"
+watchPatterns = ["/apps/web/**"]
+
+[deploy]
+healthcheckPath = "/"
+restartPolicyType = "ON_FAILURE"

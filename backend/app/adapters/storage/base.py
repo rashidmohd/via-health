@@ -1,0 +1,13 @@
+from typing import Protocol
+
+
+class ObjectStore(Protocol):
+    async def presign_put(self, key: str, *, expires_s: int) -> str: ...
+
+    async def get(self, key: str) -> bytes:
+        """Return object bytes in memory. Never write to disk (rule 2)."""
+        ...
+
+    async def delete(self, key: str) -> None: ...
+
+    async def delete_prefix(self, prefix: str) -> int: ...

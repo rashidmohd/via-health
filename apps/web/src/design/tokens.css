@@ -1,0 +1,17 @@
+:root {
+  --olive-50: #f6f7f0;
+  --olive-100: #e8ecd9;
+  --olive-300: #c5cda2;
+  --olive-500: #8a9a5b;
+  --olive-700: #5c6b37;
+  --clay: #c47a5a;
+  --sand: #efe6d2;
+  --charcoal: #2b2a26;
+  --bg: #fafaf6;
+  --border: #e6e6de;
+  --danger: #c2412d;
+  --warning: #c9963a;
+  --info: #5b7a8c;
+  --radius: 8px;
+  --radius-card: 12px;
+}

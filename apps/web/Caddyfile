@@ -1,0 +1,24 @@
+# Static PWA with strict security headers. API_ORIGIN is set on the Railway `web` service.
+{
+	admin off
+}
+
+:{$PORT:8080} {
+	root * /srv
+	encode zstd gzip
+
+	header {
+		Content-Security-Policy "default-src 'self'; script-src 'self' 'wasm-unsafe-eval'; style-src 'self'; img-src 'self' data:; connect-src 'self' {$API_ORIGIN}; worker-src 'self'; object-src 'none'; base-uri 'self'; frame-ancestors 'none'"
+		Permissions-Policy "microphone=(self), camera=(), geolocation=()"
+		Strict-Transport-Security "max-age=31536000; includeSubDomains"
+		X-Content-Type-Options "nosniff"
+		Referrer-Policy "no-referrer"
+		-Server
+	}
+
+	@hashed path /assets/*
+	header @hashed Cache-Control "public, max-age=31536000, immutable"
+
+	try_files {path} /index.html
+	file_server
+}

@@ -1,0 +1,75 @@
+@import './design/tokens.css';
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--charcoal);
+  font-family: system-ui, -apple-system, 'Segoe UI', sans-serif;
+  line-height: 1.5;
+}
+
+:focus-visible {
+  outline: 2px solid var(--olive-500);
+  outline-offset: 2px;
+}
+
+.layout {
+  display: grid;
+  grid-template-columns: 220px 1fr;
+  min-height: 100vh;
+}
+
+.sidebar {
+  background: var(--olive-50);
+  border-right: 1px solid var(--border);
+  padding: 24px 12px;
+}
+
+.sidebar .brand {
+  color: var(--olive-700);
+  font-weight: 600;
+  padding: 0 12px 24px;
+}
+
+.sidebar ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.sidebar a {
+  display: block;
+  padding: 8px 12px;
+  border-radius: var(--radius);
+  color: var(--charcoal);
+  text-decoration: none;
+}
+
+.sidebar a.active {
+  background: var(--olive-100);
+  color: var(--olive-700);
+  font-weight: 600;
+}
+
+main {
+  padding: 32px 40px;
+}
+
+@media (max-width: 720px) {
+  .layout {
+    grid-template-columns: 1fr;
+  }
+  .sidebar {
+    border-right: 0;
+    border-bottom: 1px solid var(--border);
+  }
+  main {
+    padding: 24px 16px;
+  }
+}

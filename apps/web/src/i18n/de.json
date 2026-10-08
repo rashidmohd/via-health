@@ -1,0 +1,25 @@
+{
+  "nav": {
+    "today": "Heute",
+    "clients": "Klient:innen",
+    "sessions": "Sitzungen",
+    "reports": "Berichte",
+    "keys": "Schlüssel",
+    "settings": "Einstellungen"
+  },
+  "common": { "comingSoon": "Noch nicht umgesetzt." },
+  "errors": {
+    "client_not_found": "Diese Klient:in wurde nicht gefunden.",
+    "client_not_active": "Diese Klient:in ist eingeschränkt oder archiviert. Neue Aufnahmen sind nicht möglich.",
+    "consent_missing": "Für die Aufnahme braucht es die Einwilligung der Klient:in in Aufnahme und KI-Verarbeitung, auf dem aktuellen Einwilligungstext.",
+    "consent_text_kind_mismatch": "Dieser Einwilligungstext passt nicht zur Art der Einwilligung.",
+    "consent_invalid": "Diese Einwilligung konnte nicht gespeichert werden.",
+    "consent_immutable": "Eine Einwilligung kann nicht geändert werden. Sie kann nur einmal widerrufen werden.",
+    "session_not_found": "Diese Sitzung wurde nicht gefunden.",
+    "audio_not_accepted": "Diese Sitzung nimmt keine Audiodaten mehr an.",
+    "chunk_conflict": "Ein Teil der Aufnahme wurde zweimal mit unterschiedlichem Inhalt hochgeladen.",
+    "consent_texts_immutable": "Veröffentlichte Einwilligungstexte können nicht geändert werden.",
+    "audit_log_immutable": "Das Audit-Protokoll kann nicht geändert werden.",
+    "unknown": "Etwas ist schiefgelaufen. Bitte versuchen Sie es erneut."
+  }
+}

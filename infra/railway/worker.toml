@@ -1,0 +1,8 @@
+# Railway service `worker`. Dashboard: Settings → Config-as-code → /infra/railway/worker.toml
+[build]
+builder = "DOCKERFILE"
+watchPatterns = ["/backend/**"]
+
+[deploy]
+startCommand = "arq app.workers.settings.WorkerSettings"
+restartPolicyType = "ALWAYS"

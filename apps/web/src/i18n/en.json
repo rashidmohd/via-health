@@ -1,0 +1,25 @@
+{
+  "nav": {
+    "today": "Today",
+    "clients": "Clients",
+    "sessions": "Sessions",
+    "reports": "Reports",
+    "keys": "Keys",
+    "settings": "Settings"
+  },
+  "common": { "comingSoon": "Not built yet." },
+  "errors": {
+    "client_not_found": "This client could not be found.",
+    "client_not_active": "This client is restricted or archived. New recordings are not possible.",
+    "consent_missing": "Recording needs the client's consent to recording and to AI processing, on the current consent text.",
+    "consent_text_kind_mismatch": "This consent text does not match the type of consent.",
+    "consent_invalid": "This consent could not be saved.",
+    "consent_immutable": "A consent cannot be changed. It can only be withdrawn, once.",
+    "session_not_found": "This session could not be found.",
+    "audio_not_accepted": "This session no longer accepts audio.",
+    "chunk_conflict": "A part of the recording was uploaded twice with different content.",
+    "consent_texts_immutable": "Published consent texts cannot be changed.",
+    "audit_log_immutable": "The audit log cannot be changed.",
+    "unknown": "Something went wrong. Please try again."
+  }
+}
