@@ -17,7 +17,16 @@ from app.adapters.storage import ObjectStore, make_object_store
 from app.api.deps import CurrentUserId, Db
 from app.api.errors import ApiError
 from app.core.data_crypto import DecryptionError, decrypt_json
-from app.db.models import AudioChunk, AuditLog, Client, Session, Transcript, WrappedKey
+from app.db.models import (
+    AudioChunk,
+    AuditLog,
+    Client,
+    Session,
+    Transcript,
+    TranscriptWindow,
+    WrappedKey,
+)
+from app.domain.transcript import STEP_MS
 
 router = APIRouter(tags=["sessions"])
 
@@ -84,6 +93,8 @@ class SessionOut(BaseModel):
     total_chunks: int | None
     uploaded_chunks: int
     failure_reason: str | None
+    # While recording: how much audio is already transcribed (plan 0006).
+    transcribed_ms: int
 
 
 def _key_aad(session_id: uuid.UUID) -> str:
@@ -132,6 +143,10 @@ def _out(db: DbSession, session: Session) -> SessionOut:
         total_chunks=session.total_chunks,
         uploaded_chunks=_uploaded(db, session.id),
         failure_reason=session.failure_reason,
+        transcribed_ms=(
+            db.scalar(select(func.count()).where(TranscriptWindow.session_id == session.id)) or 0
+        )
+        * STEP_MS,
     )
 
 

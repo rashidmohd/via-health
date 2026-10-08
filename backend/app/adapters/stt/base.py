@@ -1,19 +1,8 @@
-from dataclasses import asdict, dataclass
-from typing import Any, Protocol
+from typing import Protocol
 
+from app.domain.transcript import Segment, Word
 
-@dataclass(frozen=True)
-class Segment:
-    """A run of words by one speaker. `speaker` is the model's label ("1", "2"); the therapist
-    decides which label is them."""
-
-    speaker: str | None
-    start_ms: int
-    end_ms: int
-    text: str
-
-    def to_json(self) -> dict[str, Any]:
-        return asdict(self)
+__all__ = ["Segment", "SttError", "SttProvider", "Word"]
 
 
 class SttError(Exception):
@@ -31,4 +20,9 @@ class SttProvider(Protocol):
     ) -> list[Segment]:
         """Transcribe a whole session with speaker separation. Audio is plaintext in memory;
         any temporary copy the provider needs must be deleted before returning."""
+        ...
+
+    def recognize_window(self, audio_wav: bytes, *, language: str) -> list[Word]:
+        """Synchronous recognition of ≤ 60 s of WAV audio with speaker diarization.
+        Times are relative to the start of `audio_wav`; labels are the model's own."""
         ...

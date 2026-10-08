@@ -3,7 +3,7 @@ import time
 import uuid
 from typing import Any, ClassVar
 
-from arq import Retry, cron
+from arq import Retry, cron, func
 from arq.connections import RedisSettings
 
 from app.adapters.kms import get_kms
@@ -12,10 +12,17 @@ from app.adapters.stt import get_stt
 from app.core.config import get_settings
 from app.core.logging import configure_logging
 from app.db.session import WORKER_ROLE, make_engine
-from app.workers.transcribe import TransientFailure, find_ready, process_session
+from app.workers.transcribe import (
+    TransientFailure,
+    find_ready,
+    find_window_work,
+    process_session,
+    process_windows,
+)
 
 HEARTBEAT_KEY = "worker:heartbeat"
 MAX_TRIES = 3
+WINDOW_ERROR_PAUSE_S = 300  # after a window error, wait before trying that session again
 
 
 async def heartbeat(ctx: dict[str, Any]) -> None:
@@ -23,11 +30,33 @@ async def heartbeat(ctx: dict[str, Any]) -> None:
 
 
 async def enqueue_ready_sessions(ctx: dict[str, Any]) -> None:
-    """Every 15 s: queue uploaded sessions. The job id makes this safe to repeat."""
+    """Every 15 s: queue uploaded sessions and recording sessions with a new window of audio.
+    Job ids make this safe to repeat (one job per session and kind at a time)."""
+    redis = ctx["redis"]
     for session_id in await asyncio.to_thread(find_ready, ctx["engine"]):
-        await ctx["redis"].enqueue_job(
+        await redis.enqueue_job(
             "transcribe_session", str(session_id), _job_id=f"transcribe:{session_id}"
         )
+    for session_id in await asyncio.to_thread(find_window_work, ctx["engine"]):
+        if await redis.exists(f"windows-paused:{session_id}"):
+            continue
+        await redis.enqueue_job(
+            "transcribe_windows", str(session_id), _job_id=f"windows:{session_id}"
+        )
+
+
+async def transcribe_windows(ctx: dict[str, Any], session_id: str) -> str:
+    result = await asyncio.to_thread(
+        process_windows,
+        uuid.UUID(session_id),
+        engine=ctx["engine"],
+        store_for=make_object_store,
+        kms=get_kms(),
+        stt=get_stt(),
+    )
+    if result == "error":
+        await ctx["redis"].set(f"windows-paused:{session_id}", 1, ex=WINDOW_ERROR_PAUSE_S)
+    return result
 
 
 async def transcribe_session(ctx: dict[str, Any], session_id: str) -> str:
@@ -56,7 +85,12 @@ async def shutdown(ctx: dict[str, Any]) -> None:
 
 
 class WorkerSettings:
-    functions: ClassVar[list[Any]] = [transcribe_session]
+    # keep_result=0: the job id is free again right after the job, so the next window or a
+    # retry can be queued without waiting.
+    functions: ClassVar[list[Any]] = [
+        func(transcribe_session, keep_result=0),
+        func(transcribe_windows, keep_result=0, max_tries=1),
+    ]
     cron_jobs: ClassVar[list[Any]] = [
         cron(heartbeat, second=0),
         cron(enqueue_ready_sessions, second={0, 15, 30, 45}),
@@ -65,5 +99,4 @@ class WorkerSettings:
     on_shutdown = shutdown
     max_tries = MAX_TRIES
     job_timeout = 45 * 60
-    keep_result = 60
     redis_settings = RedisSettings.from_dsn(get_settings().redis_url)

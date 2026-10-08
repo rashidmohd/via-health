@@ -40,6 +40,12 @@ export function SessionPage() {
         {minutes && <span className="muted">{t('sessions.minutes', { count: minutes })}</span>}
       </header>
 
+      {session.status === 'recording' && session.transcribed_ms > 0 && (
+        <p className="muted">
+          {t('record.transcribedSoFar', { count: Math.floor(session.transcribed_ms / 60_000) })}
+        </p>
+      )}
+
       {session.status === 'recording' && (
         <p className="banner warning">
           {t('session.waitingForUpload', {
@@ -54,7 +60,9 @@ export function SessionPage() {
           <span className="spinner" aria-hidden="true" />
           <div>
             <strong>{t('session.transcribing')}</strong>
-            <p className="muted small">{t('session.transcribingHint')}</p>
+            <p className="muted small">
+              {t(session.transcribed_ms > 0 ? 'session.finishingHint' : 'session.transcribingHint')}
+            </p>
           </div>
         </div>
       )}

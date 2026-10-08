@@ -14,7 +14,8 @@ from google.cloud.speech_v2 import SpeechClient
 from google.cloud.speech_v2.types import cloud_speech
 
 from app.adapters.gcp import gcp_credentials
-from app.adapters.stt.base import Segment, SttError
+from app.adapters.stt.base import Segment, SttError, Word
+from app.domain.transcript import words_to_segments as domain_words_to_segments
 
 TEMP_PREFIX = "stt-tmp/"
 TIMEOUT_S = 30 * 60
@@ -31,29 +32,21 @@ def _ms(offset: Any) -> int:
     return int(offset.total_seconds() * 1000) if offset is not None else 0
 
 
-def words_to_segments(words: Iterable[Any]) -> list[Segment]:
+def to_words(google_words: Iterable[Any]) -> list[Word]:
+    return [
+        Word(
+            speaker=w.speaker_label or None,
+            start_ms=_ms(w.start_offset),
+            end_ms=_ms(w.end_offset),
+            text=w.word,
+        )
+        for w in google_words
+    ]
+
+
+def words_to_segments(google_words: Iterable[Any]) -> list[Segment]:
     """Group consecutive words with the same speaker label into segments."""
-    segments: list[Segment] = []
-    current: list[Any] = []
-
-    def flush() -> None:
-        if current:
-            segments.append(
-                Segment(
-                    speaker=current[0].speaker_label or None,
-                    start_ms=_ms(current[0].start_offset),
-                    end_ms=_ms(current[-1].end_offset),
-                    text=" ".join(w.word for w in current).strip(),
-                )
-            )
-            current.clear()
-
-    for word in words:
-        if current and word.speaker_label != current[0].speaker_label:
-            flush()
-        current.append(word)
-    flush()
-    return segments
+    return domain_words_to_segments(to_words(google_words))
 
 
 class GoogleChirp3Provider:
@@ -86,8 +79,29 @@ class GoogleChirp3Provider:
             except gexc.NotFound:
                 pass
 
-    def _batch_recognize(self, uri: str, language: str) -> list[Segment]:
-        config = cloud_speech.RecognitionConfig(
+    def recognize_window(self, audio_wav: bytes, *, language: str) -> list[Word]:
+        try:
+            response = self._speech.recognize(
+                request=cloud_speech.RecognizeRequest(
+                    recognizer=self._recognizer,
+                    config=self._config(language),
+                    content=audio_wav,
+                ),
+                timeout=120,
+            )
+        except RETRYABLE as exc:
+            raise SttError(type(exc).__name__, retryable=True) from None
+        except gexc.GoogleAPICallError as exc:
+            raise SttError(type(exc).__name__, retryable=False) from None
+        return to_words(
+            word
+            for result in response.results
+            if result.alternatives
+            for word in result.alternatives[0].words
+        )
+
+    def _config(self, language: str) -> Any:
+        return cloud_speech.RecognitionConfig(
             auto_decoding_config=cloud_speech.AutoDetectDecodingConfig(),
             language_codes=[language],
             model=self._model,
@@ -99,9 +113,11 @@ class GoogleChirp3Provider:
                 ),
             ),
         )
+
+    def _batch_recognize(self, uri: str, language: str) -> list[Segment]:
         request = cloud_speech.BatchRecognizeRequest(
             recognizer=self._recognizer,
-            config=config,
+            config=self._config(language),
             files=[cloud_speech.BatchRecognizeFileMetadata(uri=uri)],
             recognition_output_config=cloud_speech.RecognitionOutputConfig(
                 inline_response_config=cloud_speech.InlineOutputConfig()

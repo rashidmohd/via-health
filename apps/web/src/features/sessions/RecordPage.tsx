@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Link, useParams } from 'react-router-dom'
 import { useClient } from '../../api/clients'
+import { useSession } from '../../api/sessions'
 import { getActiveRecorder, setActiveRecorder, useActiveRecorder } from '../../recorder/active'
 import { db } from '../../recorder/db'
 import { RecorderError, SessionRecorder, type RecorderProblem } from '../../recorder/recorder'
@@ -47,6 +48,9 @@ export function RecordPage() {
     stoppedSessionId ?? '',
   )
 
+  // Server view of the running session: how much is already transcribed (plan 0006).
+  const { data: serverSession } = useSession(active?.sessionId ?? '', active !== null)
+  const transcribedMinutes = Math.floor((serverSession?.transcribed_ms ?? 0) / 60_000)
   const name = client?.name ?? cached?.name ?? ''
   // Online: the server's answer. Offline: the last known consent status on this device.
   const ready = client ? client.ready_to_record : isError ? (cached?.ready ?? false) : false
@@ -114,6 +118,9 @@ export function RecordPage() {
             {t('record.stop')}
           </button>
           <p className="muted small">{t('record.savedLocally')}</p>
+          {transcribedMinutes > 0 && (
+            <p className="muted small">{t('record.transcribedSoFar', { count: transcribedMinutes })}</p>
+          )}
         </div>
       ) : stoppedSession ? (
         <div className="record-panel">
@@ -126,6 +133,9 @@ export function RecordPage() {
                 : t('record.uploading', { count: pendingChunks ?? 0 })}
           </p>
           <div className="actions">
+            <Link className="button primary" to={`/sessions/${stoppedSession.id}`}>
+              {t('record.openSession')}
+            </Link>
             <Link className="button secondary" to={`/clients/${clientId}`}>
               {t('record.toClient')}
             </Link>

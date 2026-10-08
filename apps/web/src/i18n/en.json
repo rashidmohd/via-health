@@ -191,13 +191,16 @@
       "storage_low": "Not enough free storage on this device (at least 500 MB needed). Free up space, then try again.",
       "storage_full": "The device storage is full. The recording was stopped; everything saved so far is kept.",
       "write_failed": "Audio could not be saved on this device. The recording was stopped; everything saved so far is kept."
-    }
+    },
+    "transcribedSoFar_one": "Transcribed so far: {{count}} minute",
+    "transcribedSoFar_other": "Transcribed so far: {{count}} minutes",
+    "openSession": "Open session"
   },
   "session": {
     "title": "Session on {{date}}",
     "waitingForUpload": "Waiting for the rest of the audio from the recording device ({{done}} of {{total}} parts). Open the app on that device so it can finish uploading.",
     "transcribing": "Transcribing…",
-    "transcribingHint": "This usually takes a few minutes. You can leave this page; the transcript will be here when it is ready.",
+    "transcribingHint": "Usually ready within a minute. You can leave this page; the transcript will be here when it is ready.",
     "failure": {
       "incomplete_upload": "Parts of the recording are missing, so it could not be transcribed. Open the app on the recording device to finish the upload.",
       "chunk_corrupt": "Part of the recording is damaged and could not be decrypted.",
@@ -207,7 +210,8 @@
       "audio_not_accepted": "The audio of this session is no longer available.",
       "consent_missing": "Consent for this client was withdrawn, so the session was not transcribed.",
       "unknown": "The session could not be transcribed."
-    }
+    },
+    "finishingHint": "Most of the session was transcribed during recording. Finishing the last part…"
   },
   "transcript": {
     "title": "Transcript",

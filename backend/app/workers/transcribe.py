@@ -1,4 +1,8 @@
-"""transcribe_session: uploaded session → transcript (docs/plans/0005-transcription.md).
+"""Transcription jobs (docs/plans/0005-transcription.md, 0006-transcribe-during-session.md).
+
+- transcribe_windows: while recording, transcribe each new ~minute of uploaded audio.
+- transcribe_session: after upload, finish the remaining windows and store the transcript;
+  falls back to one BatchRecognize call if windows cannot be made.
 
 Logs carry ids, sizes and durations only — never transcript text (rule 3)."""
 
@@ -8,22 +12,38 @@ import logging
 import time
 import uuid
 from collections.abc import Callable
+from concurrent.futures import ThreadPoolExecutor
 
-from sqlalchemy import Engine, select, text
+from sqlalchemy import Engine, delete, select, text
 from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.orm import Session as DbSession
 
 from app.adapters.kms import KmsProvider
 from app.adapters.storage import ObjectStore
 from app.adapters.stt import SttError, SttProvider
+from app.core.audio import AudioCutError, cut_to_wav
 from app.core.audio_crypto import ChunkDecryptionError, decrypt_chunk
 from app.core.config import get_settings
-from app.core.data_crypto import encrypt_json
-from app.db.models import AudioChunk, Client, Session, Transcript, WrappedKey
+from app.core.data_crypto import decrypt_json, encrypt_json
+from app.db.models import AudioChunk, Client, Session, Transcript, TranscriptWindow, WrappedKey
+from app.domain.transcript import (
+    CHUNK_MS,
+    STEP_MS,
+    Segment,
+    Word,
+    labels_in_order,
+    map_speakers,
+    stitch,
+    window_audio_range,
+    windows_for_duration,
+    windows_ready_while_recording,
+    words_to_segments,
+)
 
 logger = logging.getLogger("sessio.worker.transcribe")
 
 LANGUAGE_CODES = {"de": "de-DE", "en": "en-US"}
+PARALLEL_WINDOWS = 4
 
 
 class PermanentFailure(Exception):
@@ -82,9 +102,7 @@ def _claim(db: DbSession, session_id: uuid.UUID) -> Session | None:
     return session
 
 
-def _assemble_audio(
-    db: DbSession, session: Session, kms: KmsProvider, store: ObjectStore
-) -> bytearray:
+def _check_processable(db: DbSession, session: Session) -> None:
     if session.audio_state != "present":
         raise PermanentFailure("audio_not_accepted")
     if not db.execute(
@@ -92,14 +110,33 @@ def _assemble_audio(
     ).scalar_one():
         raise PermanentFailure("consent_missing")
 
-    chunks = list(
+
+def _chunks(db: DbSession, session_id: uuid.UUID) -> list[AudioChunk]:
+    return list(
         db.scalars(
-            select(AudioChunk).where(AudioChunk.session_id == session.id).order_by(AudioChunk.seq)
+            select(AudioChunk).where(AudioChunk.session_id == session_id).order_by(AudioChunk.seq)
         )
     )
-    if session.total_chunks is None or [c.seq for c in chunks] != list(range(session.total_chunks)):
-        raise PermanentFailure("incomplete_upload")
 
+
+def _contiguous(chunks: list[AudioChunk]) -> int:
+    """Number of chunks 0..n-1 without a gap (later ones may still be uploading)."""
+    count = 0
+    for chunk in chunks:
+        if chunk.seq != count:
+            break
+        count += 1
+    return count
+
+
+def _load_audio(
+    db: DbSession,
+    session: Session,
+    kms: KmsProvider,
+    store: ObjectStore,
+    chunks: list[AudioChunk],
+) -> bytearray:
+    """Decrypt `chunks` (must be 0..n-1) in memory and join them strictly by seq."""
     wrapped = db.scalar(
         select(WrappedKey.ciphertext).where(
             WrappedKey.session_id == session.id, WrappedKey.kind == "processing"
@@ -109,10 +146,12 @@ def _assemble_audio(
         raise PermanentFailure("key_missing")
     key = kms.unwrap(bytes(wrapped), aad=key_aad(session.id))
 
+    with ThreadPoolExecutor(max_workers=8) as pool:  # object reads are network-bound
+        ciphertexts = list(pool.map(lambda c: store.get(c.object_key), chunks))
+
     audio = bytearray()
     try:
-        for chunk in chunks:  # strictly by seq: chunk 0 holds the container header
-            ciphertext = store.get(chunk.object_key)
+        for chunk, ciphertext in zip(chunks, ciphertexts, strict=True):
             if hashlib.sha256(ciphertext).hexdigest() != chunk.sha256:
                 raise PermanentFailure("chunk_corrupt")
             audio += decrypt_chunk(key, str(session.id), chunk.seq, ciphertext)
@@ -120,6 +159,170 @@ def _assemble_audio(
         _wipe(audio)
         raise PermanentFailure("chunk_corrupt") from None
     return audio
+
+
+def _assemble_audio(
+    db: DbSession, session: Session, kms: KmsProvider, store: ObjectStore
+) -> bytearray:
+    _check_processable(db, session)
+    chunks = _chunks(db, session.id)
+    if session.total_chunks is None or [c.seq for c in chunks] != list(range(session.total_chunks)):
+        raise PermanentFailure("incomplete_upload")
+    return _load_audio(db, session, kms, store, chunks)
+
+
+def _language(db: DbSession, session: Session) -> str:
+    # Column-level grant: the worker may read the language, never client identity.
+    preferred = db.scalar(select(Client.preferred_language).where(Client.id == session.client_id))
+    return LANGUAGE_CODES.get(preferred or "de", "de-DE")
+
+
+# --- windows ------------------------------------------------------------------------
+
+
+def window_aad(session_id: uuid.UUID, idx: int) -> str:
+    return f"transcript-window:{session_id}:{idx}"
+
+
+def _stored_windows(db: DbSession, session_id: uuid.UUID) -> list[list[Word]]:
+    """Stored windows 0..m-1 (stops at the first gap)."""
+    rows = db.scalars(
+        select(TranscriptWindow)
+        .where(TranscriptWindow.session_id == session_id)
+        .order_by(TranscriptWindow.idx)
+    )
+    windows: list[list[Word]] = []
+    for row in rows:
+        if row.idx != len(windows):
+            break
+        data = decrypt_json(row.words_enc, window_aad(session_id, row.idx))
+        windows.append([Word(**w) for w in data["words"]])
+    return windows
+
+
+def _transcribe_windows(
+    audio: bytes,
+    stored: list[list[Word]],
+    target: int,
+    stt: SttProvider,
+    language: str,
+) -> list[list[Word]]:
+    """Make windows len(stored)..target-1. Recognition runs in parallel; speaker labels are
+    then matched window by window. Returns only the new windows."""
+    indices = list(range(len(stored), target))
+    if not indices:
+        return []
+    wavs = [cut_to_wav(audio, *window_audio_range(idx)) for idx in indices]
+    with ThreadPoolExecutor(max_workers=PARALLEL_WINDOWS) as pool:
+        raw = list(
+            pool.map(lambda wav: stt.recognize_window(wav, language=language) if wav else [], wavs)
+        )
+    del wavs
+
+    done = list(stored)
+    for idx, words in zip(indices, raw, strict=True):
+        offset = window_audio_range(idx)[0]
+        absolute = [w.shifted(offset) for w in words]
+        previous = done[-1] if done else []
+        known = labels_in_order(w for window in done for w in window)
+        done.append(map_speakers(previous, absolute, known))
+    return done[len(stored) :]
+
+
+def _store_windows(
+    db: DbSession, session_id: uuid.UUID, first_idx: int, windows: list[list[Word]]
+) -> None:
+    for offset, words in enumerate(windows):
+        idx = first_idx + offset
+        start, end = window_audio_range(idx)
+        db.execute(
+            insert(TranscriptWindow)
+            .values(
+                session_id=session_id,
+                idx=idx,
+                start_ms=start,
+                end_ms=end,
+                words_enc=encrypt_json(
+                    {"words": [w.to_json() for w in words]}, window_aad(session_id, idx)
+                ),
+            )
+            .on_conflict_do_nothing(index_elements=["session_id", "idx"])
+        )
+
+
+def find_window_work(engine: Engine) -> list[uuid.UUID]:
+    """Recording sessions with at least one more window of uploaded audio than transcribed."""
+    with DbSession(engine) as db:
+        rows = db.execute(
+            text(
+                """
+                SELECT s.id FROM sessions s
+                WHERE s.status = 'recording' AND s.audio_state = 'present'
+                  AND s.started_at > now() - interval '12 hours'
+                  AND floor(greatest((SELECT count(*) FROM audio_chunks c
+                                      WHERE c.session_id = s.id) - 1, 0)
+                            * :chunk_ms / :step_ms)
+                      > (SELECT count(*) FROM transcript_windows w WHERE w.session_id = s.id)
+                LIMIT 50
+                """
+            ),
+            {"chunk_ms": CHUNK_MS, "step_ms": STEP_MS},
+        )
+        return [row[0] for row in rows]
+
+
+def process_windows(
+    session_id: uuid.UUID,
+    *,
+    engine: Engine,
+    store_for: Callable[[DbSession], ObjectStore],
+    kms: KmsProvider,
+    stt: SttProvider,
+) -> str:
+    """While recording: transcribe newly complete windows. Returns `windows`, `idle`,
+    `skipped` or `error`; never fails the session (the final step has a fallback)."""
+    started = time.monotonic()
+    with DbSession(engine) as db:
+        session = db.get(Session, session_id)
+        if session is None or session.status != "recording":
+            return "skipped"
+        try:
+            _check_processable(db, session)
+        except PermanentFailure:
+            # Consent withdrawn: transcript text made so far is deleted too (rule 10).
+            db.execute(delete(TranscriptWindow).where(TranscriptWindow.session_id == session_id))
+            db.commit()
+            return "skipped"
+        chunks = _chunks(db, session_id)
+        n = _contiguous(chunks)
+        stored = _stored_windows(db, session_id)
+        target = windows_ready_while_recording(n)
+        if target <= len(stored):
+            return "idle"
+        language = _language(db, session)
+        try:
+            audio = _load_audio(db, session, kms, store_for(db), chunks[:n])
+        except PermanentFailure:
+            return "error"
+
+    try:
+        new = _transcribe_windows(bytes(audio), stored, target, stt, language)
+    except (AudioCutError, SttError) as error:
+        logger.warning("window failed session_id=%s error=%s", session_id, type(error).__name__)
+        return "error"
+    finally:
+        _wipe(audio)
+
+    with DbSession(engine) as db, db.begin():
+        status = db.scalar(select(Session.status).where(Session.id == session_id).with_for_update())
+        if status != "recording":  # finished meanwhile; the final step makes its own windows
+            return "skipped"
+        _store_windows(db, session_id, len(stored), new)
+    logger.info(
+        "windows session_id=%s new=%d total=%d seconds=%.1f",
+        session_id, len(new), len(stored) + len(new), time.monotonic() - started,
+    )  # fmt: skip
+    return "windows"
 
 
 def _wipe(buffer: bytearray) -> None:
@@ -153,22 +356,35 @@ def process_session(
         if session is None:
             return "skipped"
 
+    method = "windows"
     try:
         with DbSession(engine) as db:
             session = db.get(Session, session_id)
             assert session is not None
-            # Column-level grant: the worker may read the language, never client identity.
-            preferred = db.scalar(
-                select(Client.preferred_language).where(Client.id == session.client_id)
-            )
-            language = LANGUAGE_CODES.get(preferred or "de", "de-DE")
+            language = _language(db, session)
             mime_type = session.mime_type or "audio/webm"
+            duration_ms = session.duration_ms or (session.total_chunks or 0) * CHUNK_MS
             audio = _assemble_audio(db, session, kms, store_for(db))
+            stored = _stored_windows(db, session_id)
         size = len(audio)
         try:
-            segments = stt.transcribe(
-                bytes(audio), mime_type=mime_type, language=language, job_id=str(session_id)
-            )
+            segments: list[Segment] | None = None
+            try:
+                target = max(windows_for_duration(duration_ms), len(stored))
+                new = _transcribe_windows(bytes(audio), stored, target, stt, language)
+                segments = words_to_segments(stitch(stored + new))
+            except (AudioCutError, SttError) as error:
+                if isinstance(error, SttError) and error.retryable and not last_attempt:
+                    raise
+                logger.warning(
+                    "windows failed, using batch session_id=%s error=%s",
+                    session_id, type(error).__name__,
+                )  # fmt: skip
+            if segments is None:
+                method = "batch"
+                segments = stt.transcribe(
+                    bytes(audio), mime_type=mime_type, language=language, job_id=str(session_id)
+                )
         finally:
             _wipe(audio)
     except PermanentFailure as failure:
@@ -204,13 +420,15 @@ def process_session(
                 },
             )
         )
+        db.execute(delete(TranscriptWindow).where(TranscriptWindow.session_id == session_id))
         session = db.get(Session, session_id)
         assert session is not None
         session.status = "transcribed"
-        _audit(db, "session_transcribed", session_id)
+        _audit(db, "session_transcribed", session_id, {"method": method})
     logger.info(
-        "transcribed session_id=%s audio_bytes=%d segments=%d seconds=%.1f",
+        "transcribed session_id=%s method=%s audio_bytes=%d segments=%d seconds=%.1f",
         session_id,
+        method,
         size,
         len(segments),
         time.monotonic() - started,

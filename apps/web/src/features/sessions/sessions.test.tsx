@@ -91,6 +91,10 @@ describe('start session flow', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Stop recording' }))
     expect(await screen.findByText('Recording saved.')).toBeInTheDocument()
     const [session] = await db.sessions.toArray()
+    expect(screen.getByRole('link', { name: 'Open session' })).toHaveAttribute(
+      'href',
+      `/sessions/${session.id}`,
+    )
     expect(session.clientId).toBe('c1')
     expect(['stopped', 'synced']).toContain(session.status)
   })

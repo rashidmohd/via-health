@@ -6,7 +6,7 @@ function session(status: string, extra: Record<string, unknown> = {}) {
   return {
     id: 's1', client_id: 'c1', client_name: 'Anna Weber', started_at: '2026-10-08T10:00:00Z',
     ended_at: null, status, audio_state: 'present', duration_ms: 3_000_000, total_chunks: 300,
-    uploaded_chunks: 300, failure_reason: null, ...extra,
+    uploaded_chunks: 300, failure_reason: null, transcribed_ms: 0, ...extra,
   }
 }
 
@@ -66,6 +66,16 @@ describe('session page', () => {
     // Speaker 0 said the most, so it is listed first.
     expect(calls.find((c) => c.method === 'PATCH')?.body).toEqual({ therapist_speaker: '0' })
     expect(screen.getByText('0:04')).toBeInTheDocument()
+  })
+
+  it('shows how much is transcribed while still recording', async () => {
+    mockApi((url) =>
+      url.endsWith('/auth/me')
+        ? { status: 200, body: ME }
+        : { status: 200, body: session('recording', { transcribed_ms: 144_000, uploaded_chunks: 150 }) },
+    )
+    renderApp('/sessions/s1')
+    expect(await screen.findByText('Transcribed so far: 2 minutes')).toBeInTheDocument()
   })
 
   it('shows German labels', async () => {

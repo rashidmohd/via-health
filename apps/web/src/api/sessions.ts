@@ -22,6 +22,8 @@ export interface ServerSession {
   total_chunks: number | null
   uploaded_chunks: number
   failure_reason: string | null
+  /** While recording: audio already transcribed (ms). */
+  transcribed_ms: number
 }
 
 export interface TranscriptSegment {
@@ -50,10 +52,12 @@ export function useSessions(clientId?: string) {
   })
 }
 
-export function useSession(id: string) {
+export function useSession(id: string, enabled = true) {
   return useQuery({
     queryKey: ['session', id],
     queryFn: () => api<ServerSession>(`/sessions/${id}`),
+    enabled,
+    retry: false,
     // Poll while the worker is busy; stop once there is a result.
     refetchInterval: (query) =>
       query.state.data && IN_PROGRESS.includes(query.state.data.status) ? 5_000 : false,

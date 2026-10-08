@@ -135,9 +135,10 @@ encrypted with a per-session AES key, stored in IndexedDB, uploaded via
 presigned URLs with retry; (b) 16 kHz PCM to sherpa-onnx in a Web Worker for a
 local live preview transcript and capture chips. The session key is wrapped with
 the therapist's PGP public key and with a KMS processing key. Workers transcribe
-sub-minute windows during the session (Chirp 3 `Recognize`), then, once the
-manifest is complete, run one `BatchRecognize` with diarization over the full
-audio, and Gemini drafts the report from the chosen template. The therapist
+~1-minute overlapping windows during the session (Chirp 3 `Recognize` with
+diarization; speakers matched across windows via the overlap), so the transcript
+is ready seconds after Stop; `BatchRecognize` is only the fallback (plan 0006).
+Gemini drafts the report from the chosen template. The therapist
 edits and signs in the browser; the signed report is PGP-encrypted, the audio
 deleted, and the KMS-wrapped session key destroyed (crypto-shred).
 

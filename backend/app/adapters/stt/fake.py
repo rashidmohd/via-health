@@ -1,4 +1,4 @@
-from app.adapters.stt.base import Segment
+from app.adapters.stt.base import Segment, Word
 
 
 class FakeSttProvider:
@@ -30,3 +30,9 @@ class FakeSttProvider:
             Segment(speaker="1", start_ms=0, end_ms=2500, text=hello),
             Segment(speaker="2", start_ms=2600, end_ms=5200, text=reply),
         ]
+
+    def recognize_window(self, audio_wav: bytes, *, language: str) -> list[Word]:
+        """Two speakers: one word at 12 s ("A"), one at 30 s ("B"), relative to the window —
+        after the 10 s overlap, so each window contributes both words to the transcript."""
+        self.calls.append({"window_bytes": len(audio_wav), "language": language})
+        return [Word("A", 12_000, 12_400, "hallo"), Word("B", 30_000, 30_400, "danke")]

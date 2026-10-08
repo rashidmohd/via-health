@@ -286,3 +286,19 @@ class Transcript(Base):
     language: Mapped[str] = mapped_column(Text)
     stt_model: Mapped[str] = mapped_column(Text)
     created_at: Mapped[datetime] = _created_at()
+
+
+class TranscriptWindow(Base):
+    """About one minute of transcript made while the session is still recording (plan 0006).
+    Words are encrypted; rows are deleted once the final transcript is stored."""
+
+    __tablename__ = "transcript_windows"
+
+    session_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("sessions.id"))
+    idx: Mapped[int] = mapped_column(Integer)
+    start_ms: Mapped[int] = mapped_column(Integer)
+    end_ms: Mapped[int] = mapped_column(Integer)
+    words_enc: Mapped[bytes]
+    created_at: Mapped[datetime] = _created_at()
+
+    __table_args__ = (PrimaryKeyConstraint("session_id", "idx", name="pk_transcript_windows"),)
