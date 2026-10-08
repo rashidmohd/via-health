@@ -87,10 +87,12 @@ class Settings(BaseSettings):
         if self.app_env in ("staging", "prod"):
             if self.auth_secret.startswith("dev-only") or len(self.auth_secret) < 32:
                 raise ValueError("AUTH_SECRET must be set (32+ characters) in staging/prod")
-            if self.email_sender != "resend" or not self.resend_api_key:
+            if self.email_sender != "resend":
                 raise ValueError(
-                    "EMAIL_SENDER=resend and RESEND_API_KEY are required in staging/prod"
+                    f"EMAIL_SENDER must be 'resend' in staging/prod (it is '{self.email_sender}')"
                 )
+            if not self.resend_api_key.strip():
+                raise ValueError("RESEND_API_KEY is empty or missing in staging/prod")
             if self.client_data_key == DEV_CLIENT_DATA_KEY:
                 raise ValueError("CLIENT_DATA_KEY must be set in staging/prod")
             if (self.object_store, self.kms_provider, self.stt_provider) != (
