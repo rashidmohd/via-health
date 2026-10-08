@@ -448,7 +448,15 @@
     "cardBlocking_one": "Draft – {{count}} sentence to check",
     "cardBlocking_other": "Draft – {{count}} sentences to check",
     "review": "Review note",
-    "open": "Open note"
+    "open": "Open note",
+    "origin": {
+      "ai": "AI draft",
+      "therapist": "Added by you"
+    },
+    "unsaved": "Unsaved changes",
+    "nextToCheck": "Next to check",
+    "actions": "Note actions",
+    "print": "Print"
   },
   "hiddenNames": {
     "title": "Names hidden from the AI",

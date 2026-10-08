@@ -72,6 +72,22 @@ describe('session note', () => {
   })
   afterEach(() => vi.unstubAllGlobals())
 
+  it('jumps to the next sentence to check and shows unsaved changes', async () => {
+    api((url) => (url.endsWith('/report') ? { status: 200, body: report('draft') } : undefined))
+    renderApp('/sessions/s1/report')
+    await screen.findByText('AI draft – not yet reviewed.')
+    expect(screen.getByText('Saved')).toBeInTheDocument()
+
+    fireEvent.click(screen.getByRole('button', { name: 'Next to check' }))
+    const flagged = screen.getByDisplayValue('Klientin wirkte erleichtert.')
+    expect(flagged).toHaveFocus()
+    expect(flagged.closest('li')).toHaveClass('selected')
+
+    fireEvent.change(flagged, { target: { value: 'Klientin sagte, sie sei erleichtert.' } })
+    expect(screen.getByText('Unsaved changes')).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Next to check' })).not.toBeInTheDocument()
+  })
+
   it('blocks approval until flagged AI sentences are checked, then approves', async () => {
     const calls = api((url, init) => {
       if (url.endsWith('/report') && init.method === 'PUT') {

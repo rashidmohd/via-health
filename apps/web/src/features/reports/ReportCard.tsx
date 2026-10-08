@@ -1,3 +1,4 @@
+import { FileText } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { Link } from 'react-router-dom'
 import { useReport } from '../../api/reports'
@@ -12,8 +13,11 @@ export function ReportCard({ sessionId }: { sessionId: string }) {
       ? t('report.cardBlocking', { count: report.blocking })
       : t(`report.status.${report.status}`)
   return (
-    <div className="card row spread">
-      <div>
+    <div className="card row spread report-card">
+      <span className="empty-icon">
+        <FileText className="icon" aria-hidden="true" />
+      </span>
+      <div className="report-card-text">
         <h2>{t('report.title')}</h2>
         <p className="muted small" role="status">
           {label}

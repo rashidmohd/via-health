@@ -1,3 +1,4 @@
+import { Printer } from 'lucide-react'
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { ApiError } from '../../api/client'
@@ -20,6 +21,16 @@ export function ReportView({ report, session }: { report: Report; session: Serve
         {t('report.approvedOn', { date: formatDate(report.approved_at ?? '', i18n.language) })}
       </p>
       <article className="card stack report-print">
+        <header className="doc-header">
+          <div>
+            <p className="eyebrow">{t('report.title')}</p>
+            <h2>{session.client_name}</h2>
+          </div>
+          <button type="button" className="secondary no-print" onClick={() => window.print()}>
+            <Printer className="icon" aria-hidden="true" />
+            {t('report.print')}
+          </button>
+        </header>
         <dl className="details">
           <dt>{t('report.date')}</dt>
           <dd>{formatDate(session.started_at, i18n.language)}</dd>
@@ -81,7 +92,7 @@ export function ReportView({ report, session }: { report: Report; session: Serve
             </li>
           ))}
         </ul>
-        <label className="report-field">
+        <label className="report-field no-print">
           <span className="field-label">{t('report.newAddendum')}</span>
           <textarea value={text} rows={3} maxLength={5000} onChange={(e) => setText(e.target.value)} />
         </label>
@@ -90,7 +101,7 @@ export function ReportView({ report, session }: { report: Report; session: Serve
             {errorMessage(t, addendum.error instanceof ApiError ? addendum.error.code : 'unknown')}
           </p>
         )}
-        <div className="actions">
+        <div className="actions no-print">
           <button
             className="secondary"
             disabled={!text.trim() || addendum.isPending}

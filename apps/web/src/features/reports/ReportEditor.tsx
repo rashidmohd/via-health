@@ -1,3 +1,4 @@
+import { ArrowDown, Check, CircleAlert, PenLine, Plus, Quote, RefreshCw, Sparkles, Trash2 } from 'lucide-react'
 import { useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { ApiError } from '../../api/client'
@@ -112,6 +113,18 @@ export function ReportEditor({
     setSelected(hit?.id ?? null)
   }
 
+  /** Jump to the next AI sentence that still needs a decision, after the current one. */
+  function nextToCheck() {
+    const open = statements.filter(blocks)
+    const from = open.findIndex((s) => s.id === selected)
+    const next = open[(from + 1) % open.length]
+    if (!next) return
+    setSelected(next.id)
+    const field = document.getElementById(`statement-${next.id}`)
+    field?.scrollIntoView?.({ block: 'center', behavior: 'smooth' })
+    field?.focus({ preventScroll: true })
+  }
+
   const header = content.header
 
   return (
@@ -136,7 +149,7 @@ export function ReportEditor({
         )}
 
         <div className="card stack">
-          <h2>{t('report.header')}</h2>
+          <SectionTitle step={1} title={t('report.header')} />
           <dl className="details">
             <dt>{t('report.date')}</dt>
             <dd>{formatDate(session.started_at, i18n.language)}</dd>
@@ -234,9 +247,10 @@ export function ReportEditor({
 
         <div className="card stack">
           <div className="row spread">
-            <h2>{t('report.aiPart')}</h2>
+            <SectionTitle step={2} title={t('report.aiPart')} />
             {report.ai_assisted && (
-              <button className="link small" disabled={busy} onClick={() => void regenerate(null)}>
+              <button className="ghost small-button" disabled={busy} onClick={() => void regenerate(null)}>
+                <RefreshCw className="icon" aria-hidden="true" />
                 {t('report.regenerateAll')}
               </button>
             )}
@@ -246,7 +260,8 @@ export function ReportEditor({
               <div className="row spread">
                 <h3 id={`field-${code}`}>{t(`report.fields.${code}`)}</h3>
                 {report.ai_assisted && (
-                  <button className="link small" disabled={busy} onClick={() => void regenerate(code)}>
+                  <button className="ghost small-button" disabled={busy} onClick={() => void regenerate(code)}>
+                    <RefreshCw className="icon" aria-hidden="true" />
                     {t('report.regenerate')}
                   </button>
                 )}
@@ -258,9 +273,18 @@ export function ReportEditor({
                 {content.ai[code].statements.map((s) => (
                   <li
                     key={s.id}
-                    className={`${blocks(s) ? 'blocking' : ''} ${selected === s.id ? 'selected' : ''}`}
+                    className={`statement ${blocks(s) ? 'blocking' : ''} ${selected === s.id ? 'selected' : ''}`}
                   >
+                    <span className={`origin origin-${s.origin}`}>
+                      {s.origin === 'ai' ? (
+                        <Sparkles className="icon" aria-hidden="true" />
+                      ) : (
+                        <PenLine className="icon" aria-hidden="true" />
+                      )}
+                      {t(`report.origin.${s.origin}`)}
+                    </span>
                     <textarea
+                      id={`statement-${s.id}`}
                       aria-label={t('report.statementLabel', { field: t(`report.fields.${code}`) })}
                       value={s.text}
                       rows={Math.max(1, Math.ceil(s.text.length / 70))}
@@ -274,34 +298,37 @@ export function ReportEditor({
                     />
                     <div className="statement-meta">
                       {statementFlags(s).map((flag) => (
-                        <span key={flag} className="badge attention" title={t(`report.flagHints.${flag}`)}>
+                        <span key={flag} className="badge attention flag" title={t(`report.flagHints.${flag}`)}>
                           {flag === 'wording'
                             ? t('report.flags.wording', { words: s.wording.join(', ') })
                             : t(`report.flags.${flag}`)}
                         </span>
                       ))}
                       {s.origin === 'ai' && s.refs.length > 0 && (
-                        <button className="link small" onClick={() => setSelected(s.id)}>
+                        <button className="ghost small-button" onClick={() => setSelected(s.id)}>
+                          <Quote className="icon" aria-hidden="true" />
                           {t('report.showSource')}
                         </button>
                       )}
                       {s.notes.length > 0 && <span className="muted small">{t('report.fromNote')}</span>}
                       {blocks(s) && (
                         <button
-                          className="link small"
+                          className="secondary small-button"
                           onClick={() =>
                             updateStatements(code, (list) =>
                               list.map((x) => (x.id === s.id ? { ...x, resolved: true } : x)),
                             )
                           }
                         >
+                          <Check className="icon" aria-hidden="true" />
                           {t('report.keep')}
                         </button>
                       )}
                       <button
-                        className="link small danger"
+                        className="ghost small-button danger push-right"
                         onClick={() => updateStatements(code, (list) => list.filter((x) => x.id !== s.id))}
                       >
+                        <Trash2 className="icon" aria-hidden="true" />
                         {t('report.delete')}
                       </button>
                     </div>
@@ -309,7 +336,7 @@ export function ReportEditor({
                 ))}
               </ul>
               <button
-                className="link small"
+                className="ghost small-button add-statement"
                 onClick={() =>
                   updateStatements(code, (list) => [
                     ...list,
@@ -330,14 +357,15 @@ export function ReportEditor({
                   ])
                 }
               >
-                + {t('report.addStatement')}
+                <Plus className="icon" aria-hidden="true" />
+                {t('report.addStatement')}
               </button>
             </section>
           ))}
         </div>
 
         <div className="card stack">
-          <h2>{t('report.therapistPart')}</h2>
+          <SectionTitle step={3} title={t('report.therapistPart')} />
           <p className="muted small">{t('report.therapistPartHint')}</p>
           {THERAPIST_FIELDS.map((code) => (
             <label key={code} className="report-field">
@@ -355,29 +383,54 @@ export function ReportEditor({
           ))}
         </div>
 
-        <div className="card report-actions">
-          {blocking > 0 ? (
-            <p className="muted" role="status">
-              {t('report.blocking', { count: blocking })}
+        <div className="report-actions" aria-label={t('report.actions')} role="region">
+          <div className="report-actions-status">
+            {blocking > 0 ? (
+              <p role="status">
+                <CircleAlert className="icon attention-icon" aria-hidden="true" />
+                {t('report.blocking', { count: blocking })}
+              </p>
+            ) : (
+              <p className="muted small">{t('report.approveHint')}</p>
+            )}
+            <p className="save-state small">
+              <span className={`save-dot${dirty ? ' unsaved' : ''}`} aria-hidden="true" />
+              {dirty ? t('report.unsaved') : t('report.saved')}
             </p>
-          ) : (
-            <p className="muted small">{t('report.approveHint')}</p>
-          )}
-          {error && (
-            <p className="form-error" role="alert">
-              {errorMessage(t, error instanceof ApiError ? error.code : 'unknown')}
-            </p>
-          )}
+            {error && (
+              <p className="form-error" role="alert">
+                {errorMessage(t, error instanceof ApiError ? error.code : 'unknown')}
+              </p>
+            )}
+          </div>
           <div className="actions">
+            {blocking > 0 && (
+              <button className="ghost" onClick={nextToCheck}>
+                <ArrowDown className="icon" aria-hidden="true" />
+                {t('report.nextToCheck')}
+              </button>
+            )}
             <button className="secondary" disabled={busy || !dirty} onClick={() => void saveNow()}>
-              {dirty ? t('report.save') : t('report.saved')}
+              {t('report.save')}
             </button>
             <button className="primary" disabled={busy || blocking > 0} onClick={() => void approveNow()}>
+              <Check className="icon" aria-hidden="true" />
               {t('report.approve')}
             </button>
           </div>
         </div>
       </div>
     </div>
+  )
+}
+
+function SectionTitle({ step, title }: { step: number; title: string }) {
+  return (
+    <h2 className="section-title">
+      <span className="step" aria-hidden="true">
+        {step}
+      </span>
+      {title}
+    </h2>
   )
 }

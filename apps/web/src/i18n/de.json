@@ -448,7 +448,15 @@
     "cardBlocking_one": "Entwurf – {{count}} Satz zu prüfen",
     "cardBlocking_other": "Entwurf – {{count}} Sätze zu prüfen",
     "review": "Dokumentation prüfen",
-    "open": "Dokumentation öffnen"
+    "open": "Dokumentation öffnen",
+    "origin": {
+      "ai": "KI-Entwurf",
+      "therapist": "Von Ihnen ergänzt"
+    },
+    "unsaved": "Ungespeicherte Änderungen",
+    "nextToCheck": "Zum nächsten Satz",
+    "actions": "Aktionen zur Dokumentation",
+    "print": "Drucken"
   },
   "hiddenNames": {
     "title": "Vor der KI verborgene Namen",

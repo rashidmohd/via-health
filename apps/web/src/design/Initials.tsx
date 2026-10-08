@@ -1,6 +1,6 @@
-function initialsOf(name: string): string {
+function initialsOf(name: string | undefined): string {
   // Skip titles such as "Dr." or "Prof."
-  const parts = name.trim().split(/\s+/).filter((part) => part && !part.endsWith('.'))
+  const parts = (name ?? '').trim().split(/\s+/).filter((part) => part && !part.endsWith('.'))
   const letters = parts.length > 1 ? [parts[0], parts[parts.length - 1]] : parts
   return letters.map((part) => [...part][0]?.toLocaleUpperCase() ?? '').join('')
 }
