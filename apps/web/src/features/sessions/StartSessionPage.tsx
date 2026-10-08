@@ -1,3 +1,4 @@
+import { Search } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Link } from 'react-router-dom'
@@ -53,6 +54,7 @@ export function StartSessionPage() {
       {choices && choices.length > 0 && (
         <>
           <label className="search">
+            <Search className="icon" aria-hidden="true" />
             <span className="visually-hidden">{t('clients.search')}</span>
             <input
               type="search"

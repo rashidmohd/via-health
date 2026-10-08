@@ -10,18 +10,29 @@ description: Use when building UI screens, the olive design system and tokens, l
 Calm, white, spacious. Sidebar left (olive-50), content on #FAFAF6, one focal element per main screen.
 Reference layout: clean SaaS dashboard; the Today screen's centrepiece is the avatar (in place of the reference's speaker object).
 
-Tokens (CSS variables in `src/design/tokens.css`, also exported for Tailwind if used):
+Tokens live in `src/design/tokens.css` (ADR 0009). Never hardcode hex, sizes or shadows in components — use:
+palette (`--olive-*`, `--clay`, `--sand`, `--charcoal`, `--danger`, `--warning`, `--info`), surfaces
+(`--canvas` behind the shell, `--surface-muted` main panel, `--surface` cards), text (`--text`, `--text-muted`,
+`--text-subtle`), type (`--text-xs` … `--text-2xl`, Inter), space (`--space-1` … `--space-10`, 4 px grid),
+shape (`--radius-sm/--radius/--radius-card/--radius-panel`), elevation (`--shadow-xs/sm/md`, `--ring`).
 
-```css
-:root{
-  --olive-50:#F6F7F0; --olive-100:#E8ECD9; --olive-300:#C5CDA2; --olive-500:#8A9A5B; --olive-700:#5C6B37;
-  --clay:#C47A5A; --sand:#EFE6D2; --charcoal:#2B2A26; --bg:#FAFAF6; --border:#E6E6DE;
-  --danger:#C2412D; --warning:#C9963A; --info:#5B7A8C;
-  --radius:8px; --radius-card:12px;
-}
-```
+Files: `design/base.css` = shared components, `design/shell.css` = sidebar/top bar/drawer,
+`src/index.css` = feature styles only. Shell components: `features/shell/Sidebar.tsx`, `Topbar.tsx`.
 
-- Primary button: bg olive-700, white text. Secondary: white bg, olive-300 border, olive-700 text.
+Building blocks (classes in `base.css`):
+- Page: `<section className="page">` → `<header className="page-header">` with `h1` (+ optional muted `p`) and actions right.
+- Buttons: `primary`, `secondary`, `ghost`, `icon-button` (+ `bare`); links styled as buttons add `button`. One primary per view.
+- Icons: `lucide-react` only, `className="icon" aria-hidden="true"`; icon-only buttons need `aria-label`.
+- Cards: `card` (+ `card-header`); tables: `data-list` rows; labels: `eyebrow`.
+- Number tiles: `stats` > `stat` (`stat-label` with icon, `stat-value`). Count work only — never scores about clients (rule 11).
+- Status: `badge info|attention|neutral` — always text, colour only supports it.
+- Empty: `empty` with `empty-icon`, one sentence, one action. Loading: `skeleton` blocks, not "Loading…" text, for lists.
+- Tables: `table-card` > `table-toolbar` (`search` with icon, `segmented` filter with counts) + `<table className="table">`; rows open via a `stretched` link on the name, other row controls get `above`. Collapse to stacked rows under 720 px (see `.clients-table`).
+- Lists in cards: `item-list` > `item` (`Initials` or `item-time`, `item-main`, badge/`item-action`); empty inside a card: `card-empty`. `ListSkeleton` while loading.
+- Shared helpers: `Initials` (design/), `sessionStatus()` (features/sessions/status.ts) for one status label per session, `formatTime`/`formatLongDate`/`isSameDay` (features/format.ts).
+- New nav items: add to `features/nav.ts` with a `group` and an icon in `NAV_ICONS`; breadcrumbs follow automatically.
+
+- Primary button: olive-700, white text. Secondary: white, hairline border, charcoal text.
 - Clay only for small attention badges (e.g. "3 reports to sign").
 - Recording indicator: danger red dot + text "Aufnahme läuft" — never colour alone.
 - Olive is brand, not "success".

@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { Cloud, CloudOff, CloudUpload, TriangleAlert } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { useLocalSyncState } from '../../recorder/useLocal'
 
@@ -24,14 +25,30 @@ export function SyncBadge() {
   if (!state) return null
 
   if (state.failedSessions > 0) {
-    return <span className="sync-badge danger">{t('sync.problem', { count: state.failedSessions })}</span>
+    return (
+      <span className="sync-badge danger">
+        <TriangleAlert className="icon" aria-hidden="true" />
+        {t('sync.problem', { count: state.failedSessions })}
+      </span>
+    )
   }
   if (state.pendingChunks > 0 || state.pendingSessions > 0) {
     return online ? (
-      <span className="sync-badge info">{t('sync.uploading')}</span>
+      <span className="sync-badge info">
+        <CloudUpload className="icon" aria-hidden="true" />
+        {t('sync.uploading')}
+      </span>
     ) : (
-      <span className="sync-badge warning">{t('sync.offline')}</span>
+      <span className="sync-badge warning">
+        <CloudOff className="icon" aria-hidden="true" />
+        {t('sync.offline')}
+      </span>
     )
   }
-  return <span className="sync-badge muted">{t('sync.allSynced')}</span>
+  return (
+    <span className="sync-badge muted">
+      <Cloud className="icon" aria-hidden="true" />
+      {t('sync.allSynced')}
+    </span>
+  )
 }

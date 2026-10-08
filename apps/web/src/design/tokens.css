@@ -1,9 +1,11 @@
 :root {
+  /* Palette (CLAUDE.md §7) */
   --olive-50: #f6f7f0;
   --olive-100: #e8ecd9;
   --olive-300: #c5cda2;
   --olive-500: #8a9a5b;
   --olive-700: #5c6b37;
+  --olive-800: #4a5729;
   --clay: #c47a5a;
   --sand: #efe6d2;
   --charcoal: #2b2a26;
@@ -12,6 +14,46 @@
   --danger: #c2412d;
   --warning: #c9963a;
   --info: #5b7a8c;
-  --radius: 8px;
-  --radius-card: 12px;
+
+  /* Surfaces: canvas (behind the shell) → panel (main area) → card → raised */
+  --canvas: #f1f2ea;
+  --surface: #ffffff;
+  --surface-muted: var(--bg);
+  --border-strong: #d9d9cf;
+  --text: var(--charcoal);
+  --text-muted: #6b6a63;
+  --text-subtle: #8c8b83;
+
+  /* Type */
+  --font-sans: 'Inter Variable', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --text-xs: 0.75rem;
+  --text-sm: 0.8125rem;
+  --text-base: 0.9375rem;
+  --text-md: 1.0625rem;
+  --text-lg: 1.375rem;
+  --text-xl: 1.75rem;
+  --text-2xl: 2.25rem;
+
+  /* Space (4px grid) */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --space-8: 32px;
+  --space-10: 40px;
+
+  /* Shape and elevation */
+  --radius-sm: 6px;
+  --radius: 10px;
+  --radius-card: 14px;
+  --radius-panel: 20px;
+  --shadow-xs: 0 1px 2px rgb(43 42 38 / 5%);
+  --shadow-sm: 0 1px 2px rgb(43 42 38 / 4%), 0 2px 8px rgb(43 42 38 / 4%);
+  --shadow-md: 0 2px 4px rgb(43 42 38 / 4%), 0 8px 24px rgb(43 42 38 / 8%);
+  --ring: 0 0 0 3px rgb(138 154 91 / 28%);
+
+  --ease: cubic-bezier(0.2, 0, 0, 1);
+  --sidebar-width: 248px;
 }

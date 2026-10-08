@@ -1,4 +1,4 @@
-import { fireEvent, screen, waitFor } from '@testing-library/react'
+import { fireEvent, screen, waitFor, within } from '@testing-library/react'
 import i18n from '../../i18n'
 import { ME, mockApi, renderApp } from '../../test-utils'
 
@@ -194,9 +194,10 @@ describe('session note', () => {
     )
     renderApp('/')
     expect(await screen.findByRole('heading', { name: '1 note to review' })).toBeInTheDocument()
-    expect(screen.getByRole('link', { name: 'Anna Weber' })).toHaveAttribute('href', '/sessions/s1/report')
-    expect(screen.getByText(/please complete/)).toBeInTheDocument()
-    expect(screen.queryByText('Ben')).not.toBeInTheDocument()
+    const notes = within(screen.getByTestId('notes-to-review'))
+    expect(notes.getByRole('link', { name: 'Anna Weber' })).toHaveAttribute('href', '/sessions/s1/report')
+    expect(notes.getByText(/please complete/)).toBeInTheDocument()
+    expect(notes.queryByText('Ben')).not.toBeInTheDocument()
   })
 
   it('shows the note topics on the session card, not on Today', async () => {

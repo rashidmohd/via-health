@@ -1,9 +1,7 @@
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { Navigate, NavLink, Route, Routes } from 'react-router-dom'
-import { useLogout, useMe } from './api/auth'
-import { useNotifications } from './api/notifications'
-import { LanguageSwitch } from './features/LanguageSwitch'
+import { Navigate, Route, Routes, useLocation } from 'react-router-dom'
+import { useMe } from './api/auth'
 import { PlaceholderPage } from './features/PlaceholderPage'
 import { EmailCodeForm } from './features/auth/EmailCodeForm'
 import { ClientPage } from './features/clients/ClientPage'
@@ -19,16 +17,20 @@ import { SessionPage } from './features/sessions/SessionPage'
 import { RecoveryBanner } from './features/sessions/RecoveryBanner'
 import { SessionsPage } from './features/sessions/SessionsPage'
 import { StartSessionPage } from './features/sessions/StartSessionPage'
-import { SyncBadge } from './features/sessions/SyncBadge'
+import { Sidebar } from './features/shell/Sidebar'
+import { Topbar } from './features/shell/Topbar'
 import { TodayPage } from './features/today/TodayPage'
 import { startSync } from './recorder/sync'
-import { Logo } from './design/Logo'
 
 export default function App() {
   const { t } = useTranslation()
   const { data: me, isPending, isError, refetch } = useMe()
-  const logout = useLogout()
   const loggedIn = Boolean(me)
+  const { pathname } = useLocation()
+  // The mobile drawer remembers the route it was opened on, so navigating closes it.
+  const [navOpenOn, setNavOpenOn] = useState<string | null>(null)
+  const navOpen = navOpenOn === pathname
+  const setNavOpen = (open: boolean) => setNavOpenOn(open ? pathname : null)
 
   useEffect(() => (loggedIn ? startSync() : undefined), [loggedIn])
 
@@ -59,61 +61,33 @@ export default function App() {
   }
 
   return (
-    <div className="layout">
-      <nav className="sidebar" aria-label="Main">
-        <div className="brand">
-          <Logo />
-        </div>
-        <ul>
-          {NAV_ITEMS.map((item) => (
-            <li key={item.key}>
-              <NavLink to={item.path} end={item.path === '/'}>
-                {t(`nav.${item.key}`)}
-                {item.key === 'notifications' && <UnreadBadge />}
-              </NavLink>
-            </li>
-          ))}
-        </ul>
-        <div className="sidebar-footer">
-          <SyncBadge />
-          <div className="user-name">{me.display_name}</div>
-          <LanguageSwitch />
-          <button className="link" onClick={() => logout.mutate()} disabled={logout.isPending}>
-            {t('auth.signOut')}
-          </button>
-        </div>
-      </nav>
-      <main>
-        <RecoveryBanner />
-        <Routes>
-          <Route path="/" element={<TodayPage />} />
-          <Route path="/notifications" element={<NotificationsPage />} />
-          <Route path="/sessions" element={<SessionsPage />} />
-          <Route path="/sessions/new" element={<StartSessionPage />} />
-          <Route path="/sessions/record/:clientId" element={<RecordPage />} />
-          <Route path="/sessions/:id" element={<SessionPage />} />
-          <Route path="/sessions/:id/report" element={<ReportPage />} />
-          {NAV_ITEMS.filter((item) => !['today', 'notifications', 'clients', 'sessions'].includes(item.key)).map((item) => (
-            <Route key={item.key} path={item.path} element={<PlaceholderPage navKey={item.key} />} />
-          ))}
-          <Route path="/clients" element={<ClientsPage />} />
-          <Route path="/clients/new" element={<NewClientPage />} />
-          <Route path="/clients/:id" element={<ClientPage />} />
-          <Route path="/clients/:id/consent" element={<ConsentPage />} />
-          <Route path="*" element={<Navigate to="/" replace />} />
-        </Routes>
-      </main>
+    <div className={navOpen ? 'shell nav-open' : 'shell'}>
+      <Sidebar me={me} onClose={() => setNavOpen(false)} />
+      <div className="scrim" onClick={() => setNavOpen(false)} aria-hidden="true" />
+      <div className="main-panel">
+        <Topbar navOpen={navOpen} onMenu={() => setNavOpen(true)} />
+        <main>
+          <RecoveryBanner />
+          <Routes>
+            <Route path="/" element={<TodayPage />} />
+            <Route path="/notifications" element={<NotificationsPage />} />
+            <Route path="/sessions" element={<SessionsPage />} />
+            <Route path="/sessions/new" element={<StartSessionPage />} />
+            <Route path="/sessions/record/:clientId" element={<RecordPage />} />
+            <Route path="/sessions/:id" element={<SessionPage />} />
+            <Route path="/sessions/:id/report" element={<ReportPage />} />
+            {NAV_ITEMS.filter((item) => !['today', 'notifications', 'clients', 'sessions'].includes(item.key)).map((item) => (
+              <Route key={item.key} path={item.path} element={<PlaceholderPage navKey={item.key} />} />
+            ))}
+            <Route path="/clients" element={<ClientsPage />} />
+            <Route path="/clients/new" element={<NewClientPage />} />
+            <Route path="/clients/:id" element={<ClientPage />} />
+            <Route path="/clients/:id/consent" element={<ConsentPage />} />
+            <Route path="*" element={<Navigate to="/" replace />} />
+          </Routes>
+        </main>
+      </div>
     </div>
   )
 }
 
-function UnreadBadge() {
-  const { t } = useTranslation()
-  const { data } = useNotifications()
-  if (!data?.unread) return null
-  return (
-    <span className="nav-count" aria-label={t('notifications.unreadCount', { count: data.unread })}>
-      {data.unread > 99 ? '99+' : data.unread}
-    </span>
-  )
-}

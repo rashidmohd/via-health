@@ -4,6 +4,7 @@ import { useSessions } from '../../api/sessions'
 import { db } from '../../recorder/db'
 import { useLocal } from '../../recorder/useLocal'
 import { formatDate } from '../format'
+import { sessionStatus } from './status'
 
 function minutes(ms: number | null | undefined): string {
   return ms ? String(Math.max(1, Math.round(ms / 60_000))) : '–'
@@ -59,11 +60,7 @@ export function SessionList({ clientId, showClient }: { clientId?: string; showC
               </p>
             )}
           </div>
-          <span className="muted small">
-            {s.status === 'transcribed' && s.report_status
-              ? t(`report.status.${s.report_status}`)
-              : t(`sessions.status.${s.status}`)}
-          </span>
+          <span className="muted small">{sessionStatus(t, s).label}</span>
         </li>
       ))}
     </ul>

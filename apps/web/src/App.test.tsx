@@ -12,7 +12,7 @@ describe('App shell (logged in)', () => {
   it('shows all seven nav items in order', async () => {
     renderApp()
     await screen.findByText('Anna')
-    const links = screen.getByRole('navigation').querySelectorAll('a')
+    const links = screen.getByRole('navigation', { name: 'Main' }).querySelectorAll('a')
     expect([...links].map((a) => a.textContent)).toEqual([
       'Today',
       'Notifications',

@@ -99,7 +99,25 @@
       "email": "Email",
       "phone": "Phone",
       "language": "Preferred language"
-    }
+    },
+    "count_one": "{{count}} client",
+    "count_other": "{{count}} clients",
+    "filter": {
+      "label": "Show",
+      "all": "All",
+      "ready": "Ready to record",
+      "needsConsent": "Needs consent"
+    },
+    "columns": {
+      "consent": "Consent",
+      "lastSession": "Last session",
+      "language": "Language",
+      "actions": "Actions"
+    },
+    "record": "Record session",
+    "recordWith": "Record a session with {{name}}",
+    "getConsent": "Add consent",
+    "consentFor": "Add consent for {{name}}"
   },
   "consent": {
     "title": "Consent",
@@ -148,7 +166,18 @@
     "evening": "Good evening, {{name}}",
     "notesToReview_one": "{{count}} note to review",
     "notesToReview_other": "{{count}} notes to review",
-    "overdue": "From {{date}} – please complete"
+    "overdue": "From {{date}} – please complete",
+    "stats": {
+      "sessionsToday": "Sessions today",
+      "notesToReview": "Notes to review",
+      "waitingUpload": "Waiting for upload"
+    },
+    "notesTitle": "Notes to review",
+    "noNotes": "No notes waiting for review.",
+    "review": "Review",
+    "sessionsTitle": "Today's sessions",
+    "noSessionsToday": "No sessions recorded today yet.",
+    "allSessions": "All sessions"
   },
   "sync": {
     "allSynced": "All audio uploaded",
@@ -427,6 +456,23 @@
       "report_ready": "Note draft ready",
       "report_failed": "Note draft failed",
       "report_no_consent": "No AI consent – write the note yourself"
+    }
+  },
+  "shell": {
+    "mainNav": "Main",
+    "breadcrumb": "Breadcrumb",
+    "openMenu": "Open menu",
+    "closeMenu": "Close menu",
+    "group": {
+      "workspace": "Workspace",
+      "account": "Account"
+    },
+    "crumb": {
+      "new": "New",
+      "record": "Recording",
+      "consent": "Consent",
+      "report": "Session note",
+      "details": "Details"
     }
   }
 }

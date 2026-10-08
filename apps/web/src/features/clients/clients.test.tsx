@@ -66,13 +66,46 @@ describe('clients', () => {
       }
     })
     renderApp('/clients')
-    const anna = (await screen.findByText('Anna Weber')).closest('a')!
+    const anna = (await screen.findByText('Anna Weber')).closest('tr')!
     expect(within(anna).getByText('Ready to record')).toBeInTheDocument()
-    const ben = screen.getByText('Ben Braun').closest('a')!
+    const ben = screen.getByText('Ben Braun').closest('tr')!
     expect(within(ben).getByText('Consent missing')).toBeInTheDocument()
 
     fireEvent.change(screen.getByPlaceholderText('Search clients'), { target: { value: 'ben' } })
     expect(screen.queryByText('Anna Weber')).not.toBeInTheDocument()
+  })
+
+  it('filters by readiness and offers the next step per row', async () => {
+    mockApi((url) => {
+      if (url.endsWith('/auth/me')) return { status: 200, body: ME }
+      return {
+        status: 200,
+        body: [
+          clientDetail({ ready_to_record: true, consent: { recording: 'granted', ai_processing: 'granted', product_improvement: 'missing' } }),
+          clientDetail({ id: 'c2', name: 'Ben Braun' }),
+          clientDetail({ id: 'c3', name: 'Cem Arslan', status: 'archived' }),
+        ],
+      }
+    })
+    renderApp('/clients')
+    await screen.findByText('Anna Weber')
+    expect(screen.getByText('3 clients')).toBeInTheDocument()
+
+    // Ready → record; consent missing → consent form; archived → no action.
+    expect(screen.getByRole('link', { name: 'Record a session with Anna Weber' })).toHaveAttribute('href', '/sessions/record/c1')
+    expect(screen.getByRole('link', { name: 'Add consent for Ben Braun' })).toHaveAttribute('href', '/clients/c2/consent')
+    const cem = screen.getByText('Cem Arslan').closest('tr')!
+    expect(within(cem).getAllByRole('link')).toHaveLength(1)
+
+    const filters = screen.getByRole('group', { name: 'Show' })
+    fireEvent.click(within(filters).getByRole('button', { name: /Needs consent/ }))
+    expect(screen.getByText('Ben Braun')).toBeInTheDocument()
+    expect(screen.queryByText('Anna Weber')).not.toBeInTheDocument()
+    expect(screen.queryByText('Cem Arslan')).not.toBeInTheDocument()
+
+    fireEvent.click(within(filters).getByRole('button', { name: /Ready to record/ }))
+    expect(screen.getByText('Anna Weber')).toBeInTheDocument()
+    expect(screen.queryByText('Ben Braun')).not.toBeInTheDocument()
   })
 
   it('shows an empty state', async () => {

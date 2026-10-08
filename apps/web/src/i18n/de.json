@@ -99,7 +99,25 @@
       "email": "E-Mail",
       "phone": "Telefon",
       "language": "Bevorzugte Sprache"
-    }
+    },
+    "count_one": "{{count}} Klient:in",
+    "count_other": "{{count}} Klient:innen",
+    "filter": {
+      "label": "Anzeigen",
+      "all": "Alle",
+      "ready": "Aufnahme möglich",
+      "needsConsent": "Einwilligung fehlt"
+    },
+    "columns": {
+      "consent": "Einwilligung",
+      "lastSession": "Letzte Sitzung",
+      "language": "Sprache",
+      "actions": "Aktionen"
+    },
+    "record": "Sitzung aufnehmen",
+    "recordWith": "Sitzung mit {{name}} aufnehmen",
+    "getConsent": "Einwilligung erfassen",
+    "consentFor": "Einwilligung für {{name}} erfassen"
   },
   "consent": {
     "title": "Einwilligung",
@@ -148,7 +166,18 @@
     "evening": "Guten Abend, {{name}}",
     "notesToReview_one": "{{count}} Dokumentation zu prüfen",
     "notesToReview_other": "{{count}} Dokumentationen zu prüfen",
-    "overdue": "Vom {{date}} – bitte abschließen"
+    "overdue": "Vom {{date}} – bitte abschließen",
+    "stats": {
+      "sessionsToday": "Sitzungen heute",
+      "notesToReview": "Zu prüfende Notizen",
+      "waitingUpload": "Warten auf Upload"
+    },
+    "notesTitle": "Zu prüfende Notizen",
+    "noNotes": "Keine Notizen warten auf Prüfung.",
+    "review": "Prüfen",
+    "sessionsTitle": "Heutige Sitzungen",
+    "noSessionsToday": "Heute wurden noch keine Sitzungen aufgenommen.",
+    "allSessions": "Alle Sitzungen"
   },
   "sync": {
     "allSynced": "Alle Audiodaten hochgeladen",
@@ -427,6 +456,23 @@
       "report_ready": "Dokumentationsentwurf fertig",
       "report_failed": "Dokumentationsentwurf fehlgeschlagen",
       "report_no_consent": "Keine KI-Einwilligung – bitte selbst dokumentieren"
+    }
+  },
+  "shell": {
+    "mainNav": "Hauptnavigation",
+    "breadcrumb": "Pfad",
+    "openMenu": "Menü öffnen",
+    "closeMenu": "Menü schließen",
+    "group": {
+      "workspace": "Arbeitsbereich",
+      "account": "Konto"
+    },
+    "crumb": {
+      "new": "Neu",
+      "record": "Aufnahme",
+      "consent": "Einwilligung",
+      "report": "Sitzungsdokumentation",
+      "details": "Details"
     }
   }
 }
