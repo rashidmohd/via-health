@@ -73,7 +73,8 @@
     "noAccount": "Neu hier?",
     "haveAccount": "Sie haben schon ein Konto?",
     "continue": "Weiter",
-    "signOut": "Abmelden"
+    "signOut": "Abmelden",
+    "tagline": "Sitzungen aufnehmen, Transkript prüfen, Dokumentation freigeben."
   },
   "clients": {
     "add": "Klient:in hinzufügen",

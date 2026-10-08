@@ -1,4 +1,4 @@
-import { ChevronLeft } from 'lucide-react'
+import { ChevronLeft, ShieldCheck } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { Link, useNavigate } from 'react-router-dom'
 import { ApiError } from '../../api/client'
@@ -18,23 +18,32 @@ export function NewClientPage() {
         <ChevronLeft className="icon" aria-hidden="true" />
         {t('nav.clients')}
       </Link>
-      <h1>{t('clients.add')}</h1>
-      <p className="muted">{t('clients.encryptedNote')}</p>
-      <ClientForm
-        submitLabel={t('clients.save')}
-        busy={create.isPending}
-        onSubmit={(values) =>
-          create.mutate(
-            { ...values.identity, preferred_language: values.preferred_language },
-            {
-              onSuccess: (client) => {
-                emitAvatarEvent('client.created')
-                navigate(`/clients/${client.id}/consent`)
+      <header className="page-header">
+        <div>
+          <h1>{t('clients.add')}</h1>
+          <p className="muted small icon-line">
+            <ShieldCheck className="icon" aria-hidden="true" />
+            {t('clients.encryptedNote')}
+          </p>
+        </div>
+      </header>
+      <div className="card">
+        <ClientForm
+          submitLabel={t('clients.save')}
+          busy={create.isPending}
+          onSubmit={(values) =>
+            create.mutate(
+              { ...values.identity, preferred_language: values.preferred_language },
+              {
+                onSuccess: (client) => {
+                  emitAvatarEvent('client.created')
+                  navigate(`/clients/${client.id}/consent`)
+                },
               },
-            },
-          )
-        }
-      />
+            )
+          }
+        />
+      </div>
       {create.error && (
         <p className="form-error" role="alert">
           {errorMessage(t, create.error instanceof ApiError ? create.error.code : 'unknown')}

@@ -1,3 +1,4 @@
+import { Bookmark, Check, X } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { useCaptures, useSaveCapture, type Transcript } from '../../api/sessions'
 import { detectCaptures, type DetectedCapture } from '../../live-stt/detectors'
@@ -42,7 +43,10 @@ export function CaptureReview({ sessionId, transcript }: { sessionId: string; tr
 
   return (
     <div className="card">
-      <h2>{t('captures.title')}</h2>
+      <h2 className="section-title">
+        <Bookmark className="icon" aria-hidden="true" />
+        {t('captures.title')}
+      </h2>
       <p className="muted small">{t('captures.hint')}</p>
       <ul className="capture-review">
         {items.map((item) => (
@@ -56,10 +60,12 @@ export function CaptureReview({ sessionId, transcript }: { sessionId: string; tr
             </div>
             {item.status === 'suggested' ? (
               <div className="actions">
-                <button className="secondary" onClick={() => decide(item, 'confirmed')} disabled={save.isPending}>
+                <button className="secondary small-button" onClick={() => decide(item, 'confirmed')} disabled={save.isPending}>
+                  <Check className="icon" aria-hidden="true" />
                   {t('captures.keep')}
                 </button>
-                <button className="link" onClick={() => decide(item, 'dismissed')} disabled={save.isPending}>
+                <button className="ghost small-button" onClick={() => decide(item, 'dismissed')} disabled={save.isPending}>
+                  <X className="icon" aria-hidden="true" />
                   {t('captures.remove')}
                 </button>
               </div>

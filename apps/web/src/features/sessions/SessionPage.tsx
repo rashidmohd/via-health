@@ -1,4 +1,4 @@
-import { ChevronLeft } from 'lucide-react'
+import { AudioLines, ChevronLeft } from 'lucide-react'
 import { useEffect, useRef } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Link, useParams } from 'react-router-dom'
@@ -7,6 +7,8 @@ import { useRetrySession, useSession, useTranscript } from '../../api/sessions'
 import { Avatar } from '../../avatar/Avatar'
 import { emitAvatarEvent } from '../../avatar/events'
 import { useAvatarMood } from '../../avatar/useAvatarMood'
+import { Initials } from '../../design/Initials'
+import { ListSkeleton } from '../../design/ListSkeleton'
 import { errorMessage } from '../../i18n/errors'
 import { formatDate } from '../format'
 import { ReportCard } from '../reports/ReportCard'
@@ -46,7 +48,7 @@ export function SessionPage() {
       </section>
     )
   }
-  if (!session) return <p className="muted">{t('common.loading')}</p>
+  if (!session) return <ListSkeleton rows={5} />
 
   const minutes = session.duration_ms ? Math.max(1, Math.round(session.duration_ms / 60_000)) : null
 
@@ -57,8 +59,16 @@ export function SessionPage() {
         {session.client_name}
       </Link>
       <header className="page-header">
-        <h1>{t('session.title', { date: formatDate(session.started_at, i18n.language) })}</h1>
-        {minutes && <span className="muted">{t('sessions.minutes', { count: minutes })}</span>}
+        <div className="record-header">
+          <Initials name={session.client_name} />
+          <div>
+            <h1>{t('session.title', { date: formatDate(session.started_at, i18n.language) })}</h1>
+            <p className="muted small">
+              {session.client_name}
+              {minutes && ` · ${t('sessions.minutes', { count: minutes })}`}
+            </p>
+          </div>
+        </div>
         <Avatar mood={mood} size={56} />
       </header>
 
@@ -79,12 +89,15 @@ export function SessionPage() {
 
       {(session.status === 'uploaded' || session.status === 'processing') && (
         <div className="card progress" role="status">
-          <span className="spinner" aria-hidden="true" />
-          <div>
+          <span className="stage-icon">
+            <AudioLines className="icon" aria-hidden="true" />
+          </span>
+          <div className="progress-text">
             <strong>{t('session.transcribing')}</strong>
             <p className="muted small">
               {t(session.transcribed_ms > 0 ? 'session.finishingHint' : 'session.transcribingHint')}
             </p>
+            <span className="progress-bar" aria-hidden="true" />
           </div>
         </div>
       )}

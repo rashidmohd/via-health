@@ -1,4 +1,4 @@
-import { ChevronLeft } from 'lucide-react'
+import { ChevronLeft, CircleCheck, FileSignature } from 'lucide-react'
 import { useState, type FormEvent } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Link, useNavigate, useParams } from 'react-router-dom'
@@ -11,6 +11,8 @@ import {
   useGrantConsents,
   type ConsentKind,
 } from '../../api/clients'
+import { Initials } from '../../design/Initials'
+import { ListSkeleton } from '../../design/ListSkeleton'
 import { errorMessage } from '../../i18n/errors'
 import { SignaturePad } from './SignaturePad'
 
@@ -30,7 +32,7 @@ export function ConsentPage() {
   const [signedBy, setSignedBy] = useState<'client' | 'guardian'>('client')
   const [signature, setSignature] = useState<string | null>(null)
 
-  if (!client || !texts) return <p className="muted">{t('common.loading')}</p>
+  if (!client || !texts) return <ListSkeleton rows={5} />
 
   const open = texts.filter((text) => client.consent[text.kind] !== 'granted')
 
@@ -58,11 +60,19 @@ export function ConsentPage() {
         <ChevronLeft className="icon" aria-hidden="true" />
         {client.name}
       </Link>
-      <h1>{t('consent.title')}</h1>
+      <header className="page-header">
+        <div className="record-header">
+          <Initials name={client.name} />
+          <div>
+            <h1>{t('consent.title')}</h1>
+            <p className="muted small">{client.name}</p>
+          </div>
+        </div>
+      </header>
 
       <div className="row">
-        <span className="muted">{t('consent.textLanguage')}</span>
-        <div className="language-switch" role="group" aria-label={t('consent.textLanguage')}>
+        <span className="muted small">{t('consent.textLanguage')}</span>
+        <div className="segmented" role="group" aria-label={t('consent.textLanguage')}>
           {(['de', 'en'] as const).map((lang) => (
             <button
               key={lang}
@@ -77,7 +87,12 @@ export function ConsentPage() {
       </div>
 
       {open.length === 0 ? (
-        <p>{t('consent.allGiven')}</p>
+        <div className="empty">
+          <span className="empty-icon">
+            <CircleCheck className="icon" aria-hidden="true" />
+          </span>
+          <p>{t('consent.allGiven')}</p>
+        </div>
       ) : (
         <form className="stack" onSubmit={submit}>
           {open.map((text) => (
@@ -102,7 +117,7 @@ export function ConsentPage() {
             </div>
           ))}
 
-          <fieldset className="signer">
+          <fieldset className="signer card">
             <legend>{t('consent.signedBy')}</legend>
             <label className="checkbox">
               <input
@@ -132,6 +147,7 @@ export function ConsentPage() {
               type="submit"
               disabled={grant.isPending || chosen.size === 0 || !signature}
             >
+              <FileSignature className="icon" aria-hidden="true" />
               {t('consent.save')}
             </button>
           </div>

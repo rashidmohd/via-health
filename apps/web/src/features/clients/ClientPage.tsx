@@ -1,4 +1,4 @@
-import { ChevronLeft } from 'lucide-react'
+import { ChevronLeft, CircleAlert, CircleCheck, FileSignature, Mic, Pencil } from 'lucide-react'
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Link, useParams } from 'react-router-dom'
@@ -10,6 +10,8 @@ import {
   useWithdrawConsent,
   type ConsentRecord,
 } from '../../api/clients'
+import { Initials } from '../../design/Initials'
+import { ListSkeleton } from '../../design/ListSkeleton'
 import { errorMessage } from '../../i18n/errors'
 import { formatDate } from '../format'
 import { SessionList } from '../sessions/SessionList'
@@ -38,7 +40,7 @@ export function ClientPage() {
       </section>
     )
   }
-  if (!client) return <p className="muted">{t('common.loading')}</p>
+  if (!client) return <ListSkeleton rows={5} />
 
   const active = client.status === 'active'
   const mutationError = update.error ?? withdraw.error
@@ -56,14 +58,20 @@ export function ClientPage() {
         {t('nav.clients')}
       </Link>
       <header className="page-header">
-        <h1>{client.name}</h1>
-        <ReadinessBadge client={client} />
+        <div className="record-header">
+          <Initials name={client.name} />
+          <div>
+            <h1>{client.name}</h1>
+            <ReadinessBadge client={client} />
+          </div>
+        </div>
+        {client.ready_to_record && (
+          <Link className="button primary" to={`/sessions/record/${client.id}`}>
+            <Mic className="icon" aria-hidden="true" />
+            {t('sessions.start')}
+          </Link>
+        )}
       </header>
-      {client.ready_to_record && (
-        <Link className="button primary" to={`/sessions/record/${client.id}`}>
-          {t('sessions.start')}
-        </Link>
-      )}
 
       <div className="card">
         <h2>{t('clients.details')}</h2>
@@ -96,6 +104,7 @@ export function ClientPage() {
               <div className="actions">
                 {active && (
                   <button className="secondary" onClick={() => setEditing(true)}>
+                    <Pencil className="icon" aria-hidden="true" />
                     {t('common.edit')}
                   </button>
                 )}
@@ -118,12 +127,20 @@ export function ClientPage() {
           {CONSENT_KINDS.map((kind) => (
             <li key={kind}>
               <span>{t(`consent.kinds.${kind}`)}</span>
-              <span className={`status-${client.consent[kind]}`}>{t(`consent.status.${client.consent[kind]}`)}</span>
+              <span className={`consent-state status-${client.consent[kind]}`}>
+                {client.consent[kind] === 'granted' ? (
+                  <CircleCheck className="icon" aria-hidden="true" />
+                ) : (
+                  <CircleAlert className="icon" aria-hidden="true" />
+                )}
+                {t(`consent.status.${client.consent[kind]}`)}
+              </span>
             </li>
           ))}
         </ul>
         {active && CONSENT_KINDS.some((kind) => client.consent[kind] !== 'granted') && (
           <Link className="button primary" to={`/clients/${id}/consent`}>
+            <FileSignature className="icon" aria-hidden="true" />
             {t('consent.record')}
           </Link>
         )}

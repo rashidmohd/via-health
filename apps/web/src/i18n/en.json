@@ -73,7 +73,8 @@
     "noAccount": "New here?",
     "haveAccount": "Already have an account?",
     "continue": "Continue",
-    "signOut": "Sign out"
+    "signOut": "Sign out",
+    "tagline": "Record sessions, check the transcript, approve the session note."
   },
   "clients": {
     "add": "Add client",

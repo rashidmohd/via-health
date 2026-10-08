@@ -42,21 +42,27 @@ export function ClientForm({
   }
 
   return (
-    <form className="stack" onSubmit={submit}>
-      <label>
+    <form className="stack client-form" onSubmit={submit}>
+      <label className="span-2">
         {t('clients.fields.name')}
         <input value={name} onChange={(e) => setName(e.target.value)} maxLength={200} required />
       </label>
       <label>
-        {t('clients.fields.dateOfBirth')} <span className="muted small">{t('common.optional')}</span>
+        <span>
+          {t('clients.fields.dateOfBirth')} <span className="muted small">{t('common.optional')}</span>
+        </span>
         <input type="date" value={dob} onChange={(e) => setDob(e.target.value)} />
       </label>
       <label>
-        {t('clients.fields.email')} <span className="muted small">{t('common.optional')}</span>
+        <span>
+          {t('clients.fields.email')} <span className="muted small">{t('common.optional')}</span>
+        </span>
         <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} maxLength={254} />
       </label>
       <label>
-        {t('clients.fields.phone')} <span className="muted small">{t('common.optional')}</span>
+        <span>
+          {t('clients.fields.phone')} <span className="muted small">{t('common.optional')}</span>
+        </span>
         <input type="tel" value={phone} onChange={(e) => setPhone(e.target.value)} maxLength={50} />
       </label>
       <label>
@@ -66,7 +72,7 @@ export function ClientForm({
           <option value="en">English</option>
         </select>
       </label>
-      <div className="actions">
+      <div className="actions span-2">
         <button className="primary" type="submit" disabled={busy || !name.trim()}>
           {submitLabel}
         </button>

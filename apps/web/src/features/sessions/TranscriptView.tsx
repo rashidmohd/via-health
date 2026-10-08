@@ -1,3 +1,4 @@
+import { AudioLines, CircleCheck, Undo2, Users } from 'lucide-react'
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import {
@@ -51,12 +52,18 @@ export function TranscriptView({ sessionId, transcript }: { sessionId: string; t
     <div className="stack">
       {askWho && (
         <div className="card who-card">
-          <h2>{t('transcript.whoTitle')}</h2>
+          <h2 className="section-title">
+            <Users className="icon" aria-hidden="true" />
+            {t('transcript.whoTitle')}
+          </h2>
           <p className="muted">{t('transcript.whoHint')}</p>
           <ul className="who-list">
             {speakers(transcript).map(({ label, sample }) => (
               <li key={label}>
-                <div>
+                <span className="speaker-tag" aria-hidden="true">
+                  {label}
+                </span>
+                <div className="who-text">
                   <strong>{t('transcript.speaker', { label })}</strong>
                   <p className="muted small">„{sample}“</p>
                 </div>
@@ -77,9 +84,13 @@ export function TranscriptView({ sessionId, transcript }: { sessionId: string; t
 
       <div className="card">
         <div className="row spread">
-          <h2>{t('transcript.title')}</h2>
+          <h2 className="section-title">
+            <AudioLines className="icon" aria-hidden="true" />
+            {t('transcript.title')}
+          </h2>
           {therapist !== null && !choosing && (
-            <button className="link" onClick={() => setChoosing(true)}>
+            <button className="ghost small-button" onClick={() => setChoosing(true)}>
+              <Users className="icon" aria-hidden="true" />
               {t('transcript.changeSpeaker')}
             </button>
           )}
@@ -89,12 +100,18 @@ export function TranscriptView({ sessionId, transcript }: { sessionId: string; t
             {t('transcript.checking')}
           </p>
         )}
-        {transcript.refine_status === 'done' && <p className="muted small">{t('transcript.checked')}</p>}
+        {transcript.refine_status === 'done' && (
+          <p className="muted small icon-line">
+            <CircleCheck className="icon" aria-hidden="true" />
+            {t('transcript.checked')}
+          </p>
+        )}
         {canCorrect && (
           <div className="row spread">
             <p className="muted small">{t('transcript.correctHint')}</p>
             {transcript.corrections > 0 && (
-              <button className="link small" onClick={() => undo.mutate()} disabled={busy}>
+              <button className="ghost small-button" onClick={() => undo.mutate()} disabled={busy}>
+                <Undo2 className="icon" aria-hidden="true" />
                 {t('transcript.undo')}
               </button>
             )}

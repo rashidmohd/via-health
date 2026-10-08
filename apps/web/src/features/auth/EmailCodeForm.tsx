@@ -75,7 +75,10 @@ export function EmailCodeForm({ mode }: { mode: Mode }) {
           </span>
           <LanguageSwitch />
         </div>
-        <h1>{t(mode === 'signup' ? 'auth.signupTitle' : 'auth.loginTitle')}</h1>
+        <div className="auth-heading">
+          <h1>{t(mode === 'signup' ? 'auth.signupTitle' : 'auth.loginTitle')}</h1>
+          <p className="muted small">{t('auth.tagline')}</p>
+        </div>
 
         {step === 'email' ? (
           <form onSubmit={submitEmail}>
@@ -113,6 +116,7 @@ export function EmailCodeForm({ mode }: { mode: Mode }) {
               <input
                 value={code}
                 onChange={(e) => setCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                className="code-input"
                 inputMode="numeric"
                 autoComplete="one-time-code"
                 pattern="\d{6}"
