@@ -29,9 +29,12 @@ Code is deployed from GitHub (`rashidmohd/via-health`, branch `main`).
    AUTH_SECRET=<64 random characters>        # e.g. `openssl rand -hex 32`; never change casually
    EMAIL_SENDER=resend
    RESEND_API_KEY=<from Resend>
-   EMAIL_FROM=Sessio <login@bandi.ae>
+   EMAIL_FROM=Sessio <hello@via.bandi.ae>
+   CLIENT_DATA_KEY=<another `openssl rand -hex 32`>   # encrypts client names (ADR 0004)
    ```
    Changing `AUTH_SECRET` logs everyone out and invalidates pending codes.
+   **Never change or lose `CLIENT_DATA_KEY`:** client details become unreadable. Keep a copy in a
+   password manager.
 
 ## 3. `worker` service
 1. **+ Create** → **GitHub Repo** → `via-health` again. Rename to `worker`.

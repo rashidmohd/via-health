@@ -10,7 +10,10 @@
   "common": {
     "comingSoon": "Not built yet.",
     "loading": "Loading…",
-    "retry": "Try again"
+    "retry": "Try again",
+    "optional": "(optional)",
+    "cancel": "Cancel",
+    "edit": "Edit"
   },
   "errors": {
     "client_not_found": "This client could not be found.",
@@ -31,6 +34,9 @@
     "invalid_input": "Please check your entries.",
     "origin_not_allowed": "This request was blocked for security reasons.",
     "network_error": "No connection to the server. Please check your internet connection.",
+    "consent_already_given": "This consent has already been given.",
+    "consent_text_missing": "The consent text is missing in this language.",
+    "consent_not_found": "This consent could not be found.",
     "unknown": "Something went wrong. Please try again."
   },
   "language": {
@@ -53,5 +59,72 @@
     "haveAccount": "Already have an account?",
     "continue": "Continue",
     "signOut": "Sign out"
+  },
+  "clients": {
+    "add": "Add client",
+    "addFirst": "Add your first client",
+    "search": "Search clients",
+    "empty": "No clients yet.",
+    "noMatch": "No client matches your search.",
+    "lastSession": "Last session {{date}}",
+    "noSessions": "No sessions yet",
+    "encryptedNote": "Personal details are stored encrypted.",
+    "save": "Save",
+    "details": "Details",
+    "archive": "Archive client",
+    "reactivate": "Reactivate client",
+    "status": {
+      "active": "Active",
+      "restricted": "Restricted",
+      "archived": "Archived"
+    },
+    "fields": {
+      "name": "Name",
+      "dateOfBirth": "Date of birth",
+      "email": "Email",
+      "phone": "Phone",
+      "language": "Preferred language"
+    }
+  },
+  "consent": {
+    "title": "Consent",
+    "ready": "Ready to record",
+    "missingShort": "Consent missing",
+    "withdrawnShort": "Consent withdrawn",
+    "textLanguage": "Language of the texts",
+    "allGiven": "All consents have been given.",
+    "kinds": {
+      "recording": "Audio recording",
+      "ai_processing": "AI processing",
+      "product_improvement": "Product improvement"
+    },
+    "requiredForRecording": "(needed for recording)",
+    "agree": {
+      "recording": "I agree to the audio recording.",
+      "ai_processing": "I agree to the AI processing.",
+      "product_improvement": "I agree to the use for product improvement."
+    },
+    "signedBy": "Who is signing?",
+    "signer": {
+      "client": "Client",
+      "guardian": "Legal guardian"
+    },
+    "save": "Save consent",
+    "signatureArea": "Signature area",
+    "signHere": "Sign in the box above",
+    "signed": "Signature captured",
+    "clearSignature": "Clear signature",
+    "record": "Record consent",
+    "history": "History",
+    "historyLine": "{{date}} · text version {{version}} ({{language}}) · signed by {{signer}}",
+    "withdrawnOn": "withdrawn {{date}}",
+    "withdraw": "Withdraw",
+    "withdrawConfirm": "Withdraw consent to {{kind}}? Recording stops being possible and audio that has not been processed yet will be deleted.",
+    "status": {
+      "granted": "Given",
+      "outdated": "New text, consent needed again",
+      "withdrawn": "Withdrawn",
+      "missing": "Not given"
+    }
   }
 }

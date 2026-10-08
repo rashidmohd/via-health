@@ -7,6 +7,8 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 # Rule 4: every cloud resource lives in an EU region.
 EU_REGION_PREFIXES = ("europe-",)
 
+DEV_CLIENT_DATA_KEY = "00" * 32
+
 
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(env_file=(".env", ".env.local"), extra="ignore")
@@ -29,6 +31,9 @@ class Settings(BaseSettings):
     email_sender: Literal["console", "resend"] = "console"
     resend_api_key: str = ""
     email_from: str = "Sessio <login@example.com>"
+
+    # ADR 0004: interim server key for client identity and signatures (64 hex chars).
+    client_data_key: str = DEV_CLIENT_DATA_KEY
 
     @property
     def secure_cookies(self) -> bool:
@@ -57,7 +62,19 @@ class Settings(BaseSettings):
                 raise ValueError("AUTH_SECRET must be set (32+ characters) in prod")
             if self.email_sender != "resend" or not self.resend_api_key:
                 raise ValueError("EMAIL_SENDER=resend and RESEND_API_KEY are required in prod")
+            if self.client_data_key == DEV_CLIENT_DATA_KEY:
+                raise ValueError("CLIENT_DATA_KEY must be set in prod")
         return self
+
+    @field_validator("client_data_key")
+    @classmethod
+    def key_is_32_bytes_hex(cls, value: str) -> str:
+        try:
+            if len(bytes.fromhex(value)) == 32:
+                return value
+        except ValueError:
+            pass
+        raise ValueError("CLIENT_DATA_KEY must be 64 hex characters (32 bytes)")
 
 
 @lru_cache

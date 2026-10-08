@@ -10,7 +10,10 @@
   "common": {
     "comingSoon": "Noch nicht umgesetzt.",
     "loading": "Wird geladen…",
-    "retry": "Erneut versuchen"
+    "retry": "Erneut versuchen",
+    "optional": "(optional)",
+    "cancel": "Abbrechen",
+    "edit": "Bearbeiten"
   },
   "errors": {
     "client_not_found": "Diese Klient:in wurde nicht gefunden.",
@@ -31,6 +34,9 @@
     "invalid_input": "Bitte prüfen Sie Ihre Eingaben.",
     "origin_not_allowed": "Diese Anfrage wurde aus Sicherheitsgründen blockiert.",
     "network_error": "Keine Verbindung zum Server. Bitte prüfen Sie Ihre Internetverbindung.",
+    "consent_already_given": "Diese Einwilligung liegt bereits vor.",
+    "consent_text_missing": "Der Einwilligungstext fehlt in dieser Sprache.",
+    "consent_not_found": "Diese Einwilligung wurde nicht gefunden.",
     "unknown": "Etwas ist schiefgelaufen. Bitte versuchen Sie es erneut."
   },
   "language": {
@@ -53,5 +59,72 @@
     "haveAccount": "Sie haben schon ein Konto?",
     "continue": "Weiter",
     "signOut": "Abmelden"
+  },
+  "clients": {
+    "add": "Klient:in hinzufügen",
+    "addFirst": "Erste Klient:in hinzufügen",
+    "search": "Klient:innen suchen",
+    "empty": "Noch keine Klient:innen.",
+    "noMatch": "Keine Klient:in passt zur Suche.",
+    "lastSession": "Letzte Sitzung {{date}}",
+    "noSessions": "Noch keine Sitzungen",
+    "encryptedNote": "Persönliche Angaben werden verschlüsselt gespeichert.",
+    "save": "Speichern",
+    "details": "Angaben",
+    "archive": "Klient:in archivieren",
+    "reactivate": "Klient:in reaktivieren",
+    "status": {
+      "active": "Aktiv",
+      "restricted": "Eingeschränkt",
+      "archived": "Archiviert"
+    },
+    "fields": {
+      "name": "Name",
+      "dateOfBirth": "Geburtsdatum",
+      "email": "E-Mail",
+      "phone": "Telefon",
+      "language": "Bevorzugte Sprache"
+    }
+  },
+  "consent": {
+    "title": "Einwilligung",
+    "ready": "Aufnahme möglich",
+    "missingShort": "Einwilligung fehlt",
+    "withdrawnShort": "Einwilligung widerrufen",
+    "textLanguage": "Sprache der Texte",
+    "allGiven": "Alle Einwilligungen liegen vor.",
+    "kinds": {
+      "recording": "Audioaufnahme",
+      "ai_processing": "KI-Verarbeitung",
+      "product_improvement": "Produktverbesserung"
+    },
+    "requiredForRecording": "(nötig für die Aufnahme)",
+    "agree": {
+      "recording": "Ich willige in die Audioaufnahme ein.",
+      "ai_processing": "Ich willige in die KI-Verarbeitung ein.",
+      "product_improvement": "Ich willige in die Nutzung zur Produktverbesserung ein."
+    },
+    "signedBy": "Wer unterschreibt?",
+    "signer": {
+      "client": "Klient:in",
+      "guardian": "Gesetzliche Vertretung"
+    },
+    "save": "Einwilligung speichern",
+    "signatureArea": "Unterschriftsfeld",
+    "signHere": "Bitte im Feld oben unterschreiben",
+    "signed": "Unterschrift erfasst",
+    "clearSignature": "Unterschrift löschen",
+    "record": "Einwilligung erfassen",
+    "history": "Verlauf",
+    "historyLine": "{{date}} · Textversion {{version}} ({{language}}) · unterschrieben von {{signer}}",
+    "withdrawnOn": "widerrufen am {{date}}",
+    "withdraw": "Widerrufen",
+    "withdrawConfirm": "Einwilligung zu {{kind}} widerrufen? Aufnahmen sind dann nicht mehr möglich und noch nicht verarbeitete Audiodaten werden gelöscht.",
+    "status": {
+      "granted": "Erteilt",
+      "outdated": "Neuer Text, erneute Einwilligung nötig",
+      "withdrawn": "Widerrufen",
+      "missing": "Nicht erteilt"
+    }
   }
 }

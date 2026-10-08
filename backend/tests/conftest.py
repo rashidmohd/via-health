@@ -14,8 +14,14 @@ from pathlib import Path
 import pytest
 from alembic import command
 from alembic.config import Config
+from fastapi.testclient import TestClient
 from sqlalchemy import Connection, Engine, create_engine, make_url, text
 from sqlalchemy.pool import NullPool
+
+from app.adapters.email import EmailSender, get_email_sender
+from app.db.session import get_engine, make_engine
+from app.main import app
+from tests.api_helpers import ORIGIN, FakeEmailSender
 
 BACKEND_DIR = Path(__file__).resolve().parents[1]
 
@@ -161,3 +167,30 @@ def fresh_db_url(template_db_url: str) -> Iterator[str]:
         with server.connect() as c:
             c.execute(text(f"DROP DATABASE IF EXISTS {name} WITH (FORCE)"))
         server.dispose()
+
+
+@pytest.fixture
+def mail() -> FakeEmailSender:
+    return FakeEmailSender()
+
+
+@pytest.fixture
+def owner(fresh_db_url: str) -> Iterator[Engine]:
+    """Superuser engine on the per-test database (bypasses RLS) for setup and inspection."""
+    engine = create_engine(fresh_db_url)
+    yield engine
+    engine.dispose()
+
+
+@pytest.fixture
+def client(fresh_db_url: str, mail: FakeEmailSender) -> Iterator[TestClient]:
+    engine = make_engine(fresh_db_url)
+    sender: EmailSender = mail
+    app.dependency_overrides[get_engine] = lambda: engine
+    app.dependency_overrides[get_email_sender] = lambda: sender
+    try:
+        with TestClient(app, headers={"Origin": ORIGIN}) as c:
+            yield c
+    finally:
+        app.dependency_overrides.clear()
+        engine.dispose()

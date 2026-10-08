@@ -20,6 +20,9 @@ export const ERROR_CODES = [
   'invalid_input',
   'origin_not_allowed',
   'network_error',
+  'consent_already_given',
+  'consent_text_missing',
+  'consent_not_found',
 ] as const
 
 export type ErrorCode = (typeof ERROR_CODES)[number]

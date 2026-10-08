@@ -1,75 +1,10 @@
 """Email-code signup/login against a fresh real Postgres per test."""
 
-import re
-from collections.abc import Iterator
-from dataclasses import dataclass, field
-
 import pytest
 from fastapi.testclient import TestClient
-from sqlalchemy import Engine, create_engine, text
+from sqlalchemy import Engine, text
 
-from app.adapters.email import EmailSender, EmailSendError, get_email_sender
-from app.core.config import get_settings
-from app.db.session import get_engine, make_engine
-from app.main import app
-
-ORIGIN = get_settings().web_origin
-
-
-@dataclass
-class FakeEmailSender:
-    sent: list[tuple[str, str, str]] = field(default_factory=list)
-    fail: bool = False
-
-    def send(self, *, to: str, subject: str, text: str) -> None:
-        if self.fail:
-            raise EmailSendError("down")
-        self.sent.append((to, subject, text))
-
-    def last_code(self) -> str:
-        match = re.search(r"\b(\d{6})\b", self.sent[-1][2])
-        assert match
-        return match.group(1)
-
-
-@pytest.fixture
-def mail() -> FakeEmailSender:
-    return FakeEmailSender()
-
-
-@pytest.fixture
-def owner(fresh_db_url: str) -> Iterator[Engine]:
-    engine = create_engine(fresh_db_url)
-    yield engine
-    engine.dispose()
-
-
-@pytest.fixture
-def client(fresh_db_url: str, mail: FakeEmailSender) -> Iterator[TestClient]:
-    engine = make_engine(fresh_db_url)
-    sender: EmailSender = mail
-    app.dependency_overrides[get_engine] = lambda: engine
-    app.dependency_overrides[get_email_sender] = lambda: sender
-    try:
-        with TestClient(app, headers={"Origin": ORIGIN}) as c:
-            yield c
-    finally:
-        app.dependency_overrides.clear()
-        engine.dispose()
-
-
-def start(client: TestClient, email: str, language: str = "en") -> int:
-    return client.post("/auth/email/start", json={"email": email, "language": language}).status_code
-
-
-def login(client: TestClient, mail: FakeEmailSender, email: str, **extra: str) -> dict[str, str]:
-    assert start(client, email) == 202
-    response = client.post(
-        "/auth/email/verify", json={"email": email, "code": mail.last_code(), **extra}
-    )
-    assert response.status_code == 200, response.text
-    body: dict[str, str] = response.json()
-    return body
+from tests.api_helpers import FakeEmailSender, login, start
 
 
 def wrong_code(code: str) -> str:

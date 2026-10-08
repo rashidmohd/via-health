@@ -27,5 +27,11 @@ def test_prod_requires_real_auth_secret_and_resend() -> None:
         Settings(app_env="prod")
     with pytest.raises(ValidationError):
         Settings(app_env="prod", auth_secret="x" * 40, email_sender="console")
-    ok = Settings(app_env="prod", auth_secret="x" * 40, email_sender="resend", resend_api_key="k")
+    ok = Settings(
+        app_env="prod",
+        auth_secret="x" * 40,
+        email_sender="resend",
+        resend_api_key="k",
+        client_data_key="ab" * 32,
+    )
     assert ok.secure_cookies

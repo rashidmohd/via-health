@@ -1,7 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.api import auth, health
+from app.api import auth, clients, health
 from app.api.errors import install_error_handlers
 from app.api.origin import origin_check
 from app.core.config import get_settings
@@ -24,6 +24,7 @@ def create_app() -> FastAPI:
     install_error_handlers(app)
     app.include_router(health.router)
     app.include_router(auth.router)
+    app.include_router(clients.router)
     return app
 
 

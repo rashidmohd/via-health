@@ -4,6 +4,10 @@ import { useLogout, useMe } from './api/auth'
 import { LanguageSwitch } from './features/LanguageSwitch'
 import { PlaceholderPage } from './features/PlaceholderPage'
 import { EmailCodeForm } from './features/auth/EmailCodeForm'
+import { ClientPage } from './features/clients/ClientPage'
+import { ClientsPage } from './features/clients/ClientsPage'
+import { ConsentPage } from './features/clients/ConsentPage'
+import { NewClientPage } from './features/clients/NewClientPage'
 import { NameStep } from './features/auth/NameStep'
 import { NAV_ITEMS } from './features/nav'
 
@@ -61,9 +65,13 @@ export default function App() {
       </nav>
       <main>
         <Routes>
-          {NAV_ITEMS.map((item) => (
+          {NAV_ITEMS.filter((item) => item.key !== 'clients').map((item) => (
             <Route key={item.key} path={item.path} element={<PlaceholderPage navKey={item.key} />} />
           ))}
+          <Route path="/clients" element={<ClientsPage />} />
+          <Route path="/clients/new" element={<NewClientPage />} />
+          <Route path="/clients/:id" element={<ClientPage />} />
+          <Route path="/clients/:id/consent" element={<ConsentPage />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </main>
