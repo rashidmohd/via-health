@@ -116,7 +116,7 @@ def test_email_failure_reported_and_code_not_stored(
 ) -> None:
     mail.fail = True
     response = client.post("/auth/email/start", json={"email": "a@example.com"})
-    assert (response.status_code, response.json()) == (502, {"code": "email_failed"})
+    assert (response.status_code, response.json()) == (503, {"code": "email_failed"})
     with owner.connect() as c:
         assert c.execute(text("SELECT count(*) FROM login_codes")).scalar_one() == 0
 

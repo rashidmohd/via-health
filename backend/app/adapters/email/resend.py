@@ -1,4 +1,8 @@
+import logging
+
 import httpx2
+
+logger = logging.getLogger("sessio.email")
 
 RESEND_URL = "https://api.resend.com/emails"
 
@@ -22,7 +26,15 @@ class ResendEmailSender:
                 json={"from": self._sender, "to": [to], "subject": subject, "text": text},
                 timeout=10,
             )
-            response.raise_for_status()
         except httpx2.HTTPError as exc:
             # Do not include the response body or recipient: keep logs free of personal data.
+            logger.error("Resend request failed: %s", type(exc).__name__)
             raise EmailSendError(type(exc).__name__) from None
+        if response.is_error:
+            # Status and Resend's error name only: the message can contain the recipient.
+            try:
+                name = response.json().get("name", "")
+            except ValueError:
+                name = ""
+            logger.error("Resend rejected the email: HTTP %s %s", response.status_code, name)
+            raise EmailSendError(f"HTTP {response.status_code}")

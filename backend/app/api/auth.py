@@ -109,7 +109,9 @@ def start(
     try:
         sender.send(to=normalize_email(body.email), subject=content.subject, text=content.text)
     except EmailSendError:
-        raise ApiError("email_failed", 502) from None
+        # 503, not 502: Cloudflare replaces origin 502s with its own page, which drops the
+        # CORS headers and the error code.
+        raise ApiError("email_failed", 503) from None
     return {"status": "sent"}
 
 
