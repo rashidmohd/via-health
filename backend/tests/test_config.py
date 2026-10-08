@@ -138,3 +138,20 @@ def test_staging_checks_credentials_json(raw: str, message: str) -> None:
         "private" not in str(info.value).split("input_value")[0].lower()
         or message != "not valid JSON"
     )
+
+
+def test_credentials_json_accepts_real_line_breaks_and_base64() -> None:
+    import base64
+
+    from app.core.config import parse_service_account_json
+
+    pasted = (
+        '{"type": "service_account", "client_email": "a@b", "private_key": "-----BEGIN\nKEY\n"}'
+    )
+    with_breaks = pasted.replace("\\n", "\n")  # what an editor does to the escapes
+    assert "\n" in with_breaks
+    assert parse_service_account_json(with_breaks)["private_key"].startswith("-----BEGIN")
+    encoded = base64.b64encode(pasted.encode()).decode()
+    assert parse_service_account_json(encoded)["client_email"] == "a@b"
+    with pytest.raises(ValueError, match="neither JSON nor base64"):
+        parse_service_account_json("not-json-not-base64!")

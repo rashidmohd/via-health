@@ -69,8 +69,13 @@ STT_PROVIDER=google
 GCP_PROJECT_ID=<project id>
 GCS_BUCKET=<bucket>
 KMS_KEY_NAME=projects/<project id>/locations/europe-west4/keyRings/<ring>/cryptoKeys/<key>
-GOOGLE_APPLICATION_CREDENTIALS_JSON=<whole service-account JSON>
+GOOGLE_APPLICATION_CREDENTIALS_JSON=<base64 of the key file, see below>
 ```
+Recommended: paste the key file **base64-encoded** (one line, nothing an editor can break):
+```bash
+base64 -i ~/.config/via/gcp-dev.json | tr -d '\n' | pbcopy
+```
+Plain JSON also works (line breaks inside the private key are tolerated).
 The `worker` needs the **same** variables as `api` (it validates the same settings).
 
 ## 5. Resend (login emails, ADR 0003)
