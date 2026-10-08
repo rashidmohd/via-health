@@ -45,6 +45,7 @@
     "chunk_out_of_range": "A part of the recording does not belong to this session.",
     "transcript_not_ready": "The transcript is not ready yet.",
     "session_not_failed": "This session does not need to be retried.",
+    "key_service_unavailable": "The key service is not reachable right now. Your recording is safe on this device and will be uploaded automatically.",
     "unknown": "Something went wrong. Please try again."
   },
   "language": {

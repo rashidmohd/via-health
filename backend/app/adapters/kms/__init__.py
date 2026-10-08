@@ -1,6 +1,6 @@
 from functools import lru_cache
 
-from app.adapters.kms.base import KmsProvider
+from app.adapters.kms.base import KmsProvider, KmsUnavailable
 from app.adapters.kms.local import LocalKmsProvider
 from app.core.config import get_settings
 
@@ -15,4 +15,4 @@ def get_kms() -> KmsProvider:
     return LocalKmsProvider()
 
 
-__all__ = ["KmsProvider", "get_kms"]
+__all__ = ["KmsProvider", "KmsUnavailable", "get_kms"]

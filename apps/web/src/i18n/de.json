@@ -45,6 +45,7 @@
     "chunk_out_of_range": "Ein Teil der Aufnahme gehört nicht zu dieser Sitzung.",
     "transcript_not_ready": "Das Transkript ist noch nicht fertig.",
     "session_not_failed": "Diese Sitzung muss nicht erneut verarbeitet werden.",
+    "key_service_unavailable": "Der Schlüsseldienst ist gerade nicht erreichbar. Ihre Aufnahme ist auf diesem Gerät sicher und wird automatisch hochgeladen.",
     "unknown": "Etwas ist schiefgelaufen. Bitte versuchen Sie es erneut."
   },
   "language": {

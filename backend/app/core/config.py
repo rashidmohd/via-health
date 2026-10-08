@@ -1,3 +1,4 @@
+import json
 from functools import lru_cache
 from typing import Literal
 
@@ -106,6 +107,7 @@ class Settings(BaseSettings):
                 )
             if not (self.gcs_bucket and self.kms_key_name and self.gcp_project_id):
                 raise ValueError("GCS_BUCKET, KMS_KEY_NAME and GCP_PROJECT_ID are required")
+            _check_service_account_json(self.google_application_credentials_json)
             if self.app_env == "prod" and self.llm_provider != "vertex":
                 raise ValueError("LLM_PROVIDER=vertex (EU) is required in prod (ADR 0005)")
         return self
@@ -119,6 +121,25 @@ class Settings(BaseSettings):
         except ValueError:
             pass
         raise ValueError("CLIENT_DATA_KEY must be 64 hex characters (32 bytes)")
+
+
+def _check_service_account_json(raw: str) -> None:
+    """Fail at startup with a clear message; never include the key in the message."""
+    if not raw.strip():
+        raise ValueError("GOOGLE_APPLICATION_CREDENTIALS_JSON is missing in staging/prod")
+    try:
+        info = json.loads(raw)
+    except json.JSONDecodeError as exc:
+        raise ValueError(
+            f"GOOGLE_APPLICATION_CREDENTIALS_JSON is not valid JSON (position {exc.pos}); "
+            "paste the whole key file again"
+        ) from None
+    missing = [k for k in ("type", "client_email", "private_key") if not info.get(k)]
+    if info.get("type") != "service_account" or missing:
+        raise ValueError(
+            "GOOGLE_APPLICATION_CREDENTIALS_JSON is not a service-account key "
+            f"(missing: {', '.join(missing) or 'type=service_account'})"
+        )
 
 
 @lru_cache

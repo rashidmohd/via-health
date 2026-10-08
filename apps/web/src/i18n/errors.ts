@@ -31,6 +31,7 @@ export const ERROR_CODES = [
   'chunk_out_of_range',
   'transcript_not_ready',
   'session_not_failed',
+  'key_service_unavailable',
 ] as const
 
 export type ErrorCode = (typeof ERROR_CODES)[number]

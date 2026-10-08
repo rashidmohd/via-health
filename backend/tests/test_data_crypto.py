@@ -60,6 +60,9 @@ def test_prod_requires_client_data_key() -> None:
         "gcs_bucket": "b",
         "kms_key_name": "projects/p/locations/europe-west4/keyRings/r/cryptoKeys/k",
         "gcp_project_id": "p",
+        "google_application_credentials_json": (
+            '{"type": "service_account", "client_email": "a", "private_key": "k"}'
+        ),
     }
     with pytest.raises(ValueError):
         Settings(**base)  # type: ignore[arg-type]
