@@ -1,6 +1,8 @@
+import base64
+import binascii
 import json
 from functools import lru_cache
-from typing import Literal
+from typing import Any, Literal
 
 from pydantic import field_validator, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
@@ -123,17 +125,35 @@ class Settings(BaseSettings):
         raise ValueError("CLIENT_DATA_KEY must be 64 hex characters (32 bytes)")
 
 
-def _check_service_account_json(raw: str) -> None:
-    """Fail at startup with a clear message; never include the key in the message."""
-    if not raw.strip():
-        raise ValueError("GOOGLE_APPLICATION_CREDENTIALS_JSON is missing in staging/prod")
+def parse_service_account_json(raw: str) -> dict[str, Any]:
+    """Parse GOOGLE_APPLICATION_CREDENTIALS_JSON. Accepts the key file as pasted (also when an
+    editor turned the \\n escapes into real line breaks) or base64-encoded.
+    Error messages never contain the key."""
+    text = raw.strip()
+    if not text.startswith("{"):
+        try:
+            text = base64.b64decode(text, validate=True).decode()
+        except (binascii.Error, UnicodeDecodeError):
+            raise ValueError(
+                "GOOGLE_APPLICATION_CREDENTIALS_JSON is neither JSON nor base64"
+            ) from None
     try:
-        info = json.loads(raw)
+        info = json.loads(text, strict=False)  # strict=False: real line breaks in the key
     except json.JSONDecodeError as exc:
         raise ValueError(
             f"GOOGLE_APPLICATION_CREDENTIALS_JSON is not valid JSON (position {exc.pos}); "
             "paste the whole key file again"
         ) from None
+    if not isinstance(info, dict):
+        raise ValueError("GOOGLE_APPLICATION_CREDENTIALS_JSON is not a JSON object")
+    return info
+
+
+def _check_service_account_json(raw: str) -> None:
+    """Fail at startup with a clear message; never include the key in the message."""
+    if not raw.strip():
+        raise ValueError("GOOGLE_APPLICATION_CREDENTIALS_JSON is missing in staging/prod")
+    info = parse_service_account_json(raw)
     missing = [k for k in ("type", "client_email", "private_key") if not info.get(k)]
     if info.get("type") != "service_account" or missing:
         raise ValueError(
