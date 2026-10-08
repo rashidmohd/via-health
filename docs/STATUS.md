@@ -1,6 +1,6 @@
 # Project status
 
-Last updated: 2026-10-08 · Latest commit: `2e80456` · Staging: https://via.bandi.ae (API: viaapi.bandi.ae)
+Last updated: 2026-10-09 · Latest commit: `8f82a99` · Staging: https://via.bandi.ae (API: viaapi.bandi.ae)
 
 **Prototype. Test data only.** Consent texts are placeholders (ADR 0002); the in-browser speech
 models and the Gemini API are cleared for the prototype only (see "Before real clients").
@@ -21,8 +21,9 @@ models and the Gemini API are cleared for the prototype only (see "Before real c
 | Avatar | Illustrated, moods from app events only (no emotion recognition) | plan 0007 |
 | Session note | German Verlaufsdokumentation; Gemini drafts only "what was said and done" with sources, a second pass checks each sentence; therapist writes the clinical fields, resolves flags, approves; addenda after approval; names hidden from the AI; note topics on the session card (not on Today) | plan 0009, ADRs 0006–0008 |
 | Notifications | Tab with unread badge: transcript ready / failed, note draft ready / failed / no AI consent; ids only in the DB | plan 0010 (part 1) |
+| UI design system | Inter + Lucide icons, tokens and shared components, sidebar + top bar shell (drawer on small screens); all built screens redesigned (Today tiles, client and session tables with filters, record screen, note editor with "Next to check", print view) | ADR 0009 |
 
-Tests: backend 205, web 109 (lint, typecheck, build green).
+Tests: backend 205, web 115 (lint, typecheck, build green).
 
 ## Not built yet (in order)
 
