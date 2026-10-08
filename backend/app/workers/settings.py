@@ -15,9 +15,11 @@ from app.db.session import WORKER_ROLE, make_engine
 from app.workers.transcribe import (
     TransientFailure,
     find_ready,
+    find_refine_work,
     find_window_work,
     process_session,
     process_windows,
+    refine_speakers,
 )
 
 HEARTBEAT_KEY = "worker:heartbeat"
@@ -37,12 +39,31 @@ async def enqueue_ready_sessions(ctx: dict[str, Any]) -> None:
         await redis.enqueue_job(
             "transcribe_session", str(session_id), _job_id=f"transcribe:{session_id}"
         )
+    for session_id in await asyncio.to_thread(find_refine_work, ctx["engine"]):
+        await redis.enqueue_job(
+            "refine_session_speakers", str(session_id), _job_id=f"refine:{session_id}"
+        )
     for session_id in await asyncio.to_thread(find_window_work, ctx["engine"]):
         if await redis.exists(f"windows-paused:{session_id}"):
             continue
         await redis.enqueue_job(
             "transcribe_windows", str(session_id), _job_id=f"windows:{session_id}"
         )
+
+
+async def refine_session_speakers(ctx: dict[str, Any], session_id: str) -> str:
+    try:
+        return await asyncio.to_thread(
+            refine_speakers,
+            uuid.UUID(session_id),
+            engine=ctx["engine"],
+            store_for=make_object_store,
+            kms=get_kms(),
+            stt=get_stt(),
+            last_attempt=ctx["job_try"] >= MAX_TRIES,
+        )
+    except TransientFailure:
+        raise Retry(defer=60 * ctx["job_try"]) from None
 
 
 async def transcribe_windows(ctx: dict[str, Any], session_id: str) -> str:
@@ -90,6 +111,7 @@ class WorkerSettings:
     functions: ClassVar[list[Any]] = [
         func(transcribe_session, keep_result=0),
         func(transcribe_windows, keep_result=0, max_tries=1),
+        func(refine_session_speakers, keep_result=0),
     ]
     cron_jobs: ClassVar[list[Any]] = [
         cron(heartbeat, second=0),

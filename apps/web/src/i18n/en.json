@@ -225,7 +225,15 @@
     "whoHint": "The transcript separates voices but does not know who is who. Choose your voice; everyone else is shown as the client.",
     "thatsMe": "That's me",
     "changeSpeaker": "Change who is who",
-    "reviewNote": "Automatic transcript. It can contain mistakes — please check before using it."
+    "reviewNote": "Automatic transcript. It can contain mistakes — please check before using it.",
+    "checking": "Checking who said what against the whole session… This takes a few minutes; speaker labels may still change.",
+    "checked": "Speakers checked against the whole session.",
+    "correctHint": "Wrong speaker? Click the name to switch it, or swap both speakers from a line on.",
+    "undo": "Undo last correction",
+    "switchTo": "Switch to {{role}}",
+    "switchLabel": "{{role}} at {{time}} — switch to {{other}}",
+    "swapFrom": "Swap from here",
+    "swapFromLabel": "Swap therapist and client from {{time}} on"
   },
   "live": {
     "title": "Transcript so far",

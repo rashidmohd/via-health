@@ -225,7 +225,15 @@
     "whoHint": "Das Transkript trennt die Stimmen, weiß aber nicht, wer wer ist. Wählen Sie Ihre Stimme; alle anderen werden als Klient:in angezeigt.",
     "thatsMe": "Das bin ich",
     "changeSpeaker": "Zuordnung ändern",
-    "reviewNote": "Automatisches Transkript. Es kann Fehler enthalten – bitte vor der Verwendung prüfen."
+    "reviewNote": "Automatisches Transkript. Es kann Fehler enthalten – bitte vor der Verwendung prüfen.",
+    "checking": "Die Zuordnung der Sprecher:innen wird mit der ganzen Sitzung geprüft… Das dauert einige Minuten; Zuordnungen können sich noch ändern.",
+    "checked": "Sprecher:innen mit der ganzen Sitzung geprüft.",
+    "correctHint": "Falsch zugeordnet? Klicken Sie auf den Namen zum Wechseln, oder tauschen Sie beide ab einer Zeile.",
+    "undo": "Letzte Korrektur rückgängig",
+    "switchTo": "Zu {{role}} wechseln",
+    "switchLabel": "{{role}} bei {{time}} – zu {{other}} wechseln",
+    "swapFrom": "Ab hier tauschen",
+    "swapFromLabel": "Therapeut:in und Klient:in ab {{time}} tauschen"
   },
   "live": {
     "title": "Bisheriges Transkript",

@@ -8,6 +8,7 @@ from fastapi.testclient import TestClient
 from sqlalchemy import Engine, text
 
 from app.core.data_crypto import encrypt_json
+from app.domain.transcript import STEP_MS
 from tests.api_helpers import FakeEmailSender, login
 from tests.test_transcription_windows import Recording
 
@@ -46,7 +47,7 @@ def test_live_text_stitches_windows(recording: Recording, owner: Engine) -> None
                                         word("2", 44, "Hallo")])  # fmt: skip
     add_window(owner, recording.id, 1, [word("2", 44, "Hallo"), word("2", 50, "zusammen.")])
     live = recording.client.get(f"/sessions/{recording.id}/live").json()
-    assert live["covered_ms"] == 96_000
+    assert live["covered_ms"] == 2 * STEP_MS
     assert [(s["speaker"], s["text"]) for s in live["segments"]] == [
         ("1", "Guten Tag."),
         ("2", "Hallo zusammen."),

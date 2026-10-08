@@ -1015,3 +1015,43 @@ main > .banner {
 .link.small {
   font-size: 0.85rem;
 }
+
+/* Speaker corrections (plan 0008) */
+.who-button {
+  background: none;
+  border: 1px solid transparent;
+  border-radius: var(--radius);
+  padding: 0 6px;
+  margin-left: -6px;
+  font: inherit;
+  font-weight: 600;
+  color: var(--olive-700);
+}
+
+.who-button:hover,
+.who-button:focus-visible {
+  border-color: var(--olive-300);
+  background: var(--olive-50);
+}
+
+.swap-from {
+  opacity: 0;
+  margin-left: auto;
+}
+
+.transcript li:hover .swap-from,
+.swap-from:focus-visible {
+  opacity: 1;
+}
+
+@media (hover: none) {
+  .swap-from {
+    opacity: 1;
+  }
+}
+
+.banner.info-banner {
+  background: #eef3f6;
+  border-color: var(--info);
+  color: #2f4b5a;
+}

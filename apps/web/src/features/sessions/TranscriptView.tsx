@@ -1,6 +1,11 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { useSetTherapistSpeaker, type Transcript } from '../../api/sessions'
+import {
+  useCorrectSpeakers,
+  useSetTherapistSpeaker,
+  useUndoSpeakerCorrection,
+  type Transcript,
+} from '../../api/sessions'
 
 function formatTime(ms: number): string {
   const total = Math.floor(ms / 1000)
@@ -26,9 +31,16 @@ function speakers(transcript: Transcript): { label: string; sample: string }[] {
 export function TranscriptView({ sessionId, transcript }: { sessionId: string; transcript: Transcript }) {
   const { t } = useTranslation()
   const setTherapist = useSetTherapistSpeaker(sessionId)
+  const correct = useCorrectSpeakers(sessionId)
+  const undo = useUndoSpeakerCorrection(sessionId)
   const [choosing, setChoosing] = useState(false)
   const therapist = transcript.therapist_speaker
   const askWho = therapist === null || choosing
+  // The client's label: the most-speaking label that is not the therapist (2 speakers usual).
+  const client = speakers(transcript).find((s) => s.label !== therapist)?.label ?? null
+  const canCorrect = therapist !== null && client !== null && !choosing
+  const busy = correct.isPending || undo.isPending
+  const checking = transcript.refine_status === 'pending' || transcript.refine_status === 'running'
 
   function roleOf(label: string | null): string {
     if (therapist === null) return t('transcript.speaker', { label: label ?? '?' })
@@ -72,19 +84,71 @@ export function TranscriptView({ sessionId, transcript }: { sessionId: string; t
             </button>
           )}
         </div>
+        {checking && (
+          <p className="banner info-banner" role="status">
+            {t('transcript.checking')}
+          </p>
+        )}
+        {transcript.refine_status === 'done' && <p className="muted small">{t('transcript.checked')}</p>}
+        {canCorrect && (
+          <div className="row spread">
+            <p className="muted small">{t('transcript.correctHint')}</p>
+            {transcript.corrections > 0 && (
+              <button className="link small" onClick={() => undo.mutate()} disabled={busy}>
+                {t('transcript.undo')}
+              </button>
+            )}
+          </div>
+        )}
         <ol className="transcript" lang={transcript.language.slice(0, 2)}>
-          {transcript.segments.map((segment, index) => (
-            <li
-              key={index}
-              className={therapist !== null && segment.speaker === therapist ? 'therapist' : 'client'}
-            >
-              <span className="meta">
-                <span className="who">{roleOf(segment.speaker)}</span>
-                <span className="time">{formatTime(segment.start_ms)}</span>
-              </span>
-              <p>{segment.text}</p>
-            </li>
-          ))}
+          {transcript.segments.map((segment, index) => {
+            const isTherapist = therapist !== null && segment.speaker === therapist
+            const other = isTherapist ? client : therapist
+            return (
+              <li key={`${segment.start_ms}-${index}`} className={isTherapist ? 'therapist' : 'client'}>
+                <span className="meta">
+                  {canCorrect && other ? (
+                    <button
+                      className="who who-button"
+                      disabled={busy}
+                      title={t('transcript.switchTo', { role: roleOf(other) })}
+                      aria-label={t('transcript.switchLabel', {
+                        role: roleOf(segment.speaker),
+                        time: formatTime(segment.start_ms),
+                        other: roleOf(other),
+                      })}
+                      onClick={() =>
+                        correct.mutate({ op: 'set', at_ms: segment.start_ms, speaker: other })
+                      }
+                    >
+                      {roleOf(segment.speaker)} ⇄
+                    </button>
+                  ) : (
+                    <span className="who">{roleOf(segment.speaker)}</span>
+                  )}
+                  <span className="time">{formatTime(segment.start_ms)}</span>
+                  {canCorrect && index > 0 && (
+                    <button
+                      className="link small swap-from"
+                      disabled={busy}
+                      aria-label={t('transcript.swapFromLabel', { time: formatTime(segment.start_ms) })}
+                      onClick={() =>
+                        correct.mutate({
+                          op: 'swap_from',
+                          at_ms: segment.start_ms,
+                          a: therapist as string,
+                          b: client as string,
+                        })
+                      }
+                    >
+                      {t('transcript.swapFrom')}
+                    </button>
+                  )}
+                </span>
+                <p>{segment.text}</p>
+              </li>
+            )
+          })}
         </ol>
         <p className="muted small">{t('transcript.reviewNote')}</p>
       </div>

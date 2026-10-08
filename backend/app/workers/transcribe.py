@@ -24,15 +24,15 @@ from app.adapters.stt import SttError, SttProvider
 from app.core.audio import AudioCutError, cut_to_wav
 from app.core.audio_crypto import ChunkDecryptionError, decrypt_chunk
 from app.core.config import get_settings
-from app.core.data_crypto import decrypt_json, encrypt_json
+from app.core.data_crypto import DecryptionError, decrypt_json, encrypt_json
 from app.db.models import AudioChunk, Client, Session, Transcript, TranscriptWindow, WrappedKey
 from app.domain.transcript import (
     CHUNK_MS,
     STEP_MS,
-    Segment,
     Word,
     labels_in_order,
     map_speakers,
+    relabel_by_reference,
     stitch,
     window_audio_range,
     windows_for_duration,
@@ -81,6 +81,17 @@ def key_aad(session_id: uuid.UUID) -> str:
 
 def transcript_aad(session_id: uuid.UUID) -> str:
     return f"transcript:{session_id}:segments"
+
+
+def _transcript_blob(session_id: uuid.UUID, words: list[Word]) -> bytes:
+    """Encrypted transcript: words (for later speaker correction) and segments (for reading)."""
+    return encrypt_json(
+        {
+            "words": [w.to_json() for w in words],
+            "segments": [s.to_json() for s in words_to_segments(words)],
+        },
+        transcript_aad(session_id),
+    )
 
 
 def find_ready(engine: Engine) -> list[uuid.UUID]:
@@ -368,11 +379,11 @@ def process_session(
             stored = _stored_windows(db, session_id)
         size = len(audio)
         try:
-            segments: list[Segment] | None = None
+            words: list[Word] | None = None
             try:
                 target = max(windows_for_duration(duration_ms), len(stored))
                 new = _transcribe_windows(bytes(audio), stored, target, stt, language)
-                segments = words_to_segments(stitch(stored + new))
+                words = stitch(stored + new)
             except (AudioCutError, SttError) as error:
                 if isinstance(error, SttError) and error.retryable and not last_attempt:
                     raise
@@ -380,9 +391,9 @@ def process_session(
                     "windows failed, using batch session_id=%s error=%s",
                     session_id, type(error).__name__,
                 )  # fmt: skip
-            if segments is None:
+            if words is None:
                 method = "batch"
-                segments = stt.transcribe(
+                words = stt.diarize_words(
                     bytes(audio), mime_type=mime_type, language=language, job_id=str(session_id)
                 )
         finally:
@@ -396,27 +407,30 @@ def process_session(
         _fail(engine, session_id, "transcription_failed")
         return "failed"
 
+    segments = words_to_segments(words)
     if not segments:
         _fail(engine, session_id, "no_speech")
         return "failed"
 
+    # Window labels are quick but less reliable; a whole-session pass corrects them (plan 0008).
+    refine_status = "pending" if method == "windows" else "skipped"
     settings = get_settings()
     with DbSession(engine) as db, db.begin():
         db.execute(
             insert(Transcript)
             .values(
                 session_id=session_id,
-                segments_enc=encrypt_json(
-                    {"segments": [s.to_json() for s in segments]}, transcript_aad(session_id)
-                ),
+                segments_enc=_transcript_blob(session_id, words),
                 language=language,
                 stt_model=settings.stt_model if settings.stt_provider == "google" else "fake",
+                refine_status=refine_status,
             )
             .on_conflict_do_update(
                 index_elements=["session_id"],
                 set_={
                     "segments_enc": insert(Transcript).excluded.segments_enc,
                     "language": language,
+                    "refine_status": refine_status,
                 },
             )
         )
@@ -434,3 +448,101 @@ def process_session(
         time.monotonic() - started,
     )
     return "transcribed"
+
+
+# --- speaker refinement (plan 0008 A) -------------------------------------------------
+
+
+def find_refine_work(engine: Engine) -> list[uuid.UUID]:
+    with DbSession(engine) as db:
+        return list(
+            db.scalars(
+                select(Transcript.session_id)
+                .join(Session, Session.id == Transcript.session_id)
+                .where(Transcript.refine_status == "pending", Session.audio_state == "present")
+                .limit(20)
+            )
+        )
+
+
+def _set_refine_status(engine: Engine, session_id: uuid.UUID, status: str) -> None:
+    with DbSession(engine) as db, db.begin():
+        transcript = db.get(Transcript, session_id)
+        if transcript is not None and transcript.refine_status == "running":
+            transcript.refine_status = status
+
+
+def refine_speakers(
+    session_id: uuid.UUID,
+    *,
+    engine: Engine,
+    store_for: Callable[[DbSession], ObjectStore],
+    kms: KmsProvider,
+    stt: SttProvider,
+    last_attempt: bool = True,
+) -> str:
+    """Correct the speaker labels of a window transcript with one whole-session diarization.
+    Only labels change, never text. Returns `done`, `skipped` or `failed`."""
+    started = time.monotonic()
+    with DbSession(engine) as db, db.begin():
+        transcript = db.scalars(
+            select(Transcript)
+            .where(
+                Transcript.session_id == session_id,
+                Transcript.refine_status.in_(("pending", "running")),
+            )
+            .with_for_update(skip_locked=True)
+        ).first()
+        if transcript is None:
+            return "skipped"
+        transcript.refine_status = "running"
+
+    try:
+        with DbSession(engine) as db:
+            session = db.get(Session, session_id)
+            assert session is not None
+            language = _language(db, session)
+            mime_type = session.mime_type or "audio/webm"
+            audio = _assemble_audio(db, session, kms, store_for(db))
+        try:
+            reference = stt.diarize_words(
+                bytes(audio), mime_type=mime_type, language=language, job_id=f"{session_id}-refine"
+            )
+        finally:
+            _wipe(audio)
+    except PermanentFailure as failure:
+        # Consent withdrawn or audio gone: keep the labels we have.
+        _set_refine_status(engine, session_id, "skipped")
+        logger.info("refine skipped session_id=%s reason=%s", session_id, failure.code)
+        return "skipped"
+    except SttError as error:
+        if error.retryable and not last_attempt:
+            _set_refine_status(engine, session_id, "pending")
+            raise TransientFailure(str(error)) from None
+        _set_refine_status(engine, session_id, "failed")
+        logger.warning("refine failed session_id=%s error=%s", session_id, type(error).__name__)
+        return "failed"
+
+    with DbSession(engine) as db, db.begin():
+        transcript = db.get(Transcript, session_id)
+        if transcript is None or transcript.refine_status != "running":
+            return "skipped"
+        try:
+            data = decrypt_json(transcript.segments_enc, transcript_aad(session_id))
+        except DecryptionError:
+            transcript.refine_status = "failed"
+            return "failed"
+        if not data.get("words"):
+            transcript.refine_status = "skipped"
+            return "skipped"
+        words = [Word(**w) for w in data["words"]]
+        fixed = relabel_by_reference(words, reference)
+        changed = sum(1 for a, b in zip(words, fixed, strict=True) if a.speaker != b.speaker)
+        transcript.segments_enc = _transcript_blob(session_id, fixed)
+        transcript.refine_status = "done"
+        _audit(db, "speakers_refined", session_id, {"changed_words": str(changed)})
+    logger.info(
+        "refined session_id=%s words=%d changed=%d seconds=%.1f",
+        session_id, len(words), changed, time.monotonic() - started,
+    )  # fmt: skip
+    return "done"

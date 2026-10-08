@@ -22,6 +22,13 @@ class SttProvider(Protocol):
         any temporary copy the provider needs must be deleted before returning."""
         ...
 
+    def diarize_words(
+        self, audio: bytes, *, mime_type: str, language: str, job_id: str
+    ) -> list[Word]:
+        """Whole-session recognition with speaker diarization, as words with absolute times.
+        Used to correct speaker labels (plan 0008). Same temporary-copy rule as `transcribe`."""
+        ...
+
     def recognize_window(self, audio_wav: bytes, *, language: str) -> list[Word]:
         """Synchronous recognition of ≤ 60 s of WAV audio with speaker diarization.
         Times are relative to the start of `audio_wav`; labels are the model's own."""

@@ -64,6 +64,13 @@ class GoogleChirp3Provider:
     def transcribe(
         self, audio: bytes, *, mime_type: str, language: str, job_id: str
     ) -> list[Segment]:
+        return domain_words_to_segments(
+            self.diarize_words(audio, mime_type=mime_type, language=language, job_id=job_id)
+        )
+
+    def diarize_words(
+        self, audio: bytes, *, mime_type: str, language: str, job_id: str
+    ) -> list[Word]:
         blob = self._bucket.blob(f"{TEMP_PREFIX}{job_id}")
         try:
             blob.upload_from_string(audio, content_type=mime_type.split(";")[0])
@@ -114,7 +121,7 @@ class GoogleChirp3Provider:
             ),
         )
 
-    def _batch_recognize(self, uri: str, language: str) -> list[Segment]:
+    def _batch_recognize(self, uri: str, language: str) -> list[Word]:
         request = cloud_speech.BatchRecognizeRequest(
             recognizer=self._recognizer,
             config=self._config(language),
@@ -133,4 +140,4 @@ class GoogleChirp3Provider:
             if result.alternatives
             for word in result.alternatives[0].words
         ]
-        return words_to_segments(words)
+        return to_words(words)

@@ -12,6 +12,7 @@ function session(status: string, extra: Record<string, unknown> = {}) {
 
 const TRANSCRIPT = {
   session_id: 's1', language: 'de-DE', stt_model: 'chirp_3', therapist_speaker: null as string | null,
+  refine_status: 'done', corrections: 0,
   segments: [
     { speaker: '0', start_ms: 0, end_ms: 4100, text: 'Guten Tag, wie ist es Ihnen ergangen?' },
     { speaker: '1', start_ms: 4200, end_ms: 9500, text: 'Ehrlich gesagt etwas besser, danke für die Frage.' },
@@ -61,8 +62,8 @@ describe('session page', () => {
 
     const [speaker0] = screen.getAllByRole('button', { name: "That's me" })
     fireEvent.click(speaker0)
-    expect(await screen.findAllByText('Therapist')).toHaveLength(2)
-    expect(screen.getByText('Client')).toBeInTheDocument()
+    expect(await screen.findAllByRole('button', { name: /^Therapist at/ })).toHaveLength(2)
+    expect(screen.getAllByRole('button', { name: /^Client at/ })).toHaveLength(1)
     expect(screen.queryByRole('heading', { name: 'Which speaker are you?' })).not.toBeInTheDocument()
     // Speaker 0 said the most, so it is listed first.
     expect(calls.find((c) => c.method === 'PATCH')?.body).toEqual({ therapist_speaker: '0' })
@@ -111,6 +112,45 @@ describe('session page', () => {
       status: 'confirmed',
       text: 'Schreiben Sie bis nächste Woche Ihre Gedanken auf.',
     })
+  })
+
+  it('lets the therapist correct speakers, swap from a line on, and undo', async () => {
+    const posts: { url: string; body: unknown }[] = []
+    mockApi((url, init) => {
+      if (url.endsWith('/auth/me')) return { status: 200, body: ME }
+      if (url.endsWith('/captures')) return { status: 200, body: [] }
+      if (url.includes('/transcript')) {
+        if (init.method === 'POST') posts.push({ url, body: init.body ? JSON.parse(String(init.body)) : null })
+        return { status: 200, body: { ...TRANSCRIPT, therapist_speaker: '0', corrections: posts.length } }
+      }
+      return { status: 200, body: session('transcribed') }
+    })
+    renderApp('/sessions/s1')
+    // Client line at 0:04 → switch to therapist
+    fireEvent.click(await screen.findByRole('button', { name: 'Client at 0:04 — switch to Therapist' }))
+    await vi.waitFor(() => expect(posts).toHaveLength(1))
+    expect(posts[0].body).toEqual({ correction: { op: 'set', at_ms: 4200, speaker: '0' } })
+
+    fireEvent.click(screen.getByRole('button', { name: 'Swap therapist and client from 0:10 on' }))
+    await vi.waitFor(() => expect(posts).toHaveLength(2))
+    expect(posts[1].body).toEqual({ correction: { op: 'swap_from', at_ms: 10_000, a: '0', b: '1' } })
+
+    fireEvent.click(await screen.findByRole('button', { name: 'Undo last correction' }))
+    await vi.waitFor(() => expect(posts).toHaveLength(3))
+    expect(posts[2].url).toMatch(/\/transcript\/speakers\/undo$/)
+  })
+
+  it('says when speakers are still being checked', async () => {
+    mockApi((url) => {
+      if (url.endsWith('/auth/me')) return { status: 200, body: ME }
+      if (url.endsWith('/captures')) return { status: 200, body: [] }
+      if (url.endsWith('/transcript')) {
+        return { status: 200, body: { ...TRANSCRIPT, therapist_speaker: '0', refine_status: 'running' } }
+      }
+      return { status: 200, body: session('transcribed') }
+    })
+    renderApp('/sessions/s1')
+    expect(await screen.findByText(/Checking who said what/)).toBeInTheDocument()
   })
 
   it('shows how much is transcribed while still recording', async () => {

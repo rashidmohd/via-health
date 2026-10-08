@@ -3,16 +3,17 @@ while the session is still recording (docs/plans/0006-transcribe-during-session.
 
 All times are milliseconds from the start of the recording."""
 
+from bisect import bisect_left
 from collections import Counter
 from collections.abc import Iterable, Sequence
 from dataclasses import asdict, dataclass, replace
 from typing import Any
 
 CHUNK_MS = 10_000  # browser slice length (apps/web/src/recorder/recorder.ts)
-STEP_MS = 48_000  # new audio per window
-OVERLAP_MS = 10_000  # repeated from the previous window, used to match speakers
+STEP_MS = 43_000  # new audio per window
+OVERLAP_MS = 15_000  # repeated from the previous window, used to match speakers (plan 0008 C)
 # STEP + OVERLAP = 58 s, below the 60 s limit of synchronous Recognize.
-MATCH_TOLERANCE_MS = 500
+MATCH_TOLERANCE_MS = 800
 
 
 @dataclass(frozen=True)
@@ -153,3 +154,101 @@ def labels_in_order(words: Iterable[Word]) -> list[str]:
         if word.speaker is not None and word.speaker not in seen:
             seen.append(word.speaker)
     return seen
+
+
+# --- speaker refinement (plan 0008 A) ---------------------------------------------
+
+
+def relabel_by_reference(words: Sequence[Word], reference: Sequence[Word]) -> list[Word]:
+    """Give each word the speaker of the nearest reference word (whole-session diarization),
+    keeping the existing label names: reference labels are renamed to the labels they overlap
+    most. Words without a reference word nearby keep their label. Text never changes."""
+    ref = sorted((w for w in reference if w.speaker is not None), key=lambda w: w.start_ms)
+    if not ref:
+        return list(words)
+    starts = [w.start_ms for w in ref]
+
+    def nearest(word: Word) -> Word | None:
+        i = bisect_left(starts, word.start_ms)
+        best = min(
+            (ref[j] for j in (i - 1, i) if 0 <= j < len(ref)),
+            key=lambda r: abs(r.start_ms - word.start_ms),
+            default=None,
+        )
+        if best is None or abs(best.start_ms - word.start_ms) > MATCH_TOLERANCE_MS:
+            return None
+        return best
+
+    matches = [(w, nearest(w)) for w in words]
+    votes: Counter[tuple[str, str]] = Counter(
+        (r.speaker, w.speaker)  # type: ignore[misc]
+        for w, r in matches
+        if r is not None and w.speaker is not None
+    )
+    rename: dict[str, str] = {}
+    used: set[str] = set()
+    for (ref_label, label), _count in votes.most_common():
+        if ref_label not in rename and label not in used:
+            rename[ref_label] = label
+            used.add(label)
+    known = labels_in_order(words)
+    for ref_label in labels_in_order(ref):
+        if ref_label not in rename:
+            free = [k for k in known if k not in used]
+            new_label = free[0] if free else str(len(known) + 1)
+            if new_label not in known:
+                known.append(new_label)
+            rename[ref_label] = new_label
+            used.add(new_label)
+
+    return [
+        replace(w, speaker=rename[r.speaker]) if r is not None and r.speaker else w
+        for w, r in matches
+    ]
+
+
+# --- manual corrections (plan 0008 B) ----------------------------------------------
+
+MAX_OVERRIDES = 500
+
+
+def apply_overrides(
+    segments: Sequence[Segment], overrides: Sequence[dict[str, Any]]
+) -> list[Segment]:
+    """Apply the therapist's corrections in order, then join neighbours with the same speaker.
+
+    - {"op": "set", "at_ms": t, "speaker": s}: the line at time t is by s.
+    - {"op": "swap_from", "at_ms": t, "a": x, "b": y}: from time t on, x and y are swapped."""
+    out = list(segments)
+    for op in overrides:
+        at = int(op.get("at_ms", 0))
+        if op.get("op") == "set" and out:
+            idx = _segment_at(out, at)
+            out[idx] = replace(out[idx], speaker=str(op["speaker"]))
+        elif op.get("op") == "swap_from":
+            a, b = str(op["a"]), str(op["b"])
+            out = [
+                replace(s, speaker=b if s.speaker == a else a if s.speaker == b else s.speaker)
+                if s.start_ms >= at
+                else s
+                for s in out
+            ]
+    return _join(out)
+
+
+def _segment_at(segments: Sequence[Segment], at_ms: int) -> int:
+    for i, s in enumerate(segments):
+        if s.start_ms <= at_ms <= s.end_ms:
+            return i
+    return min(range(len(segments)), key=lambda i: abs(segments[i].start_ms - at_ms))
+
+
+def _join(segments: Sequence[Segment]) -> list[Segment]:
+    joined: list[Segment] = []
+    for s in segments:
+        if joined and joined[-1].speaker == s.speaker:
+            last = joined[-1]
+            joined[-1] = Segment(last.speaker, last.start_ms, s.end_ms, f"{last.text} {s.text}")
+        else:
+            joined.append(s)
+    return joined

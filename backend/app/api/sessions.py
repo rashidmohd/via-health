@@ -27,7 +27,15 @@ from app.db.models import (
     TranscriptWindow,
     WrappedKey,
 )
-from app.domain.transcript import STEP_MS, Word, stitch, words_to_segments
+from app.domain.transcript import (
+    MAX_OVERRIDES,
+    STEP_MS,
+    Segment,
+    Word,
+    apply_overrides,
+    stitch,
+    words_to_segments,
+)
 
 router = APIRouter(tags=["sessions"])
 
@@ -287,6 +295,9 @@ class TranscriptOut(BaseModel):
     stt_model: str
     therapist_speaker: str | None
     segments: list[TranscriptSegment]
+    # Plan 0008: whole-session speaker check (pending/running/done/failed/skipped).
+    refine_status: str
+    corrections: int
 
 
 class TranscriptUpdate(BaseModel):
@@ -295,13 +306,20 @@ class TranscriptUpdate(BaseModel):
 
 def _transcript_out(transcript: Transcript) -> TranscriptOut:
     data = decrypt_json(transcript.segments_enc, f"transcript:{transcript.session_id}:segments")
+    if data.get("words"):
+        base = words_to_segments(Word(**w) for w in data["words"])
+    else:
+        base = [Segment(**segment) for segment in data["segments"]]
+    overrides = transcript.speaker_overrides or []
     roles = transcript.speaker_roles or {}
     return TranscriptOut(
         session_id=transcript.session_id,
         language=transcript.language,
         stt_model=transcript.stt_model,
         therapist_speaker=roles.get("therapist"),
-        segments=[TranscriptSegment(**segment) for segment in data["segments"]],
+        segments=[TranscriptSegment(**s.to_json()) for s in apply_overrides(base, overrides)],
+        refine_status=transcript.refine_status,
+        corrections=len(overrides),
     )
 
 
@@ -329,6 +347,57 @@ def update_transcript(
     if transcript is None:
         raise ApiError("transcript_not_ready", 404)
     transcript.speaker_roles = {"therapist": body.therapist_speaker}
+    db.flush()
+    return _transcript_out(transcript)
+
+
+SpeakerLabel = Annotated[str, Field(min_length=1, max_length=10)]
+
+
+class SetSpeaker(BaseModel):
+    op: Literal["set"]
+    at_ms: Annotated[int, Field(ge=0, le=24 * 3600 * 1000)]
+    speaker: SpeakerLabel
+
+
+class SwapFrom(BaseModel):
+    op: Literal["swap_from"]
+    at_ms: Annotated[int, Field(ge=0, le=24 * 3600 * 1000)]
+    a: SpeakerLabel
+    b: SpeakerLabel
+
+
+class SpeakerCorrection(BaseModel):
+    correction: Annotated[SetSpeaker | SwapFrom, Field(discriminator="op")]
+
+
+def _own_transcript(db: DbSession, session_id: uuid.UUID) -> Transcript:
+    _get_session(db, session_id)
+    transcript = db.get(Transcript, session_id)
+    if transcript is None:
+        raise ApiError("transcript_not_ready", 404)
+    return transcript
+
+
+@router.post("/sessions/{session_id}/transcript/speakers")
+def correct_speakers(
+    session_id: uuid.UUID, body: SpeakerCorrection, user_id: CurrentUserId, db: Db
+) -> TranscriptOut:
+    """The therapist corrects who said what (plan 0008 B). Applied on read, after any automatic
+    refinement, so manual corrections always win."""
+    transcript = _own_transcript(db, session_id)
+    overrides = list(transcript.speaker_overrides or [])
+    if len(overrides) >= MAX_OVERRIDES:
+        raise ApiError("too_many_corrections", 409)
+    transcript.speaker_overrides = [*overrides, body.correction.model_dump()]
+    db.flush()
+    return _transcript_out(transcript)
+
+
+@router.post("/sessions/{session_id}/transcript/speakers/undo")
+def undo_speaker_correction(session_id: uuid.UUID, user_id: CurrentUserId, db: Db) -> TranscriptOut:
+    transcript = _own_transcript(db, session_id)
+    transcript.speaker_overrides = list(transcript.speaker_overrides or [])[:-1]
     db.flush()
     return _transcript_out(transcript)
 

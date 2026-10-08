@@ -33,13 +33,23 @@ export interface TranscriptSegment {
   text: string
 }
 
+export type RefineStatus = 'pending' | 'running' | 'done' | 'failed' | 'skipped'
+
 export interface Transcript {
   session_id: string
   language: string
   stt_model: string
   therapist_speaker: string | null
   segments: TranscriptSegment[]
+  /** Whole-session speaker check after the quick transcript (plan 0008). */
+  refine_status: RefineStatus
+  /** Number of the therapist's own speaker corrections. */
+  corrections: number
 }
+
+export type SpeakerCorrection =
+  | { op: 'set'; at_ms: number; speaker: string }
+  | { op: 'swap_from'; at_ms: number; a: string; b: string }
 
 const IN_PROGRESS: SessionStatus[] = ['recording', 'uploaded', 'processing']
 
@@ -69,6 +79,28 @@ export function useTranscript(id: string, enabled: boolean) {
     queryKey: ['transcript', id],
     queryFn: () => api<Transcript>(`/sessions/${id}/transcript`),
     enabled,
+    // Poll while the speaker check runs, then stop.
+    refetchInterval: (query) => {
+      const status = query.state.data?.refine_status
+      return status === 'pending' || status === 'running' ? 15_000 : false
+    },
+  })
+}
+
+export function useCorrectSpeakers(id: string) {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (correction: SpeakerCorrection) =>
+      api<Transcript>(`/sessions/${id}/transcript/speakers`, { method: 'POST', body: { correction } }),
+    onSuccess: (transcript) => queryClient.setQueryData(['transcript', id], transcript),
+  })
+}
+
+export function useUndoSpeakerCorrection(id: string) {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: () => api<Transcript>(`/sessions/${id}/transcript/speakers/undo`, { method: 'POST' }),
+    onSuccess: (transcript) => queryClient.setQueryData(['transcript', id], transcript),
   })
 }
 

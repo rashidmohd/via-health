@@ -76,3 +76,50 @@ def test_first_window_and_segments() -> None:
 
 def test_no_diarization_labels_stay_empty() -> None:
     assert [x.speaker for x in map_speakers([], [w(None, 1, "x")], [])] == [None]
+
+
+# --- plan 0008: refinement and manual corrections ----------------------------------
+
+from app.domain.transcript import Segment, apply_overrides, relabel_by_reference  # noqa: E402
+
+
+def test_refinement_fixes_a_swapped_minute_and_keeps_label_names() -> None:
+    # Windows got minute 2 the wrong way round.
+    words = [w("1", 1, "a"), w("2", 5, "b"), w("2", 50, "c"), w("1", 55, "d")]
+    # Whole-session diarization (its own label names) knows better.
+    batch = [w("X", 1, "a"), w("Y", 5, "b"), w("X", 50, "c"), w("Y", 55, "d")]
+    fixed = relabel_by_reference(words, batch)
+    assert [x.speaker for x in fixed] == ["1", "2", "1", "2"]
+    assert [x.text for x in fixed] == ["a", "b", "c", "d"]  # text never changes
+
+
+def test_refinement_keeps_label_when_nothing_close() -> None:
+    words = [w("1", 1, "a"), w("2", 30, "b")]
+    fixed = relabel_by_reference(words, [w("X", 1, "a")])
+    assert [x.speaker for x in fixed] == ["1", "2"]
+    assert relabel_by_reference(words, []) == words
+
+
+def seg(speaker: str, start_s: float, end_s: float, text: str) -> Segment:
+    return Segment(speaker, int(start_s * 1000), int(end_s * 1000), text)
+
+
+def test_set_override_changes_one_line_and_joins_neighbours() -> None:
+    segments = [seg("1", 0, 2, "Hallo."), seg("2", 3, 4, "Ja."), seg("1", 5, 6, "Gut.")]
+    out = apply_overrides(segments, [{"op": "set", "at_ms": 3500, "speaker": "1"}])
+    assert [(s.speaker, s.text) for s in out] == [("1", "Hallo. Ja. Gut.")]
+
+
+def test_swap_from_here() -> None:
+    segments = [seg("1", 0, 2, "a"), seg("2", 3, 4, "b"), seg("1", 5, 6, "c"), seg("2", 7, 8, "d")]
+    out = apply_overrides(segments, [{"op": "swap_from", "at_ms": 5000, "a": "1", "b": "2"}])
+    assert [(s.speaker, s.text) for s in out] == [("1", "a"), ("2", "b c"), ("1", "d")]
+
+
+def test_overrides_apply_in_order() -> None:
+    segments = [seg("1", 0, 2, "a"), seg("2", 3, 4, "b")]
+    ops = [
+        {"op": "swap_from", "at_ms": 0, "a": "1", "b": "2"},
+        {"op": "set", "at_ms": 0, "speaker": "1"},
+    ]
+    assert [(s.speaker, s.text) for s in apply_overrides(segments, ops)] == [("1", "a b")]

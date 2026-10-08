@@ -7,6 +7,7 @@ class FakeSttProvider:
     def __init__(self, segments: list[Segment] | None = None) -> None:
         self.calls: list[dict[str, object]] = []
         self._segments = segments
+        self.diarized_words: list[Word] | None = None
 
     def transcribe(
         self, audio: bytes, *, mime_type: str, language: str, job_id: str
@@ -14,6 +15,9 @@ class FakeSttProvider:
         self.calls.append(
             {"bytes": len(audio), "mime_type": mime_type, "language": language, "job_id": job_id}
         )
+        return self._fixed_segments(language)
+
+    def _fixed_segments(self, language: str) -> list[Segment]:
         if self._segments is not None:
             return self._segments
         hello = (
@@ -29,6 +33,19 @@ class FakeSttProvider:
         return [
             Segment(speaker="1", start_ms=0, end_ms=2500, text=hello),
             Segment(speaker="2", start_ms=2600, end_ms=5200, text=reply),
+        ]
+
+    def diarize_words(
+        self, audio: bytes, *, mime_type: str, language: str, job_id: str
+    ) -> list[Word]:
+        """Whole-session speakers as words. Default: the window words, labels as given."""
+        self.calls.append(
+            {"bytes": len(audio), "mime_type": mime_type, "language": language, "job_id": job_id}
+        )
+        if self.diarized_words is not None:
+            return self.diarized_words
+        return [
+            Word(s.speaker, s.start_ms, s.end_ms, s.text) for s in self._fixed_segments(language)
         ]
 
     def recognize_window(self, audio_wav: bytes, *, language: str) -> list[Word]:

@@ -18,6 +18,7 @@ from sqlalchemy.exc import ProgrammingError
 from app.adapters.kms.local import LocalKmsProvider
 from app.adapters.storage.postgres import PostgresObjectStore
 from app.adapters.stt.base import Segment, SttError
+from app.adapters.stt.base import Word as DomainWord
 from app.adapters.stt.fake import FakeSttProvider
 from app.adapters.stt.google import GoogleChirp3Provider, words_to_segments
 from app.db.session import WORKER_ROLE, make_engine
@@ -132,9 +133,9 @@ def test_audio_is_joined_strictly_by_seq(
     captured: dict[str, bytes] = {}
 
     class Capture(FakeSttProvider):
-        def transcribe(self, audio: bytes, **kwargs: Any) -> list[Segment]:
+        def diarize_words(self, audio: bytes, **kwargs: Any) -> list[DomainWord]:
             captured["audio"] = audio
-            return super().transcribe(audio, **kwargs)
+            return super().diarize_words(audio, **kwargs)
 
     run(worker, rec["session_id"], Capture())
     assert captured["audio"] == b"".join(PLAIN_CHUNKS)
@@ -243,7 +244,7 @@ def test_transient_stt_error_retries_then_fails(
 ) -> None:
     rec = record_session(client)
     flaky = MagicMock()
-    flaky.transcribe.side_effect = SttError("ServiceUnavailable", retryable=True)
+    flaky.diarize_words.side_effect = SttError("ServiceUnavailable", retryable=True)
 
     with pytest.raises(TransientFailure):
         run(worker, rec["session_id"], flaky, last_attempt=False)
@@ -257,7 +258,7 @@ def test_transient_stt_error_retries_then_fails(
 def test_retry_after_failure(client: TestClient, therapist: dict[str, str], worker: Engine) -> None:
     rec = record_session(client)
     broken = MagicMock()
-    broken.transcribe.side_effect = SttError("InvalidArgument", retryable=False)
+    broken.diarize_words.side_effect = SttError("InvalidArgument", retryable=False)
     run(worker, rec["session_id"], broken)
     assert client.post(f"/sessions/{rec['session_id']}/retry").json()["status"] == "uploaded"
     assert run(worker, rec["session_id"]) == "transcribed"

@@ -286,6 +286,17 @@ class Transcript(Base):
     language: Mapped[str] = mapped_column(Text)
     stt_model: Mapped[str] = mapped_column(Text)
     created_at: Mapped[datetime] = _created_at()
+    # Plan 0008: whole-session speaker check after the quick window transcript.
+    refine_status: Mapped[str] = mapped_column(Text, server_default="skipped")
+    # Therapist's speaker corrections, applied on read (times and labels only, no text).
+    speaker_overrides: Mapped[list[Any] | None] = mapped_column(JSONB)
+
+    __table_args__ = (
+        CheckConstraint(
+            _in("refine_status", ("pending", "running", "done", "failed", "skipped")),
+            name="refine_status",
+        ),
+    )
 
 
 class TranscriptWindow(Base):
