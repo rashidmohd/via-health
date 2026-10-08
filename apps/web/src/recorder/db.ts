@@ -35,6 +35,14 @@ export interface LocalChunk {
   createdAt: string
 }
 
+export interface LocalBookmark {
+  sessionId: string
+  atMs: number
+  /** Client-generated capture id (idempotent upload). */
+  id: string
+  uploaded: 0 | 1
+}
+
 export interface CachedConsent {
   clientId: string
   name: string
@@ -46,6 +54,7 @@ class RecorderDb extends Dexie {
   sessions!: Table<LocalSession, string>
   chunks!: Table<LocalChunk, [string, number]>
   consent!: Table<CachedConsent, string>
+  bookmarks!: Table<LocalBookmark, [string, number]>
 
   constructor() {
     super('sessio-recorder')
@@ -53,6 +62,9 @@ class RecorderDb extends Dexie {
       sessions: 'id, clientId, status',
       chunks: '[sessionId+seq], sessionId',
       consent: 'clientId',
+    })
+    this.version(2).stores({
+      bookmarks: '[sessionId+atMs], sessionId, uploaded',
     })
   }
 }

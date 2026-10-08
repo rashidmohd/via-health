@@ -36,6 +36,7 @@ describe('upload queue', () => {
   beforeEach(async () => {
     await db.sessions.clear()
     await db.chunks.clear()
+    await db.bookmarks.clear()
   })
   afterEach(() => vi.unstubAllGlobals())
 
@@ -94,6 +95,22 @@ describe('upload queue', () => {
     expect(stored?.error).toBe('consent_missing')
     expect(stored?.rawKey).toBeUndefined()
     expect(await db.chunks.count()).toBe(0)
+  })
+
+  it('uploads bookmarks once the session exists, only once', async () => {
+    await addSession()
+    await db.bookmarks.put({ sessionId: 's1', atMs: 61_000, id: 'b-1', uploaded: 0 })
+    const calls = mockApi(() => ({ status: 200, body: {} }))
+    await runSyncOnce()
+    const uploads = calls.filter((c) => c.url.endsWith('/sessions/s1/captures'))
+    expect(uploads.map((c) => c.body)).toEqual([
+      { id: 'b-1', kind: 'bookmark', key: 'bookmark:61000', at_ms: 61_000, status: 'suggested' },
+    ])
+    expect(calls.findIndex((c) => c.url.endsWith('/captures'))).toBeGreaterThan(
+      calls.findIndex((c) => c.url.endsWith('/sessions')),
+    )
+    await runSyncOnce()
+    expect(calls.filter((c) => c.url.endsWith('/captures'))).toHaveLength(1)
   })
 
   it('backs off exponentially with jitter, capped at 60 s', () => {

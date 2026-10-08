@@ -48,6 +48,7 @@ describe('session page', () => {
     let therapist: string | null = null
     const calls = mockApi((url, init) => {
       if (url.endsWith('/auth/me')) return { status: 200, body: ME }
+      if (url.endsWith('/captures')) return { status: 200, body: [] }
       if (url.endsWith('/transcript')) {
         if (init.method === 'PATCH') therapist = (JSON.parse(String(init.body)) as { therapist_speaker: string }).therapist_speaker
         return { status: 200, body: { ...TRANSCRIPT, therapist_speaker: therapist } }
@@ -66,6 +67,50 @@ describe('session page', () => {
     // Speaker 0 said the most, so it is listed first.
     expect(calls.find((c) => c.method === 'PATCH')?.body).toEqual({ therapist_speaker: '0' })
     expect(screen.getByText('0:04')).toBeInTheDocument()
+  })
+
+  it('suggests notes from the transcript and saves the decision', async () => {
+    const saved: unknown[] = []
+    mockApi((url, init) => {
+      if (url.endsWith('/auth/me')) return { status: 200, body: ME }
+      if (url.endsWith('/captures')) {
+        if (init.method === 'POST') {
+          saved.push(JSON.parse(String(init.body)))
+          return { status: 200, body: {} }
+        }
+        return {
+          status: 200,
+          body: [{ id: 'b1', kind: 'bookmark', key: 'bookmark:4500', at_ms: 4500, text: '', status: 'suggested' }],
+        }
+      }
+      if (url.endsWith('/transcript')) {
+        return {
+          status: 200,
+          body: {
+            ...TRANSCRIPT,
+            therapist_speaker: '0',
+            segments: [
+              ...TRANSCRIPT.segments,
+              { speaker: '0', start_ms: 14_000, end_ms: 18_000, text: 'Schreiben Sie bis nächste Woche Ihre Gedanken auf.' },
+            ],
+          },
+        }
+      }
+      return { status: 200, body: session('transcribed') }
+    })
+    renderApp('/sessions/s1')
+    expect(await screen.findByRole('heading', { name: 'Notes from the session' })).toBeInTheDocument()
+    // Bookmark shows what was said at that moment
+    expect(screen.getAllByText('Ehrlich gesagt etwas besser, danke für die Frage.').length).toBeGreaterThan(1)
+    const keep = screen.getAllByRole('button', { name: 'Keep' })
+    expect(keep).toHaveLength(2)
+    fireEvent.click(keep[1])
+    await vi.waitFor(() => expect(saved).toHaveLength(1))
+    expect(saved[0]).toMatchObject({
+      kind: 'action_item',
+      status: 'confirmed',
+      text: 'Schreiben Sie bis nächste Woche Ihre Gedanken auf.',
+    })
   })
 
   it('shows how much is transcribed while still recording', async () => {

@@ -16,17 +16,18 @@ from app.adapters.kms import KmsProvider, get_kms
 from app.adapters.storage import ObjectStore, make_object_store
 from app.api.deps import CurrentUserId, Db
 from app.api.errors import ApiError
-from app.core.data_crypto import DecryptionError, decrypt_json
+from app.core.data_crypto import DecryptionError, decrypt_json, encrypt_json
 from app.db.models import (
     AudioChunk,
     AuditLog,
+    Capture,
     Client,
     Session,
     Transcript,
     TranscriptWindow,
     WrappedKey,
 )
-from app.domain.transcript import STEP_MS
+from app.domain.transcript import STEP_MS, Word, stitch, words_to_segments
 
 router = APIRouter(tags=["sessions"])
 
@@ -351,3 +352,133 @@ def retry_session(session_id: uuid.UUID, user_id: CurrentUserId, db: Db) -> Sess
     )
     db.flush()
     return _out(db, session)
+
+
+# --- live text while recording (plan 0007, part 1) ------------------------------------
+
+
+class LiveOut(BaseModel):
+    covered_ms: int
+    segments: list[TranscriptSegment]
+
+
+@router.get("/sessions/{session_id}/live")
+def live_text(session_id: uuid.UUID, user_id: CurrentUserId, db: Db) -> LiveOut:
+    """Transcript windows made so far, stitched. About one window behind speech."""
+    _get_session(db, session_id)
+    rows = list(
+        db.scalars(
+            select(TranscriptWindow)
+            .where(TranscriptWindow.session_id == session_id)
+            .order_by(TranscriptWindow.idx)
+        )
+    )
+    windows: list[list[Word]] = []
+    for row in rows:
+        if row.idx != len(windows):
+            break
+        data = decrypt_json(row.words_enc, f"transcript-window:{session_id}:{row.idx}")
+        windows.append([Word(**w) for w in data["words"]])
+    segments = words_to_segments(stitch(windows))
+    return LiveOut(
+        covered_ms=len(windows) * STEP_MS,
+        segments=[TranscriptSegment(**s.to_json()) for s in segments],
+    )
+
+
+# --- captures (documentation chips, plan 0007, part 3) --------------------------------
+
+CaptureKind = Literal["action_item", "date", "term", "bookmark"]
+CaptureStatus = Literal["suggested", "confirmed", "dismissed"]
+
+
+class CaptureIn(BaseModel):
+    id: uuid.UUID
+    kind: CaptureKind
+    key: Annotated[str, Field(min_length=1, max_length=100)]
+    at_ms: Annotated[int, Field(ge=0, le=24 * 3600 * 1000)]
+    text: Annotated[str, Field(max_length=500)] = ""
+    status: CaptureStatus
+
+
+class CaptureUpdate(BaseModel):
+    status: CaptureStatus
+    text: Annotated[str, Field(max_length=500)] | None = None
+
+
+class CaptureOut(BaseModel):
+    id: uuid.UUID
+    kind: CaptureKind
+    key: str
+    at_ms: int
+    text: str
+    status: CaptureStatus
+
+
+def _capture_aad(capture_id: uuid.UUID) -> str:
+    return f"capture:{capture_id}:payload"
+
+
+def _capture_out(capture: Capture) -> CaptureOut:
+    payload = decrypt_json(capture.payload_enc, _capture_aad(capture.id))
+    return CaptureOut(
+        id=capture.id,
+        kind=capture.kind,
+        key=capture.key,
+        at_ms=capture.at_ms,
+        text=payload.get("text", ""),
+        status=capture.status,
+    )
+
+
+@router.get("/sessions/{session_id}/captures")
+def list_captures(session_id: uuid.UUID, user_id: CurrentUserId, db: Db) -> list[CaptureOut]:
+    _get_session(db, session_id)
+    rows = db.scalars(
+        select(Capture).where(Capture.session_id == session_id).order_by(Capture.at_ms)
+    )
+    return [_capture_out(c) for c in rows]
+
+
+@router.post("/sessions/{session_id}/captures")
+def save_capture(
+    session_id: uuid.UUID, body: CaptureIn, user_id: CurrentUserId, db: Db
+) -> CaptureOut:
+    """Create or update by key. Idempotent: the browser may send the same capture again."""
+    _get_session(db, session_id)
+    existing = db.scalar(
+        select(Capture).where(Capture.session_id == session_id, Capture.key == body.key)
+    )
+    if existing is not None:
+        existing.status = body.status
+        existing.payload_enc = encrypt_json({"text": body.text}, _capture_aad(existing.id))
+        db.flush()
+        return _capture_out(existing)
+    if db.get(Capture, body.id) is not None:
+        raise ApiError("capture_conflict", 409)
+    capture = Capture(
+        id=body.id,
+        session_id=session_id,
+        kind=body.kind,
+        key=body.key,
+        at_ms=body.at_ms,
+        payload_enc=encrypt_json({"text": body.text}, _capture_aad(body.id)),
+        status=body.status,
+    )
+    db.add(capture)
+    db.flush()
+    return _capture_out(capture)
+
+
+@router.patch("/captures/{capture_id}")
+def update_capture(
+    capture_id: uuid.UUID, body: CaptureUpdate, user_id: CurrentUserId, db: Db
+) -> CaptureOut:
+    capture = db.get(Capture, capture_id)  # RLS: only own sessions
+    if capture is None:
+        raise ApiError("capture_not_found", 404)
+    capture.status = body.status
+    if body.text is not None:
+        capture.payload_enc = encrypt_json({"text": body.text}, _capture_aad(capture.id))
+    db.flush()
+    return _capture_out(capture)

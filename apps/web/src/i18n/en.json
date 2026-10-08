@@ -194,7 +194,10 @@
     },
     "transcribedSoFar_one": "Transcribed so far: {{count}} minute",
     "transcribedSoFar_other": "Transcribed so far: {{count}} minutes",
-    "openSession": "Open session"
+    "openSession": "Open session",
+    "bookmark": "Bookmark",
+    "bookmarks_one": "{{count}} bookmark set",
+    "bookmarks_other": "{{count}} bookmarks set"
   },
   "session": {
     "title": "Session on {{date}}",
@@ -223,5 +226,28 @@
     "thatsMe": "That's me",
     "changeSpeaker": "Change who is who",
     "reviewNote": "Automatic transcript. It can contain mistakes — please check before using it."
+  },
+  "live": {
+    "title": "Transcript so far",
+    "hint": "About one minute behind. Needs internet.",
+    "empty": "Nothing transcribed yet. The first part appears after about a minute."
+  },
+  "captures": {
+    "title": "Notes from the session",
+    "hint": "Suggested from the transcript and your bookmarks. Keep what is useful; kept notes are used for the report.",
+    "noted": "Noted",
+    "keep": "Keep",
+    "remove": "Remove",
+    "kind": {
+      "action_item": "Task",
+      "date": "Appointment",
+      "term": "Term",
+      "bookmark": "Bookmark"
+    },
+    "status": {
+      "confirmed": "Kept",
+      "dismissed": "Removed",
+      "suggested": "Suggested"
+    }
   }
 }

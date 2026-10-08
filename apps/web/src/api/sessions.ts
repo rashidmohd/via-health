@@ -91,3 +91,50 @@ export function useRetrySession(id: string) {
     onSuccess: (session) => queryClient.setQueryData(['session', id], session),
   })
 }
+
+export interface LiveText {
+  covered_ms: number
+  segments: TranscriptSegment[]
+}
+
+/** Server transcript so far while recording (~1 minute behind). */
+export function useLiveText(id: string, enabled: boolean) {
+  return useQuery({
+    queryKey: ['live', id],
+    queryFn: () => api<LiveText>(`/sessions/${id}/live`),
+    enabled,
+    retry: false,
+    refetchInterval: enabled ? 20_000 : false,
+  })
+}
+
+export type CaptureStatus = 'suggested' | 'confirmed' | 'dismissed'
+
+export interface ServerCapture {
+  id: string
+  kind: 'action_item' | 'date' | 'term' | 'bookmark'
+  key: string
+  at_ms: number
+  text: string
+  status: CaptureStatus
+}
+
+export function useCaptures(id: string, enabled = true) {
+  return useQuery({
+    queryKey: ['captures', id],
+    queryFn: () => api<ServerCapture[]>(`/sessions/${id}/captures`),
+    enabled,
+  })
+}
+
+export function useSaveCapture(id: string) {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (body: Omit<ServerCapture, 'id'> & { id?: string }) =>
+      api<ServerCapture>(`/sessions/${id}/captures`, {
+        method: 'POST',
+        body: { ...body, id: body.id ?? crypto.randomUUID() },
+      }),
+    onSuccess: () => void queryClient.invalidateQueries({ queryKey: ['captures', id] }),
+  })
+}

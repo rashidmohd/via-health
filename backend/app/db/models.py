@@ -302,3 +302,27 @@ class TranscriptWindow(Base):
     created_at: Mapped[datetime] = _created_at()
 
     __table_args__ = (PrimaryKeyConstraint("session_id", "idx", name="pk_transcript_windows"),)
+
+
+class Capture(Base):
+    """A documentation chip for a session (plan 0007): task, appointment, term or bookmark.
+    Suggested by fixed keyword rules or the bookmark button; the therapist confirms or
+    dismisses it. Text is encrypted. Never sentiment, mood or risk."""
+
+    __tablename__ = "captures"
+
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True)
+    session_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("sessions.id"), index=True)
+    kind: Mapped[str] = mapped_column(Text)
+    # Stable per session (kind + time), so a suggestion is decided only once.
+    key: Mapped[str] = mapped_column(Text)
+    at_ms: Mapped[int] = mapped_column(Integer)
+    payload_enc: Mapped[bytes]
+    status: Mapped[str] = mapped_column(Text)
+    created_at: Mapped[datetime] = _created_at()
+
+    __table_args__ = (
+        UniqueConstraint("session_id", "key", name="uq_captures_session_id_key"),
+        CheckConstraint(_in("kind", ("action_item", "date", "term", "bookmark")), name="kind"),
+        CheckConstraint(_in("status", ("suggested", "confirmed", "dismissed")), name="status"),
+    )

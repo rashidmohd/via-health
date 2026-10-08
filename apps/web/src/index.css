@@ -815,3 +815,189 @@ main > .banner {
 .transcript p {
   margin: 0;
 }
+
+/* Live panel and chips */
+.live-panel {
+  background: #fff;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-card);
+  padding: 16px 20px;
+}
+
+.live-panel summary {
+  cursor: pointer;
+  font-weight: 600;
+  color: var(--olive-700);
+}
+
+.live-panel[open] summary {
+  margin-bottom: 8px;
+}
+
+.transcript.live {
+  max-height: 320px;
+  overflow-y: auto;
+}
+
+.chips {
+  list-style: none;
+  margin: 8px 0 12px;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.chip {
+  display: inline-flex;
+  gap: 6px;
+  align-items: baseline;
+  max-width: 100%;
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: var(--olive-50);
+  border: 1px solid var(--olive-300);
+  font-size: 0.85rem;
+}
+
+.chip-kind {
+  font-weight: 600;
+  color: var(--olive-700);
+}
+
+.chip-text {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 40ch;
+}
+
+.chip .time {
+  color: #6b6a63;
+  font-variant-numeric: tabular-nums;
+}
+
+.capture-review {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 14px;
+}
+
+.capture-review li {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.capture-review p {
+  margin: 6px 0 0;
+}
+
+.capture-review li.status-dismissed p {
+  color: #6b6a63;
+  text-decoration: line-through;
+}
+
+/* Avatar (illustrated placeholder) */
+.avatar {
+  display: block;
+  overflow: visible;
+}
+
+.avatar-ring {
+  fill: none;
+  stroke: var(--olive-500);
+  stroke-width: 2;
+}
+
+.avatar-head {
+  fill: var(--olive-100);
+}
+
+.avatar-eye {
+  fill: #fff;
+}
+
+.avatar-pupil,
+.avatar-dots circle {
+  fill: var(--charcoal);
+}
+
+.avatar-pupil {
+  transition: cx 120ms ease-out, cy 120ms ease-out;
+}
+
+.avatar-brow,
+.avatar-lid,
+.avatar-mouth {
+  fill: none;
+  stroke: var(--olive-700);
+  stroke-width: 2.4;
+  stroke-linecap: round;
+}
+
+.avatar-mouth,
+.avatar-brow {
+  transition: d 300ms ease;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .avatar:not(.reduced):not(.mood-still) .avatar-eyes {
+    transform-origin: 50px 46px;
+    animation: blink 5s infinite;
+  }
+  .avatar:not(.reduced):not(.mood-still) .avatar-face {
+    transform-origin: 50px 90px;
+    animation: breathe 6s ease-in-out infinite;
+  }
+  .avatar.mood-welcome:not(.reduced) .avatar-face {
+    animation: greet 1.2s ease-out 1;
+  }
+  .avatar.mood-thinking:not(.reduced) .avatar-dots circle {
+    animation: dot 1.4s ease-in-out infinite;
+  }
+  .avatar.mood-thinking:not(.reduced) .avatar-dots circle:nth-child(2) {
+    animation-delay: 0.2s;
+  }
+  .avatar.mood-thinking:not(.reduced) .avatar-dots circle:nth-child(3) {
+    animation-delay: 0.4s;
+  }
+  .avatar.nod:not(.reduced) .avatar-face {
+    transform-origin: 50px 90px;
+    animation: nod 0.8s ease-in-out 1;
+  }
+}
+
+@keyframes blink {
+  0%, 94%, 100% { transform: scaleY(1); }
+  97% { transform: scaleY(0.1); }
+}
+
+@keyframes breathe {
+  50% { transform: translateY(-0.8px); }
+}
+
+@keyframes greet {
+  30% { transform: rotate(-4deg); }
+  60% { transform: rotate(3deg); }
+}
+
+@keyframes dot {
+  50% { opacity: 0.25; }
+}
+
+@keyframes nod {
+  40% { transform: rotate(4deg) translateY(1px); }
+}
+
+.today .avatar-wrap {
+  display: grid;
+  justify-items: center;
+  gap: 16px;
+  width: 100%;
+  padding: 24px 0;
+}

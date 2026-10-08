@@ -7,6 +7,7 @@ import { getActiveRecorder, setActiveRecorder, useActiveRecorder } from '../../r
 import { db } from '../../recorder/db'
 import { RecorderError, SessionRecorder, type RecorderProblem } from '../../recorder/recorder'
 import { useLocal } from '../../recorder/useLocal'
+import { LivePanel } from './LivePanel'
 
 function formatElapsed(ms: number): string {
   const total = Math.floor(ms / 1000)
@@ -39,6 +40,7 @@ export function RecordPage() {
   const [starting, setStarting] = useState(false)
   const [problem, setProblem] = useState<RecorderProblem | null>(null)
   const [stoppedSessionId, setStoppedSessionId] = useState<string | null>(null)
+  const [bookmarks, setBookmarks] = useState(0)
   const stoppedSession = useLocal(
     () => (stoppedSessionId ? db.sessions.get(stoppedSessionId) : Promise.resolve(undefined)),
     stoppedSessionId ?? '',
@@ -114,15 +116,32 @@ export function RecordPage() {
           <p className="timer" aria-label={t('record.elapsed')}>
             {formatElapsed(elapsed)}
           </p>
-          <button className="record-button stop" onClick={() => void stop()}>
-            {t('record.stop')}
-          </button>
+          <div className="actions">
+            <button
+              className="secondary"
+              onClick={() => void active?.bookmark().then(() => setBookmarks((n) => n + 1))}
+            >
+              ★ {t('record.bookmark')}
+            </button>
+            <button className="record-button stop" onClick={() => void stop()}>
+              {t('record.stop')}
+            </button>
+          </div>
+          {bookmarks > 0 && (
+            <p className="muted small" role="status">
+              {t('record.bookmarks', { count: bookmarks })}
+            </p>
+          )}
           <p className="muted small">{t('record.savedLocally')}</p>
           {transcribedMinutes > 0 && (
             <p className="muted small">{t('record.transcribedSoFar', { count: transcribedMinutes })}</p>
           )}
         </div>
-      ) : stoppedSession ? (
+      ) : null}
+
+      {recordingHere && active && <LivePanel sessionId={active.sessionId} />}
+
+      {recordingHere ? null : stoppedSession ? (
         <div className="record-panel">
           <p className="done">{t('record.saved')}</p>
           <p className="muted">

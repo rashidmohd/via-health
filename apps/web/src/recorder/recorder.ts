@@ -155,6 +155,14 @@ export class SessionRecorder {
     }
   }
 
+  /** Mark the current moment; uploaded with the session as a bookmark chip. */
+  async bookmark(): Promise<number> {
+    const atMs = this.elapsedMs()
+    await db.bookmarks.put({ sessionId: this.sessionId, atMs, id: crypto.randomUUID(), uploaded: 0 })
+    kickSync()
+    return atMs
+  }
+
   /** Stop, wait for the last slice to be saved, mark the session ready to finish. */
   async stop(): Promise<void> {
     if (this.stopped) return

@@ -1,9 +1,14 @@
+import { useEffect, useRef } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Link, useParams } from 'react-router-dom'
 import { ApiError } from '../../api/client'
 import { useRetrySession, useSession, useTranscript } from '../../api/sessions'
+import { Avatar } from '../../avatar/Avatar'
+import { emitAvatarEvent } from '../../avatar/events'
+import { useAvatarMood } from '../../avatar/useAvatarMood'
 import { errorMessage } from '../../i18n/errors'
 import { formatDate } from '../format'
+import { CaptureReview } from './CaptureReview'
 import { TranscriptView } from './TranscriptView'
 
 export function SessionPage() {
@@ -13,6 +18,18 @@ export function SessionPage() {
   const hasTranscript = session?.status === 'transcribed'
   const { data: transcript } = useTranscript(id, hasTranscript)
   const retry = useRetrySession(id)
+  const processing = session?.status === 'uploaded' || session?.status === 'processing'
+  const { mood } = useAvatarMood({ processing })
+
+  // A transcript that finishes while the page is open is an app event for the avatar.
+  const previousStatus = useRef(session?.status)
+  useEffect(() => {
+    const before = previousStatus.current
+    previousStatus.current = session?.status
+    if (before && before !== 'transcribed' && session?.status === 'transcribed') {
+      emitAvatarEvent('transcript.ready')
+    }
+  }, [session?.status])
 
   if (error) {
     return (
@@ -38,6 +55,7 @@ export function SessionPage() {
       <header className="page-header">
         <h1>{t('session.title', { date: formatDate(session.started_at, i18n.language) })}</h1>
         {minutes && <span className="muted">{t('sessions.minutes', { count: minutes })}</span>}
+        <Avatar mood={mood} size={56} />
       </header>
 
       {session.status === 'recording' && session.transcribed_ms > 0 && (
@@ -78,6 +96,7 @@ export function SessionPage() {
         </div>
       )}
 
+      {hasTranscript && transcript && <CaptureReview sessionId={id} transcript={transcript} />}
       {hasTranscript && transcript && <TranscriptView sessionId={id} transcript={transcript} />}
     </section>
   )

@@ -2,6 +2,7 @@ import { useTranslation } from 'react-i18next'
 import { Link, useNavigate } from 'react-router-dom'
 import { ApiError } from '../../api/client'
 import { useCreateClient } from '../../api/clients'
+import { emitAvatarEvent } from '../../avatar/events'
 import { errorMessage } from '../../i18n/errors'
 import { ClientForm } from './ClientForm'
 
@@ -23,7 +24,12 @@ export function NewClientPage() {
         onSubmit={(values) =>
           create.mutate(
             { ...values.identity, preferred_language: values.preferred_language },
-            { onSuccess: (client) => navigate(`/clients/${client.id}/consent`) },
+            {
+              onSuccess: (client) => {
+                emitAvatarEvent('client.created')
+                navigate(`/clients/${client.id}/consent`)
+              },
+            },
           )
         }
       />

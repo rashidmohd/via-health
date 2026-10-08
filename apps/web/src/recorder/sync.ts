@@ -1,4 +1,5 @@
 import { api, ApiError } from '../api/client'
+import { emitAvatarEvent } from '../avatar/events'
 import { db, type LocalSession } from './db'
 
 /**
@@ -41,6 +42,22 @@ async function syncSession(session: LocalSession): Promise<void> {
     await db.sessions.update(id, { keyUploaded: true, rawKey: undefined })
   }
 
+  // Bookmarks (documentation chips the therapist set) go up once the session exists.
+  const bookmarks = await db.bookmarks.where('sessionId').equals(id).filter((b) => b.uploaded === 0).toArray()
+  for (const bookmark of bookmarks) {
+    await api(`/sessions/${id}/captures`, {
+      method: 'POST',
+      body: {
+        id: bookmark.id,
+        kind: 'bookmark',
+        key: `bookmark:${bookmark.atMs}`,
+        at_ms: bookmark.atMs,
+        status: 'suggested',
+      },
+    })
+    await db.bookmarks.update([id, bookmark.atMs], { uploaded: 1 })
+  }
+
   const chunks = await db.chunks.where('sessionId').equals(id).sortBy('seq')
   for (const chunk of chunks) {
     await api(`/sessions/${id}/chunks/${chunk.seq}`, {
@@ -64,6 +81,7 @@ async function syncSession(session: LocalSession): Promise<void> {
         },
       })
       await db.sessions.update(id, { finished: true, status: 'synced' })
+      emitAvatarEvent('upload.done')
     }
   }
 }

@@ -194,7 +194,10 @@
     },
     "transcribedSoFar_one": "Bisher transkribiert: {{count}} Minute",
     "transcribedSoFar_other": "Bisher transkribiert: {{count}} Minuten",
-    "openSession": "Sitzung öffnen"
+    "openSession": "Sitzung öffnen",
+    "bookmark": "Lesezeichen",
+    "bookmarks_one": "{{count}} Lesezeichen gesetzt",
+    "bookmarks_other": "{{count}} Lesezeichen gesetzt"
   },
   "session": {
     "title": "Sitzung am {{date}}",
@@ -223,5 +226,28 @@
     "thatsMe": "Das bin ich",
     "changeSpeaker": "Zuordnung ändern",
     "reviewNote": "Automatisches Transkript. Es kann Fehler enthalten – bitte vor der Verwendung prüfen."
+  },
+  "live": {
+    "title": "Bisheriges Transkript",
+    "hint": "Etwa eine Minute verzögert. Benötigt Internet.",
+    "empty": "Noch nichts transkribiert. Der erste Teil erscheint nach etwa einer Minute."
+  },
+  "captures": {
+    "title": "Notizen aus der Sitzung",
+    "hint": "Vorschläge aus dem Transkript und Ihren Lesezeichen. Behalten Sie, was nützlich ist; behaltene Notizen fließen in den Bericht ein.",
+    "noted": "Notiert",
+    "keep": "Behalten",
+    "remove": "Entfernen",
+    "kind": {
+      "action_item": "Aufgabe",
+      "date": "Termin",
+      "term": "Begriff",
+      "bookmark": "Lesezeichen"
+    },
+    "status": {
+      "confirmed": "Behalten",
+      "dismissed": "Entfernt",
+      "suggested": "Vorschlag"
+    }
   }
 }
