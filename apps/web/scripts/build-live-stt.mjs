@@ -66,7 +66,16 @@ await download(ENGINE.url, ENGINE.sha256, tarball)
 const extract = join(cache, 'engine')
 rmSync(extract, { recursive: true, force: true })
 mkdirSync(extract, { recursive: true })
-const wanted = [GLUE, 'sherpa-onnx-wasm-main-asr.wasm', 'sherpa-onnx-asr.js'].map((f) => `${ENGINE.dir}/${f}`)
+// Use the archive's own member names: they may start with "./", which GNU tar (Linux, Docker)
+// does not match against "dir/file" — BSD tar (macOS) does.
+const members = execFileSync('tar', ['-tjf', tarball], { encoding: 'utf8', maxBuffer: 1 << 20 })
+  .split('\n')
+  .filter(Boolean)
+const wanted = [GLUE, 'sherpa-onnx-wasm-main-asr.wasm', 'sherpa-onnx-asr.js'].map((file) => {
+  const member = members.find((m) => m.replace(/^\.\//, '') === `${ENGINE.dir}/${file}`)
+  if (!member) throw new Error(`engine archive: ${file} not found`)
+  return member
+})
 execFileSync('tar', ['-xjf', tarball, '-C', extract, ...wanted])
 
 const model = []
