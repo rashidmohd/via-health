@@ -2,6 +2,7 @@ import { useEffect } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Navigate, NavLink, Route, Routes } from 'react-router-dom'
 import { useLogout, useMe } from './api/auth'
+import { useNotifications } from './api/notifications'
 import { LanguageSwitch } from './features/LanguageSwitch'
 import { PlaceholderPage } from './features/PlaceholderPage'
 import { EmailCodeForm } from './features/auth/EmailCodeForm'
@@ -11,6 +12,7 @@ import { ConsentPage } from './features/clients/ConsentPage'
 import { NewClientPage } from './features/clients/NewClientPage'
 import { NameStep } from './features/auth/NameStep'
 import { NAV_ITEMS } from './features/nav'
+import { NotificationsPage } from './features/notifications/NotificationsPage'
 import { ReportPage } from './features/reports/ReportPage'
 import { RecordPage } from './features/sessions/RecordPage'
 import { SessionPage } from './features/sessions/SessionPage'
@@ -67,6 +69,7 @@ export default function App() {
             <li key={item.key}>
               <NavLink to={item.path} end={item.path === '/'}>
                 {t(`nav.${item.key}`)}
+                {item.key === 'notifications' && <UnreadBadge />}
               </NavLink>
             </li>
           ))}
@@ -84,12 +87,13 @@ export default function App() {
         <RecoveryBanner />
         <Routes>
           <Route path="/" element={<TodayPage />} />
+          <Route path="/notifications" element={<NotificationsPage />} />
           <Route path="/sessions" element={<SessionsPage />} />
           <Route path="/sessions/new" element={<StartSessionPage />} />
           <Route path="/sessions/record/:clientId" element={<RecordPage />} />
           <Route path="/sessions/:id" element={<SessionPage />} />
           <Route path="/sessions/:id/report" element={<ReportPage />} />
-          {NAV_ITEMS.filter((item) => !['today', 'clients', 'sessions'].includes(item.key)).map((item) => (
+          {NAV_ITEMS.filter((item) => !['today', 'notifications', 'clients', 'sessions'].includes(item.key)).map((item) => (
             <Route key={item.key} path={item.path} element={<PlaceholderPage navKey={item.key} />} />
           ))}
           <Route path="/clients" element={<ClientsPage />} />
@@ -100,5 +104,16 @@ export default function App() {
         </Routes>
       </main>
     </div>
+  )
+}
+
+function UnreadBadge() {
+  const { t } = useTranslation()
+  const { data } = useNotifications()
+  if (!data?.unread) return null
+  return (
+    <span className="nav-count" aria-label={t('notifications.unreadCount', { count: data.unread })}>
+      {data.unread > 99 ? '99+' : data.unread}
+    </span>
   )
 }

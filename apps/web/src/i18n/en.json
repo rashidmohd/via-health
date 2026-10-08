@@ -1,6 +1,7 @@
 {
   "nav": {
     "today": "Today",
+    "notifications": "Notifications",
     "clients": "Clients",
     "sessions": "Sessions",
     "reports": "Reports",
@@ -410,5 +411,22 @@
     "placeholder": "e.g. Tom Weber",
     "add": "Add name",
     "remove": "Remove {{name}}"
+  },
+  "notifications": {
+    "markAllRead": "Mark all as read",
+    "empty": "No notifications yet. You will see here when a transcript or a note draft is ready.",
+    "unread": "Unread:",
+    "unreadCount_one": "{{count}} unread notification",
+    "unreadCount_other": "{{count}} unread notifications",
+    "notesToReview_one": "{{count}} note draft is waiting for your review.",
+    "notesToReview_other": "{{count}} note drafts are waiting for your review.",
+    "showOnToday": "Show",
+    "kinds": {
+      "transcript_ready": "Transcript ready",
+      "transcription_failed": "Transcription failed",
+      "report_ready": "Note draft ready",
+      "report_failed": "Note draft failed",
+      "report_no_consent": "No AI consent – write the note yourself"
+    }
   }
 }

@@ -39,7 +39,7 @@ from app.domain.report_template import (
     draft_schema,
 )
 from app.domain.transcript import Segment, Word, apply_overrides, words_to_segments
-from app.workers.transcribe import TransientFailure, transcript_aad
+from app.workers.transcribe import TransientFailure, notify, transcript_aad
 
 logger = logging.getLogger("sessio.worker.report")
 
@@ -93,6 +93,9 @@ def _claim(db: DbSession, session_id: uuid.UUID) -> Report | None:
     return None
 
 
+NOTIFY_ON = {"failed": "report_failed", "no_consent": "report_no_consent"}
+
+
 def _set_status(engine: Engine, report_id: uuid.UUID, status: str, reason: str | None) -> None:
     with DbSession(engine) as db, db.begin():
         report = db.get(Report, report_id)
@@ -100,6 +103,8 @@ def _set_status(engine: Engine, report_id: uuid.UUID, status: str, reason: str |
             report.status = status
             report.failure_reason = reason
             report.updated_at = datetime.now(UTC)
+            if status in NOTIFY_ON:
+                notify(db, report.session_id, NOTIFY_ON[status])
 
 
 def _segments(transcript: Transcript) -> list[Segment]:
@@ -227,6 +232,7 @@ def draft_report(
         report.llm_model = llm.model
         report.prompt_version = PROMPT_VERSION
         report.updated_at = datetime.now(UTC)
+        notify(db, session_id, "report_ready")
         db.execute(
             text(
                 "INSERT INTO audit_log (action, entity, entity_id, meta) "
@@ -250,5 +256,6 @@ def draft_report_unconfigured(engine: Engine, session_id: uuid.UUID) -> str:
             return "skipped"
         report.status = "failed"
         report.failure_reason = "llm_not_configured"
+        notify(db, session_id, "report_failed")
     logger.warning("draft failed session_id=%s error=llm_not_configured", session_id)
     return "failed"

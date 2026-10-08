@@ -75,6 +75,18 @@ def _audit(
     )
 
 
+def notify(db: DbSession, session_id: uuid.UUID, kind: str) -> None:
+    """Notification for the session's therapist (plan 0010): ids and a kind code only.
+    Written in the same transaction as the state change, so exactly once per change."""
+    db.execute(
+        text(
+            "INSERT INTO notifications (user_id, kind, session_id) "
+            "SELECT user_id, :kind, id FROM sessions WHERE id = :id"
+        ),
+        {"kind": kind, "id": str(session_id)},
+    )
+
+
 def key_aad(session_id: uuid.UUID) -> str:
     return f"session:{session_id}:processing-key"
 
@@ -348,6 +360,7 @@ def _fail(engine: Engine, session_id: uuid.UUID, code: str) -> None:
             session.status = "failed"
             session.failure_reason = code
             _audit(db, "session_failed", session_id, {"reason": code})
+            notify(db, session_id, "transcription_failed")
     logger.warning("transcription failed session_id=%s reason=%s", session_id, code)
 
 
@@ -439,6 +452,7 @@ def process_session(
         assert session is not None
         session.status = "transcribed"
         _audit(db, "session_transcribed", session_id, {"method": method})
+        notify(db, session_id, "transcript_ready")
     logger.info(
         "transcribed session_id=%s method=%s audio_bytes=%d segments=%d seconds=%.1f",
         session_id,

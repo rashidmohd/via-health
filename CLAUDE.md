@@ -173,7 +173,7 @@ speaker object on the Today screen).
 Never use olive for "success" states. Text on light olive must use olive-700 or darker.
 Copy: sentence case, plain language, no exclamation marks in system copy.
 
-Navigation: Today · Clients · Sessions · Reports · Keys · Settings.
+Navigation: Today · Notifications · Clients · Sessions · Reports · Keys · Settings.
 
 ---
 

@@ -1,6 +1,7 @@
 {
   "nav": {
     "today": "Heute",
+    "notifications": "Benachrichtigungen",
     "clients": "Klient:innen",
     "sessions": "Sitzungen",
     "reports": "Berichte",
@@ -410,5 +411,22 @@
     "placeholder": "z. B. Tom Weber",
     "add": "Name hinzufügen",
     "remove": "{{name}} entfernen"
+  },
+  "notifications": {
+    "markAllRead": "Alle als gelesen markieren",
+    "empty": "Noch keine Benachrichtigungen. Hier sehen Sie, wenn ein Transkript oder ein Dokumentationsentwurf fertig ist.",
+    "unread": "Ungelesen:",
+    "unreadCount_one": "{{count}} ungelesene Benachrichtigung",
+    "unreadCount_other": "{{count}} ungelesene Benachrichtigungen",
+    "notesToReview_one": "{{count}} Dokumentationsentwurf wartet auf Ihre Prüfung.",
+    "notesToReview_other": "{{count}} Dokumentationsentwürfe warten auf Ihre Prüfung.",
+    "showOnToday": "Anzeigen",
+    "kinds": {
+      "transcript_ready": "Transkript fertig",
+      "transcription_failed": "Transkription fehlgeschlagen",
+      "report_ready": "Dokumentationsentwurf fertig",
+      "report_failed": "Dokumentationsentwurf fehlgeschlagen",
+      "report_no_consent": "Keine KI-Einwilligung – bitte selbst dokumentieren"
+    }
   }
 }

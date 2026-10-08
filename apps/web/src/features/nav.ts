@@ -1,5 +1,6 @@
 export const NAV_ITEMS = [
   { key: 'today', path: '/' },
+  { key: 'notifications', path: '/notifications' },
   { key: 'clients', path: '/clients' },
   { key: 'sessions', path: '/sessions' },
   { key: 'reports', path: '/reports' },

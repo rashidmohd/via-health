@@ -13,6 +13,7 @@ from sqlalchemy import (
     CheckConstraint,
     DateTime,
     ForeignKey,
+    Index,
     Integer,
     LargeBinary,
     MetaData,
@@ -397,4 +398,31 @@ class ReportVersion(Base):
         PrimaryKeyConstraint("report_id", "version", name="pk_report_versions"),
         CheckConstraint(_in("kind", ("approval", "addendum")), name="kind"),
         CheckConstraint("version >= 1", name="version_positive"),
+    )
+
+
+NOTIFICATION_KINDS = (
+    "transcript_ready",
+    "transcription_failed",
+    "report_ready",
+    "report_failed",
+    "report_no_consent",
+)
+
+
+class Notification(Base):
+    """A background event for the therapist (plan 0010). Ids and a kind code only — no PHI."""
+
+    __tablename__ = "notifications"
+
+    id: Mapped[uuid.UUID] = _uuid_pk()
+    user_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("users.id"))
+    kind: Mapped[str] = mapped_column(Text)
+    session_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("sessions.id"))
+    created_at: Mapped[datetime] = _created_at()
+    read_at: Mapped[datetime | None]
+
+    __table_args__ = (
+        CheckConstraint(_in("kind", NOTIFICATION_KINDS), name="kind"),
+        Index("ix_notifications_user_id_created_at", "user_id", "created_at"),
     )

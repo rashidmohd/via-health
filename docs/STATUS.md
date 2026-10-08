@@ -20,8 +20,9 @@ models and the Gemini API are cleared for the prototype only (see "Before real c
 | Capture chips | Task / appointment chips (fixed de/en rules) and bookmarks; keep/remove after the session | plan 0007 |
 | Avatar | Illustrated, moods from app events only (no emotion recognition) | plan 0007 |
 | Session note | German Verlaufsdokumentation; Gemini drafts only "what was said and done" with sources, a second pass checks each sentence; therapist writes the clinical fields, resolves flags, approves; addenda after approval; names hidden from the AI; note topics on the session card (not on Today) | plan 0009, ADRs 0006–0008 |
+| Notifications | Tab with unread badge: transcript ready / failed, note draft ready / failed / no AI consent; ids only in the DB | plan 0010 (part 1) |
 
-Tests: backend 197, web 106 (lint, typecheck, build green).
+Tests: backend 205, web 109 (lint, typecheck, build green).
 
 ## Not built yet (in order)
 

@@ -9,12 +9,13 @@ describe('App shell (logged in)', () => {
   })
   afterEach(() => vi.unstubAllGlobals())
 
-  it('shows all six nav items in order', async () => {
+  it('shows all seven nav items in order', async () => {
     renderApp()
     await screen.findByText('Anna')
     const links = screen.getByRole('navigation').querySelectorAll('a')
     expect([...links].map((a) => a.textContent)).toEqual([
       'Today',
+      'Notifications',
       'Clients',
       'Sessions',
       'Reports',
