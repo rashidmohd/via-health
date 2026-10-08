@@ -552,65 +552,148 @@
 }
 
 /* Record screen */
-.record-panel {
-  display: grid;
-  justify-items: center;
-  gap: 16px;
-  text-align: center;
-  padding: 32px 16px;
-  background: #fff;
-  border: 1px solid var(--border);
-  border-radius: var(--radius-card);
+.record-header {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
 }
 
-.record-panel p {
+.record-header .initials {
+  width: 48px;
+  height: 48px;
+  font-size: var(--text-md);
+}
+
+.record-header p {
+  margin: 2px 0 0;
+}
+
+.record-stage {
+  display: grid;
+  justify-items: center;
+  gap: var(--space-5);
+  text-align: center;
+  padding: var(--space-10) var(--space-6);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-panel);
+  box-shadow: var(--shadow-sm);
+}
+
+.record-stage p {
   margin: 0;
 }
 
-.record-button {
-  display: inline-flex;
-  align-items: center;
-  gap: 12px;
-  font-size: 1.2rem;
-  font-weight: 600;
-  padding: 18px 32px;
-  border-radius: 999px;
+.record-stage.is-recording {
+  border-color: #efc2b8;
+  background:
+    radial-gradient(500px 200px at 50% 0%, #fbebe8, transparent 70%),
+    var(--surface);
+}
+
+.record-stage .banner {
+  width: 100%;
+  text-align: left;
+}
+
+/* Start: a large round button with its label underneath (one focus target). */
+.record-orb {
+  display: grid;
+  justify-items: center;
+  gap: var(--space-3);
+  padding: var(--space-2);
   border: 0;
+  background: none;
+  border-radius: var(--radius-card);
+  font-size: var(--text-md);
+  font-weight: 600;
+  color: var(--text);
+}
+
+.orb {
+  display: grid;
+  place-items: center;
+  width: 112px;
+  height: 112px;
+  border-radius: 50%;
   background: var(--olive-700);
   color: #fff;
+  box-shadow:
+    0 0 0 10px var(--olive-50),
+    0 0 0 11px var(--olive-100),
+    var(--shadow-md);
+  transition: transform 150ms var(--ease), background-color 150ms var(--ease);
 }
 
-.record-button .dot,
-.recording-indicator .dot {
-  width: 14px;
-  height: 14px;
-  border-radius: 50%;
-  background: var(--danger);
-  display: inline-block;
+.orb .icon {
+  width: 40px;
+  height: 40px;
+  stroke-width: 1.6;
 }
 
-.record-button .dot {
-  background: #fff;
+.record-orb:hover:not(:disabled) .orb {
+  background: var(--olive-800);
+  transform: scale(1.03);
 }
 
-.record-button.stop {
-  background: #fff;
-  color: var(--danger);
-  border: 2px solid var(--danger);
+.record-orb:disabled .orb {
+  background: var(--border-strong);
+  box-shadow: 0 0 0 10px var(--olive-50);
+}
+
+.record-hint {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-2);
+  max-width: 46ch;
+  text-align: left;
+}
+
+.record-hint .icon {
+  width: 16px;
+  height: 16px;
+  margin-top: 2px;
+  color: var(--olive-700);
 }
 
 .recording-indicator {
   display: inline-flex;
   align-items: center;
   gap: 10px;
+  padding: 6px 14px;
+  border-radius: 999px;
+  background: #fbebe8;
   color: var(--danger);
   font-weight: 600;
-  font-size: 1.1rem;
+  font-size: var(--text-base);
+}
+
+.recording-indicator .dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--danger);
+  display: inline-block;
+}
+
+.timer-ring {
+  display: grid;
+  place-items: center;
+  width: 220px;
+  height: 220px;
+  border-radius: 50%;
+  border: 2px solid #efc2b8;
+  box-shadow:
+    0 0 0 12px rgb(194 65 45 / 5%),
+    inset 0 0 0 10px var(--surface-muted);
 }
 
 @media (prefers-reduced-motion: no-preference) {
   .recording-indicator .dot {
     animation: pulse 1.6s ease-in-out infinite;
+  }
+  .timer-ring {
+    animation: ring 3.2s ease-in-out infinite;
   }
 }
 
@@ -620,32 +703,88 @@
   }
 }
 
+@keyframes ring {
+  50% {
+    box-shadow:
+      0 0 0 20px rgb(194 65 45 / 3%),
+      inset 0 0 0 10px var(--surface-muted);
+  }
+}
+
 .timer {
-  font-size: 3rem;
+  font-size: 3.25rem;
   font-variant-numeric: tabular-nums;
   font-weight: 300;
+  letter-spacing: -0.03em;
 }
 
-.done {
-  font-size: 1.2rem;
+.record-actions {
+  justify-content: center;
+}
+
+.record-button {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-height: 38px;
+  padding: 8px 18px;
+  border-radius: var(--radius);
   font-weight: 600;
+  border: 1px solid var(--danger);
+  background: var(--surface);
+  color: var(--danger);
 }
 
-/* Session lists */
-.session-list {
+.record-button:hover {
+  background: #fbebe8;
+}
+
+.record-button.stop .icon {
+  fill: currentColor;
+  width: 14px;
+  height: 14px;
+}
+
+.record-meta {
   list-style: none;
   margin: 0;
   padding: 0;
   display: grid;
-  gap: 12px;
+  gap: 6px;
+  justify-items: center;
+  font-size: var(--text-sm);
+  color: var(--text-muted);
 }
 
-.session-list li {
-  display: flex;
-  justify-content: space-between;
+.record-meta li {
+  display: inline-flex;
   align-items: center;
-  gap: 16px;
-  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+.record-meta .icon {
+  width: 16px;
+  height: 16px;
+}
+
+.stage-icon {
+  display: grid;
+  place-items: center;
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  background: var(--olive-100);
+  color: var(--olive-700);
+}
+
+.stage-icon .icon {
+  width: 28px;
+  height: 28px;
+}
+
+.done {
+  font-size: var(--text-lg);
+  font-weight: 600;
 }
 
 /* Session page */
@@ -1079,11 +1218,6 @@
 }
 
 /* Session card: the note's topics on one line */
-.session-list li > div {
-  min-width: 0;
-  flex: 1;
-}
-
 .session-topics {
   margin: 2px 0 0;
   overflow: hidden;
@@ -1131,4 +1265,74 @@
 
 .notification-kind.attention {
   color: #8a2a1c;
+}
+
+/* Sessions table */
+.table-card-header {
+  padding: var(--space-4) var(--space-5);
+  border-bottom: 1px solid var(--border);
+}
+
+.table-card-header h2 {
+  margin: 0;
+  font-size: var(--text-md);
+}
+
+.cell-date,
+.cell-stack {
+  display: grid;
+  gap: 1px;
+  min-width: 0;
+}
+
+.cell-date strong {
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.sessions-table .session-topics {
+  max-width: 48ch;
+  color: var(--text-muted);
+}
+
+.sessions-table tr.local {
+  background: #f6f9fa;
+}
+
+@media (max-width: 720px) {
+  .sessions-table thead {
+    display: none;
+  }
+
+  .sessions-table tbody tr {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 6px var(--space-3);
+    padding: 12px var(--space-4);
+    border-bottom: 1px solid var(--border);
+  }
+
+  .sessions-table td {
+    padding: 0;
+    border: 0;
+    grid-column: 1;
+  }
+
+  .sessions-table td.cell-actions {
+    grid-column: 2;
+    grid-row: 1 / span 3;
+    align-self: center;
+  }
+
+  .sessions-table td:nth-child(3) {
+    display: none;
+  }
+
+  .sessions-table.no-client td:nth-child(2) {
+    display: none;
+  }
+
+  .sessions-table.no-client td:nth-child(3) {
+    display: block;
+  }
 }

@@ -208,7 +208,23 @@
       "failed": "Fehlgeschlagen",
       "transcribed": "Transkript bereit"
     },
-    "topicsDraft": "Entwurf:"
+    "topicsDraft": "Entwurf:",
+    "count_one": "{{count}} Sitzung",
+    "count_other": "{{count}} Sitzungen",
+    "search": "Nach Klient:in suchen",
+    "noMatch": "Keine Sitzung gefunden.",
+    "onDevice": "Auf diesem Gerät",
+    "filter": {
+      "all": "Alle",
+      "toReview": "Zu prüfen",
+      "inProgress": "In Bearbeitung"
+    },
+    "columns": {
+      "date": "Datum",
+      "client": "Klient:in",
+      "length": "Dauer",
+      "status": "Status"
+    }
   },
   "record": {
     "start": "Aufnahme starten",

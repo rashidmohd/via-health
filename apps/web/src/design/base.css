@@ -579,3 +579,13 @@ a.stat:hover {
     transform: rotate(360deg);
   }
 }
+
+/* Buttons placed directly in a grid (page, card, stack) keep their natural width. */
+.page > .button,
+.page > button,
+.card > .button,
+.card > button,
+.stack > .button,
+.stack > button {
+  justify-self: start;
+}

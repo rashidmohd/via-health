@@ -208,7 +208,23 @@
       "failed": "Failed",
       "transcribed": "Transcript ready"
     },
-    "topicsDraft": "Draft:"
+    "topicsDraft": "Draft:",
+    "count_one": "{{count}} session",
+    "count_other": "{{count}} sessions",
+    "search": "Search by client",
+    "noMatch": "No session matches.",
+    "onDevice": "On this device",
+    "filter": {
+      "all": "All",
+      "toReview": "To review",
+      "inProgress": "In progress"
+    },
+    "columns": {
+      "date": "Date",
+      "client": "Client",
+      "length": "Length",
+      "status": "Status"
+    }
   },
   "record": {
     "start": "Start recording",

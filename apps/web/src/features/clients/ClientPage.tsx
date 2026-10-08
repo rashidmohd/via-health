@@ -1,3 +1,4 @@
+import { ChevronLeft } from 'lucide-react'
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Link, useParams } from 'react-router-dom'
@@ -28,7 +29,8 @@ export function ClientPage() {
     return (
       <section className="page">
         <Link to="/clients" className="back">
-          ← {t('nav.clients')}
+          <ChevronLeft className="icon" aria-hidden="true" />
+          {t('nav.clients')}
         </Link>
         <p className="form-error" role="alert">
           {errorMessage(t, error instanceof ApiError ? error.code : 'unknown')}
@@ -50,7 +52,8 @@ export function ClientPage() {
   return (
     <section className="page narrow">
       <Link to="/clients" className="back">
-        ← {t('nav.clients')}
+        <ChevronLeft className="icon" aria-hidden="true" />
+        {t('nav.clients')}
       </Link>
       <header className="page-header">
         <h1>{client.name}</h1>
@@ -162,8 +165,10 @@ export function ClientPage() {
 
       <HiddenNamesCard clientId={client.id} />
 
-      <div className="card">
-        <h2>{t('nav.sessions')}</h2>
+      <div className="table-card">
+        <div className="table-card-header">
+          <h2>{t('nav.sessions')}</h2>
+        </div>
         <SessionList clientId={client.id} showClient={false} />
       </div>
 

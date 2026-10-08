@@ -1,3 +1,4 @@
+import { ChevronLeft } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { Link, useParams } from 'react-router-dom'
 import { ApiError } from '../../api/client'
@@ -24,7 +25,8 @@ export function ReportPage() {
     return (
       <section className="page">
         <Link to={`/sessions/${id}`} className="back">
-          ← {t('nav.sessions')}
+          <ChevronLeft className="icon" aria-hidden="true" />
+          {t('nav.sessions')}
         </Link>
         <p className="form-error" role="alert">
           {errorMessage(t, failure instanceof ApiError ? failure.code : 'unknown')}
@@ -41,7 +43,8 @@ export function ReportPage() {
   return (
     <section className={`page ${report.status === 'draft' ? 'wide' : 'narrow'}`}>
       <Link to={`/sessions/${id}`} className="back">
-        ← {t('session.title', { date: formatDate(session.started_at, i18n.language) })}
+        <ChevronLeft className="icon" aria-hidden="true" />
+        {t('session.title', { date: formatDate(session.started_at, i18n.language) })}
       </Link>
       <header className="page-header">
         <h1>{t('report.title')}</h1>

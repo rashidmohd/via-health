@@ -1,8 +1,10 @@
+import { AudioLines, Bookmark, ChevronLeft, CircleCheck, Mic, ShieldCheck, Square } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Link, useParams } from 'react-router-dom'
 import { useClient } from '../../api/clients'
 import { useSession } from '../../api/sessions'
+import { Initials } from '../../design/Initials'
 import { getActiveRecorder, setActiveRecorder, useActiveRecorder } from '../../recorder/active'
 import { db } from '../../recorder/db'
 import { RecorderError, SessionRecorder, type RecorderProblem } from '../../recorder/recorder'
@@ -95,9 +97,20 @@ export function RecordPage() {
   return (
     <section className="page narrow record-page">
       <Link to="/sessions/new" className="back">
-        ← {t('sessions.start')}
+        <ChevronLeft className="icon" aria-hidden="true" />
+        {t('sessions.start')}
       </Link>
-      <h1>{name}</h1>
+      <header className="record-header">
+        <Initials name={name} />
+        <div>
+          <h1>{name}</h1>
+          {client && (
+            <p className="muted small">
+              {t('clients.fields.language')}: {client.preferred_language.toUpperCase()}
+            </p>
+          )}
+        </div>
+      </header>
 
       {problem && (
         <p className="banner danger" role="alert">
@@ -108,34 +121,47 @@ export function RecordPage() {
       {active && !recordingHere && <p className="banner warning">{t('record.otherActive')}</p>}
 
       {recordingHere ? (
-        <div className="record-panel">
+        <div className="record-stage is-recording">
           <p className="recording-indicator" role="status">
             <span className="dot" aria-hidden="true" />
             {t('record.recording')}
           </p>
-          <p className="timer" aria-label={t('record.elapsed')}>
-            {formatElapsed(elapsed)}
-          </p>
-          <div className="actions">
+          <div className="timer-ring">
+            <p className="timer" aria-label={t('record.elapsed')}>
+              {formatElapsed(elapsed)}
+            </p>
+          </div>
+          <div className="actions record-actions">
             <button
               className="secondary"
               onClick={() => void active?.bookmark().then(() => setBookmarks((n) => n + 1))}
             >
-              ★ {t('record.bookmark')}
+              <Bookmark className="icon" aria-hidden="true" />
+              {t('record.bookmark')}
             </button>
             <button className="record-button stop" onClick={() => void stop()}>
+              <Square className="icon" aria-hidden="true" />
               {t('record.stop')}
             </button>
           </div>
-          {bookmarks > 0 && (
-            <p className="muted small" role="status">
-              {t('record.bookmarks', { count: bookmarks })}
-            </p>
-          )}
-          <p className="muted small">{t('record.savedLocally')}</p>
-          {transcribedMinutes > 0 && (
-            <p className="muted small">{t('record.transcribedSoFar', { count: transcribedMinutes })}</p>
-          )}
+          <ul className="record-meta">
+            <li>
+              <ShieldCheck className="icon" aria-hidden="true" />
+              {t('record.savedLocally')}
+            </li>
+            {transcribedMinutes > 0 && (
+              <li>
+                <AudioLines className="icon" aria-hidden="true" />
+                {t('record.transcribedSoFar', { count: transcribedMinutes })}
+              </li>
+            )}
+            {bookmarks > 0 && (
+              <li role="status">
+                <Bookmark className="icon" aria-hidden="true" />
+                {t('record.bookmarks', { count: bookmarks })}
+              </li>
+            )}
+          </ul>
         </div>
       ) : null}
 
@@ -144,7 +170,10 @@ export function RecordPage() {
       )}
 
       {recordingHere ? null : stoppedSession ? (
-        <div className="record-panel">
+        <div className="record-stage">
+          <span className="stage-icon">
+            <CircleCheck className="icon" aria-hidden="true" />
+          </span>
           <p className="done">{t('record.saved')}</p>
           <p className="muted">
             {stoppedSession.status === 'synced'
@@ -153,7 +182,7 @@ export function RecordPage() {
                 ? t(`errors.${stoppedSession.error ?? 'unknown'}`)
                 : t('record.uploading', { count: pendingChunks ?? 0 })}
           </p>
-          <div className="actions">
+          <div className="actions record-actions">
             <Link className="button primary" to={`/sessions/${stoppedSession.id}`}>
               {t('record.openSession')}
             </Link>
@@ -166,21 +195,26 @@ export function RecordPage() {
           </div>
         </div>
       ) : (
-        <div className="record-panel">
+        <div className="record-stage">
           {!ready && (
             <p className="banner warning">
               {t('consent.missingShort')} · <Link to={`/clients/${clientId}/consent`}>{t('consent.record')}</Link>
             </p>
           )}
           <button
-            className="record-button"
+            className="record-orb"
             onClick={() => void start()}
             disabled={!ready || starting || active !== null}
           >
-            <span className="dot" aria-hidden="true" />
-            {t('record.start')}
+            <span className="orb" aria-hidden="true">
+              <Mic className="icon" />
+            </span>
+            <span className="orb-label">{t('record.start')}</span>
           </button>
-          <p className="muted small">{t('record.hint')}</p>
+          <p className="muted small record-hint">
+            <ShieldCheck className="icon" aria-hidden="true" />
+            {t('record.hint')}
+          </p>
         </div>
       )}
     </section>

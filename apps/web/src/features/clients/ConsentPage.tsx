@@ -1,3 +1,4 @@
+import { ChevronLeft } from 'lucide-react'
 import { useState, type FormEvent } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Link, useNavigate, useParams } from 'react-router-dom'
@@ -54,7 +55,8 @@ export function ConsentPage() {
   return (
     <section className="page narrow">
       <Link to={`/clients/${id}`} className="back">
-        ← {client.name}
+        <ChevronLeft className="icon" aria-hidden="true" />
+        {client.name}
       </Link>
       <h1>{t('consent.title')}</h1>
 

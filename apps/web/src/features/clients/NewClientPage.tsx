@@ -1,3 +1,4 @@
+import { ChevronLeft } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { Link, useNavigate } from 'react-router-dom'
 import { ApiError } from '../../api/client'
@@ -14,7 +15,8 @@ export function NewClientPage() {
   return (
     <section className="page narrow">
       <Link to="/clients" className="back">
-        ← {t('nav.clients')}
+        <ChevronLeft className="icon" aria-hidden="true" />
+        {t('nav.clients')}
       </Link>
       <h1>{t('clients.add')}</h1>
       <p className="muted">{t('clients.encryptedNote')}</p>

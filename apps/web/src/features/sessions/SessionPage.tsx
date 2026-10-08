@@ -1,3 +1,4 @@
+import { ChevronLeft } from 'lucide-react'
 import { useEffect, useRef } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Link, useParams } from 'react-router-dom'
@@ -36,7 +37,8 @@ export function SessionPage() {
     return (
       <section className="page">
         <Link to="/sessions" className="back">
-          ← {t('nav.sessions')}
+          <ChevronLeft className="icon" aria-hidden="true" />
+          {t('nav.sessions')}
         </Link>
         <p className="form-error" role="alert">
           {errorMessage(t, error instanceof ApiError ? error.code : 'unknown')}
@@ -51,7 +53,8 @@ export function SessionPage() {
   return (
     <section className="page narrow">
       <Link to={`/clients/${session.client_id}`} className="back">
-        ← {session.client_name}
+        <ChevronLeft className="icon" aria-hidden="true" />
+        {session.client_name}
       </Link>
       <header className="page-header">
         <h1>{t('session.title', { date: formatDate(session.started_at, i18n.language) })}</h1>

@@ -10,3 +10,11 @@ export function sessionStatus(t: TFunction, s: ServerSession): { label: string; 
   const tone = s.status === 'failed' ? 'attention' : s.status === 'processing' || s.status === 'uploaded' ? 'info' : 'neutral'
   return { label: t(`sessions.status.${s.status}`), tone }
 }
+
+export type SessionFilter = 'all' | 'toReview' | 'inProgress'
+
+export function matchesFilter(s: ServerSession, filter: SessionFilter): boolean {
+  if (filter === 'toReview') return s.report_status === 'draft'
+  if (filter === 'inProgress') return ['recording', 'uploaded', 'processing'].includes(s.status)
+  return true
+}
