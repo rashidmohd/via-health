@@ -4,7 +4,7 @@ builder = "DOCKERFILE"
 watchPatterns = ["/backend/**"]
 
 [deploy]
-preDeployCommand = ["alembic upgrade head"]
+# Migrations run in scripts/start-api.sh on container start.
 healthcheckPath = "/healthz"
 healthcheckTimeout = 100
 restartPolicyType = "ON_FAILURE"

@@ -16,7 +16,8 @@ Code is deployed from GitHub (`rashidmohd/via-health`, branch `main`).
 2. **Settings**
    - **Source → Root directory:** `/backend`
    - **Config-as-code → Railway config file:** `/infra/railway/api.toml`
-     (runs `alembic upgrade head` before each deploy, health check `/healthz`)
+     (health check `/healthz`). **Custom start command: leave empty** — the image runs
+     `scripts/start-api.sh`, which applies migrations and then starts the API.
    - **Deploy → Regions:** EU West (Amsterdam)
    - **Networking → Generate domain**
 3. **Variables** (use the *Add reference* helper or paste):
@@ -39,7 +40,8 @@ Code is deployed from GitHub (`rashidmohd/via-health`, branch `main`).
 ## 3. `worker` service
 1. **+ Create** → **GitHub Repo** → `via-health` again. Rename to `worker`.
 2. **Settings:** Root directory `/backend`, config file `/infra/railway/worker.toml`,
-   region EU West. No public domain.
+   region EU West. No public domain. **Deploy → Custom start command:**
+   `arq app.workers.settings.WorkerSettings` (otherwise it would start the API).
 3. **Variables:**
    ```
    DATABASE_URL=${{Postgres.DATABASE_URL}}

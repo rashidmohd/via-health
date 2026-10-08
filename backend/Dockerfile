@@ -18,9 +18,11 @@ COPY pyproject.toml uv.lock .python-version ./
 RUN uv sync --locked --no-dev --no-install-project
 COPY alembic.ini ./
 COPY app ./app
+COPY scripts ./scripts
 RUN uv sync --locked --no-dev
 
 RUN useradd --system --no-create-home sessio
 USER sessio
 
-CMD ["sh", "-c", "uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-8000} --proxy-headers --forwarded-allow-ips='*'"]
+# api: migrate + serve. The worker overrides this with its own start command.
+CMD ["./scripts/start-api.sh"]
