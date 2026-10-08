@@ -23,7 +23,7 @@ Code is deployed from GitHub (`rashidmohd/via-health`, branch `main`).
    ```
    DATABASE_URL=${{Postgres.DATABASE_URL}}
    REDIS_URL=${{Redis.REDIS_URL}}
-   APP_ENV=prod
+   APP_ENV=staging   # hosted, test data only; prod later (needs Vertex, ADR 0005)
    GCP_REGION=europe-west4
    WEB_ORIGIN=https://via.bandi.ae          # exact web address, no trailing slash
    AUTH_SECRET=<64 random characters>        # e.g. `openssl rand -hex 32`; never change casually
@@ -44,7 +44,7 @@ Code is deployed from GitHub (`rashidmohd/via-health`, branch `main`).
    ```
    DATABASE_URL=${{Postgres.DATABASE_URL}}
    REDIS_URL=${{Redis.REDIS_URL}}
-   APP_ENV=prod
+   APP_ENV=staging   # hosted, test data only; prod later (needs Vertex, ADR 0005)
    GCP_REGION=europe-west4
    ```
 

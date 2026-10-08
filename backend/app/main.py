@@ -11,7 +11,9 @@ from app.core.logging import configure_logging
 def create_app() -> FastAPI:
     settings = get_settings()
     configure_logging()
-    app = FastAPI(title="Sessio API", docs_url=None if settings.app_env == "prod" else "/docs")
+    app = FastAPI(
+        title="Sessio API", docs_url=None if settings.app_env in ("staging", "prod") else "/docs"
+    )
     # Order: CORS is added last so it runs first and answers preflight requests.
     app.middleware("http")(origin_check(settings.web_origin))
     app.add_middleware(

@@ -33,5 +33,32 @@ def test_prod_requires_real_auth_secret_and_resend() -> None:
         email_sender="resend",
         resend_api_key="k",
         client_data_key="ab" * 32,
+        llm_provider="vertex",
     )
     assert ok.secure_cookies
+
+
+def test_prod_refuses_gemini_developer_api() -> None:
+    with pytest.raises(ValidationError, match="ADR 0005"):
+        Settings(
+            app_env="prod",
+            auth_secret="x" * 40,
+            email_sender="resend",
+            resend_api_key="k",
+            client_data_key="ab" * 32,
+            llm_provider="gemini_api",
+        )
+
+
+def test_staging_is_strict_but_allows_gemini_api() -> None:
+    with pytest.raises(ValidationError):
+        Settings(app_env="staging")
+    staging = Settings(
+        app_env="staging",
+        auth_secret="x" * 40,
+        email_sender="resend",
+        resend_api_key="k",
+        client_data_key="ab" * 32,
+        llm_provider="gemini_api",
+    )
+    assert staging.secure_cookies

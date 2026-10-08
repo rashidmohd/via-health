@@ -41,9 +41,9 @@ without restructuring.
 | Database | PostgreSQL (Railway plugin) — NOT MongoDB |
 | Queue | Redis (Railway plugin) |
 | Object storage | Behind `ObjectStore` adapter. GCS `europe-west4` (ADR 0001) |
-| STT (final) | Google Speech-to-Text V2, model `chirp_3`, EU region, behind `SttProvider` adapter |
+| STT (final) | Google Speech-to-Text V2, model `chirp_3`, location `eu` (not available in `europe-west4`, verified 2026-10-08), behind `SttProvider` adapter |
 | STT (live preview) | sherpa-onnx WASM in the browser, streaming German transducer (Kroko) |
-| LLM (reports) | Gemini on Vertex AI `europe-west4`, behind `LlmProvider` adapter |
+| LLM (reports) | Gemini behind `LlmProvider`: Vertex AI `europe-west4` in prod; Gemini API allowed in dev with test data only (ADR 0005) |
 | Keys | Google Cloud KMS `europe-west4` + OpenPGP (therapist keys) |
 | Hosting | Railway, all services pinned to the EU region |
 | Auth | Email one-time code (Resend, EU region, ADR 0003); passkeys later |
@@ -178,12 +178,12 @@ Navigation: Today · Clients · Sessions · Reports · Keys · Settings.
 ## 8. Open decisions (do not decide silently — ask)
 
 - Kroko German model license for commercial use — verify before shipping.
-- Chirp 3 EU region availability and speech adaptation (phrase sets) — verify via the locations API.
+- Chirp 3 speech adaptation (phrase sets) in location `eu` — verify. (Availability verified: `eu` yes, `europe-west4` no.)
 - Vertex abuse-monitoring exception — must be requested for zero retention.
 - Final product name ("Sessio" is a placeholder).
 - Legal: DPIA, DPAs, §203 contracts, final consent texts — parked, lawyer review pending.
 
-Decided (see `docs/adr/`): GCS `europe-west4` for storage (0001); placeholder consent texts v0 for the prototype (0002); email-code login via Resend EU, open signup (0003).
+Decided (see `docs/adr/`): GCS `europe-west4` for storage (0001); placeholder consent texts v0 for the prototype (0002); email-code login via Resend EU, open signup (0003); interim server key for client data (0004); Gemini API in dev only, Vertex in prod (0005).
 
 ## 9. Skills index
 

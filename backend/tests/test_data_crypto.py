@@ -53,6 +53,7 @@ def test_prod_requires_client_data_key() -> None:
         "auth_secret": "x" * 40,
         "email_sender": "resend",
         "resend_api_key": "k",
+        "llm_provider": "vertex",
     }
     with pytest.raises(ValueError):
         Settings(**base)  # type: ignore[arg-type]

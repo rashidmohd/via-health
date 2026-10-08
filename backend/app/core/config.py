@@ -13,7 +13,8 @@ DEV_CLIENT_DATA_KEY = "00" * 32
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(env_file=(".env", ".env.local"), extra="ignore")
 
-    app_env: Literal["dev", "prod", "test"] = "dev"
+    # staging: hosted like prod (real secrets, secure cookies) but test data only.
+    app_env: Literal["dev", "staging", "prod", "test"] = "dev"
     database_url: str = "postgresql+psycopg://localhost/sessio"
     redis_url: str = "redis://localhost:6379"
     web_origin: str = "http://localhost:5173"
@@ -23,6 +24,8 @@ class Settings(BaseSettings):
     object_store: Literal["gcs", "r2"] = "gcs"
     stt_model: str = "chirp_3"
     llm_model: str = ""
+    # ADR 0005: the Gemini Developer API is not EU-pinned; dev with test data only.
+    llm_provider: Literal["gemini_api", "vertex"] = "gemini_api"
 
     audio_max_retention_days: int = 30
 
@@ -37,7 +40,7 @@ class Settings(BaseSettings):
 
     @property
     def secure_cookies(self) -> bool:
-        return self.app_env == "prod"
+        return self.app_env in ("staging", "prod")
 
     @field_validator("database_url")
     @classmethod
@@ -57,13 +60,17 @@ class Settings(BaseSettings):
 
     @model_validator(mode="after")
     def prod_requires_real_secrets(self) -> "Settings":
-        if self.app_env == "prod":
+        if self.app_env in ("staging", "prod"):
             if self.auth_secret.startswith("dev-only") or len(self.auth_secret) < 32:
-                raise ValueError("AUTH_SECRET must be set (32+ characters) in prod")
+                raise ValueError("AUTH_SECRET must be set (32+ characters) in staging/prod")
             if self.email_sender != "resend" or not self.resend_api_key:
-                raise ValueError("EMAIL_SENDER=resend and RESEND_API_KEY are required in prod")
+                raise ValueError(
+                    "EMAIL_SENDER=resend and RESEND_API_KEY are required in staging/prod"
+                )
             if self.client_data_key == DEV_CLIENT_DATA_KEY:
-                raise ValueError("CLIENT_DATA_KEY must be set in prod")
+                raise ValueError("CLIENT_DATA_KEY must be set in staging/prod")
+            if self.app_env == "prod" and self.llm_provider != "vertex":
+                raise ValueError("LLM_PROVIDER=vertex (EU) is required in prod (ADR 0005)")
         return self
 
     @field_validator("client_data_key")
