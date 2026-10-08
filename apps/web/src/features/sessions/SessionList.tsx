@@ -52,8 +52,18 @@ export function SessionList({ clientId, showClient }: { clientId?: string; showC
             </Link>
             {showClient && <span className="muted small"> · {formatDate(s.started_at, i18n.language)}</span>}
             <span className="muted small"> · {t('sessions.minutes', { count: Number(minutes(s.duration_ms)) || 0 })}</span>
+            {s.report_topics?.length > 0 && (
+              <p className="session-topics small" title={s.report_topics.join(' · ')}>
+                {s.report_status === 'draft' && <span className="muted">{t('sessions.topicsDraft')} </span>}
+                {s.report_topics.join(' · ')}
+              </p>
+            )}
           </div>
-          <span className="muted small">{t(`sessions.status.${s.status}`)}</span>
+          <span className="muted small">
+            {s.status === 'transcribed' && s.report_status
+              ? t(`report.status.${s.report_status}`)
+              : t(`sessions.status.${s.status}`)}
+          </span>
         </li>
       ))}
     </ul>

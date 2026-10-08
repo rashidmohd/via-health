@@ -1,5 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { api } from './client'
+import type { ReportStatus } from './reports'
 
 export type SessionStatus =
   | 'recording'
@@ -24,6 +25,10 @@ export interface ServerSession {
   failure_reason: string | null
   /** While recording: audio already transcribed (ms). */
   transcribed_ms: number
+  /** Session note status (plan 0009); null = not started. */
+  report_status: ReportStatus | null
+  /** The note's topics, for the session card (same text as in the note). */
+  report_topics: string[]
 }
 
 export interface TranscriptSegment {

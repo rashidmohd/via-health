@@ -12,7 +12,7 @@ The LLM drafts; the therapist decides. Output is documentation, never clinical j
 For the user (therapist):
 | Kind | When | Priority |
 |---|---|---|
-| `session_note` | after every session; template SOAP / DAP / free-form | 1 |
+| `session_note` | after every session; template `verlauf_v1` (German Verlaufsdokumentation, plan 0009); SOAP only as an optional view | 1 |
 | `progress` | on demand, across sessions | 2 |
 | `intake` | first sessions | 3 |
 | `discharge` | end of therapy | 3 |
@@ -28,7 +28,10 @@ Insurance reports (e.g. Gutachten) are out of scope for the prototype.
 
 ## Templates
 
-`report_templates.structure` is JSON describing sections, e.g. SOAP:
+Default: `verlauf_v1` (plan 0009). AI fields: homework follow-up, current situation, topics,
+interventions, agreements, next session. Therapist-only fields (mental status, understanding,
+progress, crisis, notable) are **not in the model's output schema** (ADR 0008).
+Older example of the structure format (SOAP):
 ```json
 {"sections":[
   {"key":"subjective","title":"Subjektiv","instructions":"What the client reported, in their words where useful."},
@@ -50,8 +53,8 @@ Implementations: `VertexGeminiProvider` (`europe-west4`, caching disabled, no gr
 ## Prompt rules (system prompt, versioned in code)
 
 - Use only content present in the transcript and confirmed captures. If something is not in the transcript, leave the section empty or "Nicht besprochen".
-- No diagnoses, ICD codes, risk assessments, treatment recommendations, or interpretation of the client's emotions/mental state. (Optional ICD suggestions are a later, separately reviewed feature.)
-- Replace names with placeholders (`[Klient]`, `[Person 1]`) before sending to the LLM; re-insert in the browser after decryption.
+- No diagnoses, ICD codes, risk assessments, treatment recommendations, or interpretation of the client's emotions/mental state. No ICD suggestions, ever (ADR 0008); only codes the therapist entered may be shown.
+- Replace names with placeholders (`[Klient:in]`, `[Person 1]`) before sending to the LLM; the worker re-inserts them before storing the draft encrypted (ADR 0007).
 - Every statement should be traceable: return `source_segments` (segment indices) per sentence so the review UI can highlight evidence.
 - Write in the language of the session unless the template says otherwise.
 
@@ -60,7 +63,7 @@ Implementations: `VertexGeminiProvider` (`europe-west4`, caching disabled, no gr
 1. Draft stored encrypted with the session key (`reports.draft_enc`), status `draft`.
 2. Review screen: transcript left (speaker labels editable: S1 → Therapeut, S2 → Klient), draft right, click a sentence to see its source segments, confirmed captures listed.
 3. Therapist edits freely; regenerate per section allowed.
-4. "Sign" → see `encryption-and-keys` (PGP sign + encrypt, crypto-shred, delete draft).
+4. "Approve" → read-only, later changes as addenda (plan 0009). "Sign" → see `encryption-and-keys` (PGP sign + encrypt report **and transcript**, ADR 0006; crypto-shred audio). The AI draft is kept next to the approved text.
 5. "Reject" → delete draft, keep session for manual note.
 
 ## Client document delivery

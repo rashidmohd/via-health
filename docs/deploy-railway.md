@@ -81,6 +81,17 @@ base64 -i ~/.config/via/gcp-dev.json | tr -d '\n' | pbcopy
 Plain JSON also works (line breaks inside the private key are tolerated).
 The `worker` needs the **same** variables as `api` (it validates the same settings).
 
+## 4c. AI session note (`api` and `worker`, plan 0009)
+Staging (test data only, ADR 0005) — Gemini API key on the **paid tier**
+(aistudio.google.com → API keys; billing enabled on its project):
+```
+LLM_PROVIDER=gemini_api
+LLM_API_KEY=<key>
+LLM_MODEL=gemini-2.5-flash   # or the current Flash model
+```
+Without these the worker uses `LLM_PROVIDER=fake` (fixed demo drafts, no AI).
+Prod: `LLM_PROVIDER=vertex` (EU, `GCP_REGION=europe-west4`), see `docs/google-cloud-setup.md`.
+
 ## 5. Resend (login emails, ADR 0003)
 1. resend.com → **Domains → Add domain** → `bandi.ae`, **Region: Ireland (eu-west-1)**.
    The region cannot be changed later.
@@ -98,5 +109,5 @@ The `worker` needs the **same** variables as `api` (it validates the same settin
 
 ## Later (not needed yet)
 Google Cloud variables (`GCP_PROJECT_ID`, `GOOGLE_APPLICATION_CREDENTIALS_JSON`, `GCS_BUCKET`,
-`KMS_KEY_NAME`, `LLM_MODEL`) and WebAuthn settings are added when those features are built.
+`KMS_KEY_NAME`) and WebAuthn settings are added when those features are built.
 See `.claude/skills/railway-deploy/SKILL.md`. A separate `sessio-prod` project comes later.

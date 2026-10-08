@@ -22,11 +22,14 @@ from app.db.models import (
     AuditLog,
     Capture,
     Client,
+    Report,
     Session,
     Transcript,
     TranscriptWindow,
+    User,
     WrappedKey,
 )
+from app.domain.report_draft import NameList, names_aad, report_aad
 from app.domain.transcript import (
     MAX_OVERRIDES,
     STEP_MS,
@@ -104,6 +107,10 @@ class SessionOut(BaseModel):
     failure_reason: str | None
     # While recording: how much audio is already transcribed (plan 0006).
     transcribed_ms: int
+    # Session note status (plan 0009); None = not started.
+    report_status: str | None
+    # The note's "topics" field, short, for the session card. Empty unless draft/approved.
+    report_topics: list[str]
 
 
 def _key_aad(session_id: uuid.UUID) -> str:
@@ -139,7 +146,56 @@ def _client_name(client: Client | None) -> str:
         return ""
 
 
+def hidden_names_aad(client_id: uuid.UUID) -> str:
+    return f"client:{client_id}:hidden-names"
+
+
+def hidden_names(client: Client) -> list[str]:
+    if client.hidden_names_enc is None:
+        return []
+    data = decrypt_json(client.hidden_names_enc, hidden_names_aad(client.id))
+    return [str(n) for n in data.get("names", [])]
+
+
+def snapshot_llm_names(db: DbSession, session: Session) -> None:
+    """Names to replace before the LLM call (ADR 0007): client, therapist, "names to hide".
+    Stored per session so the worker never needs to read client identity."""
+    client = db.get(Client, session.client_id)
+    user = db.get(User, session.user_id)
+    names = NameList(
+        client=[n for n in [_client_name(client)] if n],
+        therapist=[user.display_name] if user is not None and user.display_name else [],
+        others=hidden_names(client) if client is not None else [],
+    )
+    session.llm_names_enc = encrypt_json(names.to_json(), names_aad(session.id))
+
+
+CARD_TOPICS = 5
+CARD_TOPIC_CHARS = 80
+
+
+def _report_card(db: DbSession, session_id: uuid.UUID) -> tuple[str | None, list[str]]:
+    """Note status and its topics (same text as in the note, never a separate AI summary)."""
+    report = db.scalar(select(Report).where(Report.session_id == session_id))
+    if report is None:
+        return None, []
+    if report.status not in ("draft", "approved") or report.content_enc is None:
+        return report.status, []
+    try:
+        content = decrypt_json(report.content_enc, report_aad(report.id, "content"))
+    except DecryptionError:
+        return report.status, []
+    statements = content.get("ai", {}).get("topics", {}).get("statements", [])
+    topics = [str(s.get("text", "")).strip() for s in statements][:CARD_TOPICS]
+    return report.status, [
+        t if len(t) <= CARD_TOPIC_CHARS else t[: CARD_TOPIC_CHARS - 1].rstrip() + "…"
+        for t in topics
+        if t
+    ]
+
+
 def _out(db: DbSession, session: Session) -> SessionOut:
+    report_status, report_topics = _report_card(db, session.id)
     return SessionOut(
         id=session.id,
         client_id=session.client_id,
@@ -156,6 +212,8 @@ def _out(db: DbSession, session: Session) -> SessionOut:
             db.scalar(select(func.count()).where(TranscriptWindow.session_id == session.id)) or 0
         )
         * STEP_MS,
+        report_status=report_status,
+        report_topics=report_topics,
     )
 
 
@@ -178,6 +236,7 @@ def start_session(body: SessionStart, user_id: CurrentUserId, db: Db) -> Session
     )
     db.add(session)
     db.flush()  # DB trigger enforces consent (rule 8)
+    snapshot_llm_names(db, session)
     db.add(
         AuditLog(
             actor_user_id=user_id,

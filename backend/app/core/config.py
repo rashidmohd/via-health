@@ -36,9 +36,11 @@ class Settings(BaseSettings):
     stt_provider: Literal["fake", "google"] = "fake"
     stt_model: str = "chirp_3"
     stt_location: str = "eu"  # Chirp 3 is not available in europe-west4 (verified 2026-10-08)
-    llm_model: str = ""
-    # ADR 0005: the Gemini Developer API is not EU-pinned; dev with test data only.
-    llm_provider: Literal["gemini_api", "vertex"] = "gemini_api"
+    llm_model: str = "gemini-2.5-flash"
+    # ADR 0005: the Gemini Developer API is not EU-pinned; dev/staging with test data only.
+    # `fake` writes fixed drafts (tests, local dev without a key).
+    llm_provider: Literal["fake", "gemini_api", "vertex"] = "fake"
+    llm_api_key: str = ""  # Gemini API key (paid tier), only for llm_provider=gemini_api
 
     audio_max_retention_days: int = 30
 

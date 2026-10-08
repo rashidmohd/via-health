@@ -11,6 +11,7 @@ dependencies = [
     "google-cloud-kms>=3.18.0",
     "google-cloud-speech>=2.41.0",
     "google-cloud-storage>=3.16.0",
+    "google-genai>=2.29.0",
     "httpx2>=2.13.1",
     "psycopg[binary]>=3.3.6",
     "pydantic>=2",

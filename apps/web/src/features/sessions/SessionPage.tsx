@@ -8,6 +8,7 @@ import { emitAvatarEvent } from '../../avatar/events'
 import { useAvatarMood } from '../../avatar/useAvatarMood'
 import { errorMessage } from '../../i18n/errors'
 import { formatDate } from '../format'
+import { ReportCard } from '../reports/ReportCard'
 import { CaptureReview } from './CaptureReview'
 import { TranscriptView } from './TranscriptView'
 
@@ -96,6 +97,7 @@ export function SessionPage() {
         </div>
       )}
 
+      {hasTranscript && <ReportCard sessionId={id} />}
       {hasTranscript && transcript && <CaptureReview sessionId={id} transcript={transcript} />}
       {hasTranscript && transcript && <TranscriptView sessionId={id} transcript={transcript} />}
     </section>

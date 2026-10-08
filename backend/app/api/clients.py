@@ -12,6 +12,7 @@ from sqlalchemy.orm import Session as DbSession
 
 from app.api.deps import CurrentUserId, Db
 from app.api.errors import ApiError
+from app.api.sessions import hidden_names, hidden_names_aad
 from app.core.data_crypto import decrypt_json, encrypt_bytes, encrypt_json
 from app.db.models import AuditLog, Client, Consent, ConsentText, Session
 from app.domain.consent import (
@@ -337,3 +338,30 @@ def withdraw_consent(consent_id: uuid.UUID, user_id: CurrentUserId, db: Db) -> C
     client = _get_client(db, consent.client_id)
     db.expire_all()
     return _detail(db, client)
+
+
+# --- names to hide from the LLM (ADR 0007) -------------------------------------------
+
+HiddenName = Annotated[str, Field(min_length=1, max_length=100)]
+
+
+class HiddenNames(BaseModel):
+    names: Annotated[list[HiddenName], Field(max_length=50)]
+
+
+@router.get("/clients/{client_id}/hidden-names")
+def get_hidden_names(client_id: uuid.UUID, user_id: CurrentUserId, db: Db) -> HiddenNames:
+    return HiddenNames(names=hidden_names(_get_client(db, client_id)))
+
+
+@router.put("/clients/{client_id}/hidden-names")
+def set_hidden_names(
+    client_id: uuid.UUID, body: HiddenNames, user_id: CurrentUserId, db: Db
+) -> HiddenNames:
+    """Other people's names (partner, children, employer…). Replaced before every LLM call
+    for this client's sessions drafted from now on."""
+    client = _get_client(db, client_id)
+    names = list(dict.fromkeys(" ".join(n.split()) for n in body.names if n.strip()))
+    client.hidden_names_enc = encrypt_json({"names": names}, hidden_names_aad(client.id))
+    _audit(db, user_id, "client_hidden_names_updated", "client", client.id)
+    return HiddenNames(names=names)

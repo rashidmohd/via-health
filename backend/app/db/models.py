@@ -89,6 +89,8 @@ class Client(Base):
     identity_enc: Mapped[bytes]
     preferred_language: Mapped[str] = mapped_column(Text, server_default="de")
     hotwords_enc: Mapped[bytes | None]
+    # Plan 0009 / ADR 0007: other people's names, replaced by placeholders before the LLM call.
+    hidden_names_enc: Mapped[bytes | None]
     status: Mapped[str] = mapped_column(Text, server_default="active")
     created_at: Mapped[datetime] = _created_at()
 
@@ -157,6 +159,8 @@ class Session(Base):
     mime_type: Mapped[str | None] = mapped_column(Text)
     # Stable code (e.g. incomplete_upload, transcription_failed), never free text.
     failure_reason: Mapped[str | None] = mapped_column(Text)
+    # Names to replace before the LLM call (ADR 0007), snapshot taken by the API.
+    llm_names_enc: Mapped[bytes | None]
 
     __table_args__ = (
         CheckConstraint(
@@ -336,4 +340,61 @@ class Capture(Base):
         UniqueConstraint("session_id", "key", name="uq_captures_session_id_key"),
         CheckConstraint(_in("kind", ("action_item", "date", "term", "bookmark")), name="kind"),
         CheckConstraint(_in("status", ("suggested", "confirmed", "dismissed")), name="status"),
+    )
+
+
+REPORT_STATUSES = ("pending", "drafting", "draft", "approved", "failed", "no_consent")
+
+
+class Report(Base):
+    """Session note (plan 0009). `draft_enc` is what the AI wrote (kept unchanged),
+    `content_enc` the therapist's current text. Read-only once approved (DB trigger)."""
+
+    __tablename__ = "reports"
+
+    id: Mapped[uuid.UUID] = _uuid_pk()
+    session_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("sessions.id"))
+    kind: Mapped[str] = mapped_column(Text, server_default="session_note")
+    template_code: Mapped[str] = mapped_column(Text)
+    template_version: Mapped[int] = mapped_column(Integer)
+    status: Mapped[str] = mapped_column(Text)
+    # Set when only one AI field is to be drafted again.
+    pending_field: Mapped[str | None] = mapped_column(Text)
+    draft_enc: Mapped[bytes | None]
+    content_enc: Mapped[bytes | None]
+    llm_model: Mapped[str | None] = mapped_column(Text)
+    prompt_version: Mapped[str | None] = mapped_column(Text)
+    failure_reason: Mapped[str | None] = mapped_column(Text)
+    created_at: Mapped[datetime] = _created_at()
+    updated_at: Mapped[datetime] = _created_at()
+    approved_at: Mapped[datetime | None]
+    approved_by: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("users.id"))
+
+    __table_args__ = (
+        UniqueConstraint("session_id", "kind", name="uq_reports_session_id_kind"),
+        CheckConstraint(_in("kind", ("session_note",)), name="kind"),
+        CheckConstraint(_in("status", REPORT_STATUSES), name="status"),
+        CheckConstraint(
+            "status <> 'approved' OR (approved_at IS NOT NULL AND approved_by IS NOT NULL)",
+            name="approval_complete",
+        ),
+    )
+
+
+class ReportVersion(Base):
+    """Append-only (DB trigger): version 1 is the approved note, later ones are addenda."""
+
+    __tablename__ = "report_versions"
+
+    report_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("reports.id"))
+    version: Mapped[int] = mapped_column(Integer)
+    kind: Mapped[str] = mapped_column(Text)
+    content_enc: Mapped[bytes]
+    created_at: Mapped[datetime] = _created_at()
+    created_by: Mapped[uuid.UUID] = mapped_column(ForeignKey("users.id"))
+
+    __table_args__ = (
+        PrimaryKeyConstraint("report_id", "version", name="pk_report_versions"),
+        CheckConstraint(_in("kind", ("approval", "addendum")), name="kind"),
+        CheckConstraint("version >= 1", name="version_positive"),
     )

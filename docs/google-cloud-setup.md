@@ -101,5 +101,8 @@ lifecycle rule, soft delete, KMS key location, Chirp 3 availability in the EU, a
 service account can encrypt/decrypt with the key.
 
 ## Later (before real clients)
-- Vertex AI: request the **abuse-monitoring exception** (needed for zero data retention).
+- Vertex AI (session notes, plan 0009): enable the Vertex AI API, give the service account
+  *Vertex AI User*, **disable the 24 h in-memory cache** for the project (rule 5; it is a
+  project setting, not a request option), and request the **abuse-monitoring exception**
+  (needed for zero data retention). Then `LLM_PROVIDER=vertex`, `LLM_MODEL=<current Flash model>`.
 - A separate `sessio-prod` project; DPA with Google.

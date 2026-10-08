@@ -32,6 +32,11 @@ export const ERROR_CODES = [
   'transcript_not_ready',
   'session_not_failed',
   'key_service_unavailable',
+  'report_busy',
+  'report_approved',
+  'report_not_drafted',
+  'report_unresolved',
+  'report_not_approved',
 ] as const
 
 export type ErrorCode = (typeof ERROR_CODES)[number]

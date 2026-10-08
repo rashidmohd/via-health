@@ -13,6 +13,7 @@ import { errorMessage } from '../../i18n/errors'
 import { formatDate } from '../format'
 import { SessionList } from '../sessions/SessionList'
 import { ClientForm } from './ClientForm'
+import { HiddenNamesCard } from './HiddenNamesCard'
 import { ReadinessBadge } from './ConsentBadge'
 
 export function ClientPage() {
@@ -158,6 +159,8 @@ export function ClientPage() {
           </>
         )}
       </div>
+
+      <HiddenNamesCard clientId={client.id} />
 
       <div className="card">
         <h2>{t('nav.sessions')}</h2>

@@ -4,6 +4,7 @@ import { Link } from 'react-router-dom'
 import { useMe } from '../../api/auth'
 import { Avatar } from '../../avatar/Avatar'
 import { useAvatarMood } from '../../avatar/useAvatarMood'
+import { NotesToReview } from './NotesToReview'
 
 export function TodayPage() {
   const { t } = useTranslation()
@@ -20,6 +21,7 @@ export function TodayPage() {
           {t('sessions.start')}
         </Link>
       </div>
+      <NotesToReview />
     </section>
   )
 }

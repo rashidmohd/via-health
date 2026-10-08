@@ -46,7 +46,12 @@
     "transcript_not_ready": "The transcript is not ready yet.",
     "session_not_failed": "This session does not need to be retried.",
     "key_service_unavailable": "The key service is not reachable right now. Your recording is safe on this device and will be uploaded automatically.",
-    "unknown": "Something went wrong. Please try again."
+    "unknown": "Something went wrong. Please try again.",
+    "report_busy": "The AI draft is still being written. Please wait a moment.",
+    "report_approved": "This note is approved and can no longer be changed. Add an addendum instead.",
+    "report_not_drafted": "There is no draft for this note yet.",
+    "report_unresolved": "Some AI sentences still need your check before you can approve.",
+    "report_not_approved": "Addenda are only possible for approved notes."
   },
   "language": {
     "label": "Language"
@@ -139,7 +144,10 @@
   "today": {
     "morning": "Good morning, {{name}}",
     "afternoon": "Good afternoon, {{name}}",
-    "evening": "Good evening, {{name}}"
+    "evening": "Good evening, {{name}}",
+    "notesToReview_one": "{{count}} note to review",
+    "notesToReview_other": "{{count}} notes to review",
+    "overdue": "From {{date}} – please complete"
   },
   "sync": {
     "allSynced": "All audio uploaded",
@@ -169,7 +177,8 @@
       "signed": "Signed",
       "failed": "Failed",
       "transcribed": "Transcript ready"
-    }
+    },
+    "topicsDraft": "Draft:"
   },
   "record": {
     "start": "Start recording",
@@ -271,5 +280,133 @@
       "dismissed": "Removed",
       "suggested": "Suggested"
     }
+  },
+  "report": {
+    "title": "Session note",
+    "header": "Session details",
+    "date": "Date",
+    "sessionNo": "Session number",
+    "sessionType": "Session type",
+    "sessionTypes": {
+      "consultation": "Consultation (Sprechstunde)",
+      "probatory": "Probatory session",
+      "acute": "Acute treatment",
+      "short_term": "Short-term therapy",
+      "long_term": "Long-term therapy",
+      "relapse_prevention": "Relapse prevention",
+      "significant_others": "Session with significant others",
+      "other": "Other"
+    },
+    "setting": "Setting",
+    "settings": {
+      "individual": "Individual",
+      "couple": "Couple",
+      "family": "Family",
+      "group": "Group"
+    },
+    "mode": "Format",
+    "modes": {
+      "in_person": "In person",
+      "video": "Video"
+    },
+    "attendeesExtra": "Other attendees",
+    "location": "Location (if not the practice)",
+    "fields": {
+      "homework_followup": "Follow-up since last session / homework",
+      "current_situation": "Current situation",
+      "topics": "Session topics",
+      "interventions": "Interventions and responses",
+      "agreements": "Agreements / new homework",
+      "next_session": "Plan for next session",
+      "mental_status": "Mental status / changes",
+      "understanding": "Clinical understanding / hypothesis",
+      "progress": "Treatment progress",
+      "crisis": "Suicidality / crisis and measures",
+      "notable": "Notable events"
+    },
+    "prompts": {
+      "mental_status": "Only if something changed. \"No change\" is fine.",
+      "understanding": "Your method-specific understanding or hypothesis.",
+      "progress": "Progress, setback or standstill; motivation; difficulties.",
+      "crisis": "Only if addressed. Nothing is written here automatically.",
+      "notable": "Medication changes, contact with other professionals, missed sessions…"
+    },
+    "aiDraftBanner": "AI draft – not yet reviewed.",
+    "aiDraftHint": "Check every sentence against the transcript. The AI only writes what was said; it does not assess.",
+    "aiPart": "What was said and done",
+    "therapistPart": "Your clinical part",
+    "therapistPartHint": "These fields are never filled by the AI.",
+    "notDiscussed": "Not discussed",
+    "statementLabel": "Sentence in {{field}}",
+    "showSource": "Show source",
+    "fromNote": "From your notes",
+    "flags": {
+      "partly": "Partly in the transcript",
+      "unsupported": "Not found in the transcript",
+      "wording": "Wording: {{words}}"
+    },
+    "flagHints": {
+      "partly": "The transcript supports only part of this sentence.",
+      "unsupported": "This sentence could not be matched to the transcript.",
+      "wording": "Judgmental or emotion words. The client can read this note (§630g BGB)."
+    },
+    "keep": "Keep",
+    "delete": "Delete",
+    "addStatement": "Add sentence",
+    "regenerate": "Draft again",
+    "regenerateAll": "Draft everything again",
+    "regenerateAllConfirm": "Draft all AI fields again? Your changes to those fields will be replaced. Your clinical part and the session details are kept.",
+    "blocking_one": "{{count}} AI sentence still needs your check (keep, edit or delete).",
+    "blocking_other": "{{count}} AI sentences still need your check (keep, edit or delete).",
+    "approveHint": "After approval the note can no longer be changed; later changes are added as dated addenda.",
+    "approveConfirm": "Approve this note? It can no longer be changed afterwards.",
+    "save": "Save",
+    "saved": "Saved",
+    "approve": "Approve",
+    "sourceHint": "Click a line to find the sentence based on it.",
+    "drafting": "Writing the draft…",
+    "draftingField": "Drafting \"{{field}}\" again…",
+    "draftingHint": "Usually takes less than a minute.",
+    "startHint": "Let the AI draft the note from the transcript and your notes, or write it yourself.",
+    "needsTranscript": "The AI draft needs the finished transcript.",
+    "draftWithAi": "Draft with AI",
+    "tryAgain": "Try again",
+    "writeManually": "Write manually",
+    "noConsent": "The client has not consented to AI processing (or has withdrawn it). Please write the note yourself.",
+    "failure": {
+      "drafting_failed": "The AI service did not respond. Please try again or write the note yourself.",
+      "llm_not_configured": "AI drafting is not set up yet. Please write the note yourself.",
+      "names_missing": "Please start the draft again.",
+      "decryption_failed": "The transcript could not be read.",
+      "unknown": "The draft could not be written."
+    },
+    "approvedOn": "Approved on {{date}}. Read-only.",
+    "footerAi": "Drafted with AI assistance; reviewed and approved by the therapist.",
+    "footerManual": "Written by the therapist.",
+    "footerApproved": "Approved on {{date}}.",
+    "addenda": "Addenda",
+    "noAddenda": "No addenda.",
+    "newAddendum": "New addendum",
+    "addAddendum": "Add addendum",
+    "status": {
+      "none": "Not started",
+      "pending": "Waiting for the AI draft…",
+      "drafting": "Writing the draft…",
+      "draft": "Draft – ready to review",
+      "approved": "Approved",
+      "failed": "Draft failed",
+      "no_consent": "No AI consent – write manually"
+    },
+    "cardBlocking_one": "Draft – {{count}} sentence to check",
+    "cardBlocking_other": "Draft – {{count}} sentences to check",
+    "review": "Review note",
+    "open": "Open note"
+  },
+  "hiddenNames": {
+    "title": "Names hidden from the AI",
+    "hint": "Names of other people the client talks about (partner, children, employer…). They are replaced by placeholders before the transcript is sent for AI drafting. The client's and your own name are always hidden.",
+    "placeholder": "e.g. Tom Weber",
+    "add": "Add name",
+    "remove": "Remove {{name}}"
   }
 }

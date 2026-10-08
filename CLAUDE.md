@@ -185,7 +185,7 @@ Navigation: Today · Clients · Sessions · Reports · Keys · Settings.
 - Final product name ("Sessio" is a placeholder).
 - Legal: DPIA, DPAs, §203 contracts, final consent texts — parked, lawyer review pending.
 
-Decided (see `docs/adr/`): GCS `europe-west4` for storage (0001); placeholder consent texts v0 for the prototype (0002); email-code login via Resend EU, open signup (0003); interim server key for client data (0004); Gemini API in dev only, Vertex in prod (0005).
+Decided (see `docs/adr/`): GCS `europe-west4` for storage (0001); placeholder consent texts v0 for the prototype (0002); email-code login via Resend EU, open signup (0003); interim server key for client data (0004); Gemini API in dev only, Vertex in prod (0005); transcript is part of the record, kept 10 years (0006); LLM sees plain text in memory only, names replaced by placeholders (0007); AI documents what was said, never assesses (0008).
 
 ## 9. Skills index
 

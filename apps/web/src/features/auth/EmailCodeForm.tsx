@@ -6,6 +6,7 @@ import { ApiError } from '../../api/client'
 import { ME_KEY, startEmailLogin, verifyEmailCode } from '../../api/auth'
 import { errorMessage } from '../../i18n/errors'
 import { currentLanguage, setLanguage } from '../../i18n/language'
+import { Logo } from '../../design/Logo'
 import { LanguageSwitch } from '../LanguageSwitch'
 
 type Mode = 'login' | 'signup'
@@ -69,7 +70,9 @@ export function EmailCodeForm({ mode }: { mode: Mode }) {
     <div className="auth-page">
       <div className="auth-card">
         <div className="auth-top">
-          <span className="brand">Sessio</span>
+          <span className="brand">
+            <Logo />
+          </span>
           <LanguageSwitch />
         </div>
         <h1>{t(mode === 'signup' ? 'auth.signupTitle' : 'auth.loginTitle')}</h1>

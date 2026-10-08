@@ -46,7 +46,12 @@
     "transcript_not_ready": "Das Transkript ist noch nicht fertig.",
     "session_not_failed": "Diese Sitzung muss nicht erneut verarbeitet werden.",
     "key_service_unavailable": "Der Schlüsseldienst ist gerade nicht erreichbar. Ihre Aufnahme ist auf diesem Gerät sicher und wird automatisch hochgeladen.",
-    "unknown": "Etwas ist schiefgelaufen. Bitte versuchen Sie es erneut."
+    "unknown": "Etwas ist schiefgelaufen. Bitte versuchen Sie es erneut.",
+    "report_busy": "Der KI-Entwurf wird noch geschrieben. Bitte einen Moment warten.",
+    "report_approved": "Diese Dokumentation ist freigegeben und kann nicht mehr geändert werden. Bitte einen Nachtrag hinzufügen.",
+    "report_not_drafted": "Für diese Dokumentation gibt es noch keinen Entwurf.",
+    "report_unresolved": "Einige KI-Sätze müssen noch geprüft werden, bevor Sie freigeben können.",
+    "report_not_approved": "Nachträge sind nur bei freigegebener Dokumentation möglich."
   },
   "language": {
     "label": "Sprache"
@@ -139,7 +144,10 @@
   "today": {
     "morning": "Guten Morgen, {{name}}",
     "afternoon": "Guten Tag, {{name}}",
-    "evening": "Guten Abend, {{name}}"
+    "evening": "Guten Abend, {{name}}",
+    "notesToReview_one": "{{count}} Dokumentation zu prüfen",
+    "notesToReview_other": "{{count}} Dokumentationen zu prüfen",
+    "overdue": "Vom {{date}} – bitte abschließen"
   },
   "sync": {
     "allSynced": "Alle Audiodaten hochgeladen",
@@ -169,7 +177,8 @@
       "signed": "Unterschrieben",
       "failed": "Fehlgeschlagen",
       "transcribed": "Transkript bereit"
-    }
+    },
+    "topicsDraft": "Entwurf:"
   },
   "record": {
     "start": "Aufnahme starten",
@@ -271,5 +280,133 @@
       "dismissed": "Entfernt",
       "suggested": "Vorschlag"
     }
+  },
+  "report": {
+    "title": "Sitzungsdokumentation",
+    "header": "Kopfdaten",
+    "date": "Datum",
+    "sessionNo": "Sitzungsnummer",
+    "sessionType": "Sitzungsart",
+    "sessionTypes": {
+      "consultation": "Sprechstunde",
+      "probatory": "Probatorische Sitzung",
+      "acute": "Akutbehandlung",
+      "short_term": "Kurzzeittherapie (KZT)",
+      "long_term": "Langzeittherapie (LZT)",
+      "relapse_prevention": "Rezidivprophylaxe",
+      "significant_others": "Sitzung mit Bezugspersonen",
+      "other": "Sonstige"
+    },
+    "setting": "Setting",
+    "settings": {
+      "individual": "Einzel",
+      "couple": "Paar",
+      "family": "Familie",
+      "group": "Gruppe"
+    },
+    "mode": "Form",
+    "modes": {
+      "in_person": "Präsenz",
+      "video": "Video"
+    },
+    "attendeesExtra": "Weitere Anwesende",
+    "location": "Ort (falls nicht die Praxis)",
+    "fields": {
+      "homework_followup": "Umsetzung seit letzter Sitzung / Hausaufgaben",
+      "current_situation": "Aktuelle Situation",
+      "topics": "Themen der Sitzung",
+      "interventions": "Interventionen und Reaktionen",
+      "agreements": "Vereinbarungen / neue Hausaufgaben",
+      "next_session": "Planung nächste Sitzung",
+      "mental_status": "Psychischer Befund / Veränderungen",
+      "understanding": "Psychotherapeutisches Verständnis / Hypothese",
+      "progress": "Behandlungsentwicklung",
+      "crisis": "Suizidalität / Krise und Maßnahmen",
+      "notable": "Besonderheiten"
+    },
+    "prompts": {
+      "mental_status": "Nur bei Veränderung. „Keine Veränderung“ ist ausreichend.",
+      "understanding": "Ihr verfahrensspezifisches Verständnis bzw. Ihre Hypothese.",
+      "progress": "Fortschritt, Rückschritt oder Stagnation; Motivation; Schwierigkeiten.",
+      "crisis": "Nur wenn thematisiert. Hier wird nichts automatisch eingetragen.",
+      "notable": "Medikationsänderung, Kontakt zu Fachärzt:innen, ausgefallene Sitzungen …"
+    },
+    "aiDraftBanner": "KI-Entwurf – noch nicht geprüft.",
+    "aiDraftHint": "Bitte jeden Satz mit dem Transkript abgleichen. Die KI schreibt nur, was gesagt wurde; sie bewertet nicht.",
+    "aiPart": "Was gesagt und getan wurde",
+    "therapistPart": "Ihr klinischer Teil",
+    "therapistPartHint": "Diese Felder füllt die KI nie aus.",
+    "notDiscussed": "Nicht besprochen",
+    "statementLabel": "Satz in {{field}}",
+    "showSource": "Quelle zeigen",
+    "fromNote": "Aus Ihren Notizen",
+    "flags": {
+      "partly": "Nur teilweise im Transkript",
+      "unsupported": "Nicht im Transkript gefunden",
+      "wording": "Wortwahl: {{words}}"
+    },
+    "flagHints": {
+      "partly": "Das Transkript stützt nur einen Teil dieses Satzes.",
+      "unsupported": "Dieser Satz ließ sich dem Transkript nicht zuordnen.",
+      "wording": "Wertende oder Gefühlswörter. Die Klient:in kann diese Dokumentation einsehen (§630g BGB)."
+    },
+    "keep": "Beibehalten",
+    "delete": "Löschen",
+    "addStatement": "Satz hinzufügen",
+    "regenerate": "Neu entwerfen",
+    "regenerateAll": "Alles neu entwerfen",
+    "regenerateAllConfirm": "Alle KI-Felder neu entwerfen? Ihre Änderungen in diesen Feldern werden ersetzt. Ihr klinischer Teil und die Kopfdaten bleiben erhalten.",
+    "blocking_one": "{{count}} KI-Satz muss noch geprüft werden (beibehalten, bearbeiten oder löschen).",
+    "blocking_other": "{{count}} KI-Sätze müssen noch geprüft werden (beibehalten, bearbeiten oder löschen).",
+    "approveHint": "Nach der Freigabe kann die Dokumentation nicht mehr geändert werden; spätere Änderungen werden als datierte Nachträge ergänzt.",
+    "approveConfirm": "Diese Dokumentation freigeben? Danach kann sie nicht mehr geändert werden.",
+    "save": "Speichern",
+    "saved": "Gespeichert",
+    "approve": "Freigeben",
+    "sourceHint": "Klicken Sie auf eine Zeile, um den Satz zu finden, der darauf beruht.",
+    "drafting": "Entwurf wird geschrieben …",
+    "draftingField": "„{{field}}“ wird neu entworfen …",
+    "draftingHint": "Dauert meist weniger als eine Minute.",
+    "startHint": "Lassen Sie die KI die Dokumentation aus dem Transkript und Ihren Notizen entwerfen, oder schreiben Sie sie selbst.",
+    "needsTranscript": "Für den KI-Entwurf wird das fertige Transkript benötigt.",
+    "draftWithAi": "Mit KI entwerfen",
+    "tryAgain": "Erneut versuchen",
+    "writeManually": "Selbst schreiben",
+    "noConsent": "Die Klient:in hat der KI-Verarbeitung nicht zugestimmt (oder sie widerrufen). Bitte schreiben Sie die Dokumentation selbst.",
+    "failure": {
+      "drafting_failed": "Der KI-Dienst hat nicht geantwortet. Bitte erneut versuchen oder selbst schreiben.",
+      "llm_not_configured": "Der KI-Entwurf ist noch nicht eingerichtet. Bitte schreiben Sie die Dokumentation selbst.",
+      "names_missing": "Bitte den Entwurf erneut starten.",
+      "decryption_failed": "Das Transkript konnte nicht gelesen werden.",
+      "unknown": "Der Entwurf konnte nicht geschrieben werden."
+    },
+    "approvedOn": "Freigegeben am {{date}}. Nur lesbar.",
+    "footerAi": "Erstellt mit KI-Unterstützung; geprüft und freigegeben durch die Therapeut:in.",
+    "footerManual": "Von der Therapeut:in verfasst.",
+    "footerApproved": "Freigegeben am {{date}}.",
+    "addenda": "Nachträge",
+    "noAddenda": "Keine Nachträge.",
+    "newAddendum": "Neuer Nachtrag",
+    "addAddendum": "Nachtrag hinzufügen",
+    "status": {
+      "none": "Noch nicht begonnen",
+      "pending": "Warten auf den KI-Entwurf …",
+      "drafting": "Entwurf wird geschrieben …",
+      "draft": "Entwurf – bereit zur Prüfung",
+      "approved": "Freigegeben",
+      "failed": "Entwurf fehlgeschlagen",
+      "no_consent": "Keine KI-Einwilligung – selbst schreiben"
+    },
+    "cardBlocking_one": "Entwurf – {{count}} Satz zu prüfen",
+    "cardBlocking_other": "Entwurf – {{count}} Sätze zu prüfen",
+    "review": "Dokumentation prüfen",
+    "open": "Dokumentation öffnen"
+  },
+  "hiddenNames": {
+    "title": "Vor der KI verborgene Namen",
+    "hint": "Namen anderer Personen, über die die Klient:in spricht (Partner:in, Kinder, Arbeitgeber …). Sie werden durch Platzhalter ersetzt, bevor das Transkript für den KI-Entwurf gesendet wird. Der Name der Klient:in und Ihr eigener Name werden immer verborgen.",
+    "placeholder": "z. B. Tom Weber",
+    "add": "Name hinzufügen",
+    "remove": "{{name}} entfernen"
   }
 }

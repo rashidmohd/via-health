@@ -7,11 +7,13 @@ from arq import Retry, cron, func
 from arq.connections import RedisSettings
 
 from app.adapters.kms import get_kms
+from app.adapters.llm import LlmError, get_llm
 from app.adapters.storage import make_object_store
 from app.adapters.stt import get_stt
 from app.core.config import get_settings
 from app.core.logging import configure_logging
 from app.db.session import WORKER_ROLE, make_engine
+from app.workers.report import draft_report, draft_report_unconfigured, find_draft_work
 from app.workers.transcribe import (
     TransientFailure,
     find_ready,
@@ -43,6 +45,10 @@ async def enqueue_ready_sessions(ctx: dict[str, Any]) -> None:
         await redis.enqueue_job(
             "refine_session_speakers", str(session_id), _job_id=f"refine:{session_id}"
         )
+    for session_id in await asyncio.to_thread(find_draft_work, ctx["engine"]):
+        await redis.enqueue_job(
+            "draft_session_report", str(session_id), _job_id=f"report:{session_id}"
+        )
     for session_id in await asyncio.to_thread(find_window_work, ctx["engine"]):
         if await redis.exists(f"windows-paused:{session_id}"):
             continue
@@ -60,6 +66,27 @@ async def refine_session_speakers(ctx: dict[str, Any], session_id: str) -> str:
             store_for=make_object_store,
             kms=get_kms(),
             stt=get_stt(),
+            last_attempt=ctx["job_try"] >= MAX_TRIES,
+        )
+    except TransientFailure:
+        raise Retry(defer=60 * ctx["job_try"]) from None
+
+
+async def draft_session_report(ctx: dict[str, Any], session_id: str) -> str:
+    try:
+        llm = get_llm()
+    except LlmError:
+        llm = None
+    if llm is None:
+        return await asyncio.to_thread(
+            draft_report_unconfigured, ctx["engine"], uuid.UUID(session_id)
+        )
+    try:
+        return await asyncio.to_thread(
+            draft_report,
+            uuid.UUID(session_id),
+            engine=ctx["engine"],
+            llm=llm,
             last_attempt=ctx["job_try"] >= MAX_TRIES,
         )
     except TransientFailure:
@@ -112,6 +139,7 @@ class WorkerSettings:
         func(transcribe_session, keep_result=0),
         func(transcribe_windows, keep_result=0, max_tries=1),
         func(refine_session_speakers, keep_result=0),
+        func(draft_session_report, keep_result=0),
     ]
     cron_jobs: ClassVar[list[Any]] = [
         cron(heartbeat, second=0),

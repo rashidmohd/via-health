@@ -11,6 +11,7 @@ import { ConsentPage } from './features/clients/ConsentPage'
 import { NewClientPage } from './features/clients/NewClientPage'
 import { NameStep } from './features/auth/NameStep'
 import { NAV_ITEMS } from './features/nav'
+import { ReportPage } from './features/reports/ReportPage'
 import { RecordPage } from './features/sessions/RecordPage'
 import { SessionPage } from './features/sessions/SessionPage'
 import { RecoveryBanner } from './features/sessions/RecoveryBanner'
@@ -19,6 +20,7 @@ import { StartSessionPage } from './features/sessions/StartSessionPage'
 import { SyncBadge } from './features/sessions/SyncBadge'
 import { TodayPage } from './features/today/TodayPage'
 import { startSync } from './recorder/sync'
+import { Logo } from './design/Logo'
 
 export default function App() {
   const { t } = useTranslation()
@@ -57,7 +59,9 @@ export default function App() {
   return (
     <div className="layout">
       <nav className="sidebar" aria-label="Main">
-        <div className="brand">Sessio</div>
+        <div className="brand">
+          <Logo />
+        </div>
         <ul>
           {NAV_ITEMS.map((item) => (
             <li key={item.key}>
@@ -84,6 +88,7 @@ export default function App() {
           <Route path="/sessions/new" element={<StartSessionPage />} />
           <Route path="/sessions/record/:clientId" element={<RecordPage />} />
           <Route path="/sessions/:id" element={<SessionPage />} />
+          <Route path="/sessions/:id/report" element={<ReportPage />} />
           {NAV_ITEMS.filter((item) => !['today', 'clients', 'sessions'].includes(item.key)).map((item) => (
             <Route key={item.key} path={item.path} element={<PlaceholderPage navKey={item.key} />} />
           ))}
