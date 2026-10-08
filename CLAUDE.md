@@ -80,6 +80,7 @@ docs/                     data flow, DPIA notes, ADRs (docs/adr/)
 ```
 # web
 cd apps/web && pnpm install && pnpm dev
+pnpm live-stt            # once: downloads the live preview model (~85 MB) into public/live-stt
 pnpm test                 # vitest
 pnpm lint && pnpm typecheck
 
@@ -178,7 +179,7 @@ Navigation: Today · Clients · Sessions · Reports · Keys · Settings.
 
 ## 8. Open decisions (do not decide silently — ask)
 
-- Kroko German model license for commercial use — verify before shipping.
+- Kroko German model license for commercial use — community model is CC-BY-SA; Kroko recommends its commercial models for production. Prototype OK with attribution; get a commercial license or written OK before real clients.
 - Chirp 3 speech adaptation (phrase sets) in location `eu` — verify. (Availability verified: `eu` yes, `europe-west4` no.)
 - Vertex abuse-monitoring exception — must be requested for zero retention.
 - Final product name ("Sessio" is a placeholder).

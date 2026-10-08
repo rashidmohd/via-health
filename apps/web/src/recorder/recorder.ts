@@ -120,6 +120,11 @@ export class SessionRecorder {
     return recorder
   }
 
+  /** The microphone stream, for read-only taps such as the live preview. */
+  get mediaStream(): MediaStream {
+    return this.stream
+  }
+
   elapsedMs(): number {
     return Date.now() - this.startedAt
   }

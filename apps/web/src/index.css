@@ -1001,3 +1001,17 @@ main > .banner {
   width: 100%;
   padding: 24px 0;
 }
+
+.transcript.live li.source-device,
+.transcript.live li.source-partial {
+  border-left-color: var(--border);
+  border-left-style: dashed;
+}
+
+.transcript.live li.source-partial p {
+  color: #6b6a63;
+}
+
+.link.small {
+  font-size: 0.85rem;
+}

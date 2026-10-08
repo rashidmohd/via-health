@@ -229,8 +229,22 @@
   },
   "live": {
     "title": "Bisheriges Transkript",
-    "hint": "Etwa eine Minute verzögert. Benötigt Internet.",
-    "empty": "Noch nichts transkribiert. Der erste Teil erscheint nach etwa einer Minute."
+    "hint": "Der Live-Text auf diesem Gerät ist eine grobe Vorschau und bleibt auf diesem Gerät. Das Transkript mit Sprecher:innen kommt vom Server, etwa eine Minute verzögert.",
+    "empty": "Noch nichts transkribiert. Der erste Teil erscheint nach etwa einer Minute.",
+    "loading": "Sprachmodell wird geladen ({{percent}} %). Nur beim ersten Mal auf diesem Gerät.",
+    "thisDevice": "Live",
+    "turnOff": "Live-Vorschau auf diesem Gerät ausschalten",
+    "turnOn": "Live-Vorschau auf diesem Gerät einschalten",
+    "status": {
+      "idle": "Live-Vorschau startet…",
+      "live": "Live-Vorschau auf diesem Gerät",
+      "too_slow": "Live-Vorschau pausiert: Dieses Gerät ist zu langsam. Das Server-Transkript läuft weiter.",
+      "error": "Live-Vorschau konnte nicht starten. Das Server-Transkript läuft weiter.",
+      "unsupported": "Dieser Browser unterstützt die Live-Vorschau nicht. Das Server-Transkript läuft weiter.",
+      "language": "Die Live-Vorschau gibt es vorerst nur auf Deutsch. Das Server-Transkript läuft weiter.",
+      "off": "Die Live-Vorschau ist auf diesem Gerät aus. Das Server-Transkript läuft weiter.",
+      "loading": "Sprachmodell wird geladen…"
+    }
   },
   "captures": {
     "title": "Notizen aus der Sitzung",

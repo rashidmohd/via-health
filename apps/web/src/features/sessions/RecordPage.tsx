@@ -139,7 +139,9 @@ export function RecordPage() {
         </div>
       ) : null}
 
-      {recordingHere && active && <LivePanel sessionId={active.sessionId} />}
+      {recordingHere && active && (
+        <LivePanel sessionId={active.sessionId} recorder={active} language={client?.preferred_language ?? 'de'} />
+      )}
 
       {recordingHere ? null : stoppedSession ? (
         <div className="record-panel">

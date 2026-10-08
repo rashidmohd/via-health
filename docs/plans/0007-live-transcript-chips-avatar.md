@@ -1,6 +1,13 @@
 # Plan 0007 — Live transcript (browser + server), capture chips, avatar
 
-Status: parts 1, 3, 4 implemented (2026-10-08). Open: part 2 (browser model), term chips (need the Settings page), nod-on-capture setting.
+Status: parts 1–4 implemented (2026-10-08). Open: term chips (need the Settings page),
+nod-on-capture setting, English in-browser model.
+
+Part 2 notes: engine = official sherpa-onnx v1.13.7 browser build (no eval, no threads → works
+with the existing CSP, no COOP/COEP); its data package is rebuilt with the Kroko German model by
+`apps/web/scripts/build-live-stt.mjs` (checksum-pinned). Measured: real-time factor 0.08 (WASM, one
+thread); real Chrome run with a fake microphone: model ready in ~2.5 s, live words while speaking,
+audio during model load is kept (max 60 s).
 
 Product boundaries (CLAUDE.md 11–13) apply to everything here: no clinical suggestions, no
 emotion/mood detection from voice or text, no risk detection. "Actions" = documentation chips only.
