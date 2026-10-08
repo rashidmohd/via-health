@@ -5,7 +5,7 @@ import { useLiveText } from '../../api/sessions'
 import { detectCaptures } from '../../live-stt/detectors'
 import { mergeLive, type LocalLine } from '../../live-stt/merge'
 import { LivePreview, livePreviewSupported, type PreviewEvent } from '../../live-stt/preview'
-import { LIVE_STT_LANGUAGES } from '../../live-stt/version'
+import { LIVE_STT_LANGUAGES, type LiveSttLanguage } from '../../live-stt/version'
 import type { SessionRecorder } from '../../recorder/recorder'
 import { formatClock } from '../format'
 import { CaptureChips } from './CaptureChips'
@@ -87,7 +87,7 @@ export function LivePanel({
           break
       }
     }
-    LivePreview.start(recorder.mediaStream, recorder.elapsedMs(), onEvent)
+    LivePreview.start(recorder.mediaStream, recorder.elapsedMs(), language as LiveSttLanguage, onEvent)
       .then((started) => {
         if (cancelled) started.stop()
         else preview.current = started
@@ -99,7 +99,7 @@ export function LivePanel({
       preview.current = null
       setPartial(null)
     }
-  }, [open, enabled, canRun, recorder])
+  }, [open, enabled, canRun, recorder, language])
 
   function toggle() {
     const next = !enabled

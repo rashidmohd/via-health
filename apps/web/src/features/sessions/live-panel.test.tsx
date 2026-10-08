@@ -10,13 +10,20 @@ const preview = vi.hoisted(() => ({
   emit: null as null | ((event: PreviewEvent) => void),
   starts: 0,
   stops: 0,
+  language: '',
 }))
 
 vi.mock('../../live-stt/preview', () => ({
   livePreviewSupported: () => true,
   LivePreview: {
-    start: async (_stream: MediaStream, _offset: number, onEvent: (event: PreviewEvent) => void) => {
+    start: async (
+      _stream: MediaStream,
+      _offset: number,
+      language: string,
+      onEvent: (event: PreviewEvent) => void,
+    ) => {
       preview.starts++
+      preview.language = language
       preview.emit = onEvent
       return { stop: () => preview.stops++ }
     },
@@ -25,11 +32,11 @@ vi.mock('../../live-stt/preview', () => ({
 
 const recorder = { mediaStream: {} as MediaStream, elapsedMs: () => 0 } as unknown as SessionRecorder
 
-function renderPanel(language: 'de' | 'en' = 'de') {
+function renderPanel(language: string = 'de') {
   const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } })
   return render(
     <QueryClientProvider client={queryClient}>
-      <LivePanel sessionId="s1" recorder={recorder} language={language} />
+      <LivePanel sessionId="s1" recorder={recorder} language={language as 'de'} />
     </QueryClientProvider>,
   )
 }
@@ -82,10 +89,17 @@ describe('live panel', () => {
     expect(preview.stops).toBe(1)
   })
 
-  it('German only for now', async () => {
+  it('runs the English model for English-speaking clients', async () => {
     renderPanel('en')
     openPanel()
-    expect(await screen.findByText(/available for German only/)).toBeInTheDocument()
+    await vi.waitFor(() => expect(preview.starts).toBe(1))
+    expect(preview.language).toBe('en')
+  })
+
+  it('says so for a language without a model', async () => {
+    renderPanel('fr')
+    openPanel()
+    expect(await screen.findByText(/not available for this language yet/)).toBeInTheDocument()
     expect(preview.starts).toBe(0)
   })
 

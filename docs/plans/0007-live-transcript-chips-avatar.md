@@ -1,7 +1,9 @@
 # Plan 0007 — Live transcript (browser + server), capture chips, avatar
 
 Status: parts 1–4 implemented (2026-10-08). Open: term chips (need the Settings page),
-nod-on-capture setting, English in-browser model.
+nod-on-capture setting.
+English in-browser model added: Kroko English (compared with the Apache-2.0 k2 English model,
+Kroko gave punctuation/casing and no dropped sentences; RTF 0.10 vs 0.16).
 
 Part 2 notes: engine = official sherpa-onnx v1.13.7 browser build (no eval, no threads → works
 with the existing CSP, no COOP/COEP); its data package is rebuilt with the Kroko German model by

@@ -51,8 +51,8 @@ Code is deployed from GitHub (`rashidmohd/via-health`, branch `main`).
    ```
 
 ## 4. `web` service
-The image build downloads the live preview engine and German model (~240 MB download, ~85 MB
-served, checksum-verified). The first build takes a few minutes longer; later builds reuse the layer.
+The image build downloads the live preview engine and the German and English models (~310 MB
+download, ~155 MB served, checksum-verified). The first build takes a few minutes longer; later builds reuse the layer.
 
 1. **+ Create** → **GitHub Repo** → `via-health`. Rename to `web`.
 2. **Settings:** Root directory `/apps/web`, config file `/infra/railway/web.toml`,

@@ -1,12 +1,14 @@
 /*
  * Live preview speech recognition (plan 0007 part 2, live-transcript-preview skill).
- * Classic worker: loads the sherpa-onnx WebAssembly engine and the German model from our own
- * origin (`?base=/live-stt/<version>/`). Audio arrives on a MessagePort straight from the
+ * Classic worker: loads the sherpa-onnx WebAssembly engine and the model for one language from
+ * our own origin (`?base=/live-stt/<version>/&lang=de|en`). Audio arrives on a MessagePort straight from the
  * AudioWorklet. Text goes only to the page that started this worker — nothing leaves the device.
  */
 'use strict'
 
-const base = new URL(self.location.href).searchParams.get('base') || '/live-stt/'
+const params = new URL(self.location.href).searchParams
+const base = params.get('base') || '/live-stt/'
+const lang = params.get('lang') === 'en' ? 'en' : 'de'
 const TOO_SLOW_RTF = 0.8 // decode time / audio time
 const RTF_WINDOW_MS = 30000
 const MAX_PENDING_MS = 60000 // audio kept while the model loads; older audio is dropped
@@ -28,7 +30,8 @@ function post(message) {
 }
 
 self.Module = {
-  locateFile: (path) => base + path,
+  // Shared engine (.wasm) in the version folder, model package (.data) per language.
+  locateFile: (path) => (path.endsWith('.data') ? `${base}${lang}/${path}` : base + path),
   print: () => {},
   printErr: () => {},
   setStatus: (status) => {
@@ -150,7 +153,7 @@ self.onmessage = (event) => {
 }
 
 try {
-  importScripts(base + 'sherpa-onnx-wasm-main-asr.js', base + 'sherpa-onnx-asr.js')
+  importScripts(`${base}${lang}/sherpa-onnx-wasm-main-asr.js`, base + 'sherpa-onnx-asr.js')
 } catch {
   post({ type: 'error', code: 'engine_missing' })
 }

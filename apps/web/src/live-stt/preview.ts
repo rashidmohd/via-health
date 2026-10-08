@@ -1,4 +1,4 @@
-import { LIVE_STT_VERSION } from './version'
+import { LIVE_STT_VERSION, type LiveSttLanguage } from './version'
 
 /**
  * Live preview controller (plan 0007 part 2). Runs fully separate from the recorder: its own
@@ -39,9 +39,13 @@ export class LivePreview {
   static async start(
     stream: MediaStream,
     offsetMs: number,
+    language: LiveSttLanguage,
     onEvent: (event: PreviewEvent) => void,
   ): Promise<LivePreview> {
-    const worker = new Worker(`/live-stt-worker.js?base=/live-stt/${LIVE_STT_VERSION}/`)
+    // Versioned URLs: a new model version can never be served from an old cache.
+    const worker = new Worker(
+      `/live-stt-worker.js?base=/live-stt/${LIVE_STT_VERSION}/&lang=${language}&v=${LIVE_STT_VERSION}`,
+    )
     worker.onmessage = (event: MessageEvent<PreviewEvent | { type: 'stopped' }>) => {
       if (event.data.type !== 'stopped') onEvent(event.data)
     }
@@ -49,7 +53,7 @@ export class LivePreview {
 
     const context = new AudioContext()
     try {
-      await context.audioWorklet.addModule('/live-stt-capture.js')
+      await context.audioWorklet.addModule(`/live-stt-capture.js?v=${LIVE_STT_VERSION}`)
       const source = context.createMediaStreamSource(stream)
       const capture = new AudioWorkletNode(context, 'live-stt-capture')
       const silent = context.createGain()

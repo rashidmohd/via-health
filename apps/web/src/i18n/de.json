@@ -241,7 +241,7 @@
       "too_slow": "Live-Vorschau pausiert: Dieses Gerät ist zu langsam. Das Server-Transkript läuft weiter.",
       "error": "Live-Vorschau konnte nicht starten. Das Server-Transkript läuft weiter.",
       "unsupported": "Dieser Browser unterstützt die Live-Vorschau nicht. Das Server-Transkript läuft weiter.",
-      "language": "Die Live-Vorschau gibt es vorerst nur auf Deutsch. Das Server-Transkript läuft weiter.",
+      "language": "Die Live-Vorschau gibt es für diese Sprache noch nicht. Das Server-Transkript läuft weiter.",
       "off": "Die Live-Vorschau ist auf diesem Gerät aus. Das Server-Transkript läuft weiter.",
       "loading": "Sprachmodell wird geladen…"
     }

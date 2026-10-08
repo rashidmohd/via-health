@@ -42,7 +42,7 @@ without restructuring.
 | Queue | Redis (Railway plugin) |
 | Object storage | Behind `ObjectStore` adapter. GCS `europe-west4` (ADR 0001) |
 | STT (final) | Google Speech-to-Text V2, model `chirp_3`, location `eu` (not available in `europe-west4`, verified 2026-10-08), behind `SttProvider` adapter |
-| STT (live preview) | sherpa-onnx WASM in the browser, streaming German transducer (Kroko) |
+| STT (live preview) | sherpa-onnx WASM in the browser, streaming transducers (Kroko German + English) |
 | LLM (reports) | Gemini behind `LlmProvider`: Vertex AI `europe-west4` in prod; Gemini API allowed in dev with test data only (ADR 0005) |
 | Keys | Google Cloud KMS `europe-west4` + OpenPGP (therapist keys) |
 | Hosting | Railway, all services pinned to the EU region |
@@ -80,7 +80,7 @@ docs/                     data flow, DPIA notes, ADRs (docs/adr/)
 ```
 # web
 cd apps/web && pnpm install && pnpm dev
-pnpm live-stt            # once: downloads the live preview model (~85 MB) into public/live-stt
+pnpm live-stt            # once: downloads the live preview models (de + en, ~155 MB) into public/live-stt
 pnpm test                 # vitest
 pnpm lint && pnpm typecheck
 
@@ -179,7 +179,7 @@ Navigation: Today · Clients · Sessions · Reports · Keys · Settings.
 
 ## 8. Open decisions (do not decide silently — ask)
 
-- Kroko German model license for commercial use — community model is CC-BY-SA; Kroko recommends its commercial models for production. Prototype OK with attribution; get a commercial license or written OK before real clients.
+- Kroko German/English model license for commercial use — community model is CC-BY-SA; Kroko recommends its commercial models for production. Prototype OK with attribution; get a commercial license or written OK before real clients.
 - Chirp 3 speech adaptation (phrase sets) in location `eu` — verify. (Availability verified: `eu` yes, `europe-west4` no.)
 - Vertex abuse-monitoring exception — must be requested for zero retention.
 - Final product name ("Sessio" is a placeholder).

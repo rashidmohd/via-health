@@ -241,7 +241,7 @@
       "too_slow": "Live preview paused: this device is too slow. The server transcript continues.",
       "error": "Live preview could not start. The server transcript continues.",
       "unsupported": "This browser cannot run the live preview. The server transcript continues.",
-      "language": "Live preview is available for German only for now. The server transcript continues.",
+      "language": "Live preview is not available for this language yet. The server transcript continues.",
       "off": "Live preview is off on this device. The server transcript continues.",
       "loading": "Loading the speech model…"
     }
