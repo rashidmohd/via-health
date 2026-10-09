@@ -37,7 +37,7 @@ NAMING_CONVENTION = {
 
 CONSENT_KINDS = ("recording", "ai_processing", "product_improvement")
 LANGUAGES = ("de", "en")
-AVATAR_KINDS = ("illustrated", "initials", "photo")
+AVATAR_KINDS = ("illustrated", "drawn", "initials", "photo")
 
 
 def _in(column: str, values: tuple[str, ...]) -> str:
@@ -82,6 +82,8 @@ class User(Base):
     avatar_tilt: Mapped[bool] = mapped_column(server_default=false())
     # ADR 0012: which of the three ready-made characters (Rive input `character`).
     avatar_character: Mapped[int] = mapped_column(Integer, server_default="0")
+    # ADR 0013: drawn avatar description (parts + colours), never the photo.
+    avatar_appearance: Mapped[dict[str, Any] | None]
     avatar_photo_enc: Mapped[bytes | None]
     created_at: Mapped[datetime] = _created_at()
 
@@ -92,6 +94,9 @@ class User(Base):
         CheckConstraint("avatar_character BETWEEN 0 AND 2", name="avatar_character"),
         CheckConstraint(
             "avatar_kind <> 'photo' OR avatar_photo_enc IS NOT NULL", name="avatar_photo"
+        ),
+        CheckConstraint(
+            "avatar_kind <> 'drawn' OR avatar_appearance IS NOT NULL", name="avatar_drawn"
         ),
     )
 

@@ -33,5 +33,5 @@ and > 300 KB; another user cannot read the photo (RLS); delete removes it; photo
 photo; tilt off while recording and with reduced motion.
 
 ## Dropped (2026-10-09)
-No per-feature "build my avatar" and no "avatar from my photo" (AI redraw). Instead the
-illustrated avatar offers three ready-made characters (ADR 0012); initials and own photo remain.
+No step-by-step "build my avatar" questions. Instead: three ready-made presets (ADR 0012) and
+a drawn avatar suggested from the user's photo, then corrected by the user (ADR 0013).

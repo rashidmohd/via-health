@@ -1,9 +1,19 @@
 import riveWasm from '@rive-app/canvas/rive.wasm?url'
 import riveFallbackWasm from '@rive-app/canvas/rive_fallback.wasm?url'
-import { RuntimeLoader, useRive, useStateMachineInput, type StateMachineInput } from '@rive-app/react-canvas'
+import {
+  RuntimeLoader,
+  useRive,
+  useStateMachineInput,
+  useViewModel,
+  useViewModelInstance,
+  useViewModelInstanceColor,
+  useViewModelInstanceEnum,
+  type StateMachineInput,
+} from '@rive-app/react-canvas'
 import { useEffect, useRef } from 'react'
+import { rgb, type Appearance } from './appearance'
 import type { Mood } from './mood'
-import { ARTBOARD, EMOTION, INPUT, PAUSE_AFTER_MS, STATE_MACHINE, type Character } from './rive'
+import { ARTBOARD, EMOTION, INPUT, PAUSE_AFTER_MS, PROP, STATE_MACHINE, VIEW_MODEL } from './rive'
 
 // The runtime is served from our own origin. By default Rive loads it from unpkg / jsdelivr
 // (non-EU third parties, CLAUDE.md rule 4).
@@ -23,7 +33,7 @@ function prefersReducedMotion(): boolean {
 export default function RiveCanvas({
   file,
   mood,
-  character,
+  appearance,
   recording,
   nod,
   size,
@@ -31,7 +41,7 @@ export default function RiveCanvas({
 }: {
   file: ArrayBuffer
   mood: Mood
-  character: Character
+  appearance: Appearance
   recording: boolean
   nod: boolean
   size: number
@@ -49,15 +59,32 @@ export default function RiveCanvas({
   const emotion = useStateMachineInput(rive, STATE_MACHINE, INPUT.emotion)
   const still = useStateMachineInput(rive, STATE_MACHINE, INPUT.recording)
   const noted = useStateMachineInput(rive, STATE_MACHINE, INPUT.noted)
-  const look = useStateMachineInput(rive, STATE_MACHINE, INPUT.character)
+  // Appearance through data binding: the instance is bound to this Rive instance.
+  const viewModel = useViewModel(rive, { name: VIEW_MODEL })
+  const instance = useViewModelInstance(viewModel, { rive })
+  const hairStyle = useViewModelInstanceEnum(PROP.hairStyle, instance)
+  const glassesProp = useViewModelInstanceEnum(PROP.glasses, instance)
+  const beardProp = useViewModelInstanceEnum(PROP.beard, instance)
+  const hairColor = useViewModelInstanceColor(PROP.hairColor, instance)
+  const skinColor = useViewModelInstanceColor(PROP.skinColor, instance)
+  const eyeColor = useViewModelInstanceColor(PROP.eyeColor, instance)
 
   useEffect(() => {
     setInput(emotion, EMOTION[mood])
   }, [emotion, mood])
 
+  const { hair_style, glasses, beard, hair_color, skin_color, eye_color } = appearance
   useEffect(() => {
-    setInput(look, character)
-  }, [look, character])
+    if (!instance) return
+    hairStyle.setValue(hair_style)
+    glassesProp.setValue(glasses)
+    beardProp.setValue(beard)
+    hairColor.setRgb(...rgb(hair_color))
+    skinColor.setRgb(...rgb(skin_color))
+    eyeColor.setRgb(...rgb(eye_color))
+    // The setters are new objects each render; the values are what matter.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [instance, hair_style, glasses, beard, hair_color, skin_color, eye_color])
 
   const repause = useRef(0)
   useEffect(() => {

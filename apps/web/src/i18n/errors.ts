@@ -40,6 +40,8 @@ export const ERROR_CODES = [
   'photo_missing',
   'photo_invalid',
   'photo_too_large',
+  'appearance_missing',
+  'appearance_failed',
 ] as const
 
 export type ErrorCode = (typeof ERROR_CODES)[number]

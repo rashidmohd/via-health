@@ -1,8 +1,9 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import type { Appearance } from '../avatar/appearance'
 import { api, API_URL, ApiError } from './client'
 
 export type Language = 'de' | 'en'
-export type AvatarKind = 'illustrated' | 'initials' | 'photo'
+export type AvatarKind = 'illustrated' | 'drawn' | 'initials' | 'photo'
 
 export interface Me {
   id: string
@@ -13,6 +14,7 @@ export interface Me {
   avatar_reactions?: boolean
   avatar_tilt?: boolean
   avatar_character?: number
+  avatar_appearance?: Appearance | null
   has_photo?: boolean
 }
 
@@ -23,6 +25,7 @@ export interface MeUpdate {
   avatar_reactions?: boolean
   avatar_tilt?: boolean
   avatar_character?: number
+  avatar_appearance?: Appearance
 }
 
 export const ME_KEY = ['auth', 'me'] as const
@@ -107,6 +110,18 @@ export function useUploadPhoto() {
       queryClient.setQueryData(ME_KEY, me)
       void queryClient.invalidateQueries({ queryKey: PHOTO_KEY })
     },
+  })
+}
+
+/** Suggest a drawn avatar from a photo (ADR 0013). The photo is used once, never stored. */
+export function useDescribePhoto() {
+  return useMutation({
+    mutationFn: async (photo: Blob) =>
+      api<Appearance>('/auth/me/avatar/describe', {
+        method: 'POST',
+        bytes: new Uint8Array(await photo.arrayBuffer()),
+        headers: { 'Content-Type': photo.type },
+      }),
   })
 }
 

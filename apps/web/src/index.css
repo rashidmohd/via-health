@@ -2093,3 +2093,142 @@
 .character-option .avatar-image {
   border-radius: 50%;
 }
+
+/* Drawn avatar stand-in until the Rive file exists (ADR 0013) */
+.drawn-face {
+  display: block;
+  border-radius: 50%;
+}
+
+.drawn-bg {
+  fill: var(--olive-100);
+}
+
+.drawn-top {
+  fill: var(--olive-500);
+}
+
+.drawn-mouth {
+  fill: none;
+  stroke: #7a4436;
+  stroke-width: 2;
+  stroke-linecap: round;
+  transition: d 300ms ease;
+}
+
+.drawn-brows path {
+  transition: d 300ms ease;
+}
+
+.drawn-eyes circle {
+  transition: cx 120ms ease-out, cy 120ms ease-out;
+}
+
+.drawn-glasses {
+  stroke: var(--charcoal);
+  stroke-width: 1.5;
+}
+
+.drawn-dots circle {
+  fill: var(--olive-700);
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .drawn-face:not(.reduced):not(.still) .drawn-eyes {
+    transform-origin: 50px 48.5px;
+    animation: blink 5s infinite;
+  }
+  .drawn-face:not(.reduced):not(.still) .drawn-head {
+    transform-origin: 50px 90px;
+    animation: breathe 6s ease-in-out infinite;
+  }
+  .drawn-face.mood-welcome:not(.reduced):not(.still) .drawn-head {
+    animation: greet 1.2s ease-out 1;
+  }
+  .drawn-face.mood-thinking:not(.reduced) .drawn-dots circle {
+    animation: dot 1.4s ease-in-out infinite;
+  }
+  .drawn-face.mood-thinking:not(.reduced) .drawn-dots circle:nth-child(2) {
+    animation-delay: 0.2s;
+  }
+  .drawn-face.mood-thinking:not(.reduced) .drawn-dots circle:nth-child(3) {
+    animation-delay: 0.4s;
+  }
+  .drawn-face.nod:not(.reduced) .drawn-head {
+    transform-origin: 50px 90px;
+    animation: nod 0.8s ease-in-out 1;
+  }
+}
+
+@keyframes blink {
+  0%, 94%, 100% { transform: scaleY(1); }
+  97% { transform: scaleY(0.1); }
+}
+
+@keyframes breathe {
+  50% { transform: translateY(-0.6px); }
+}
+
+@keyframes greet {
+  30% { transform: rotate(-4deg); }
+  60% { transform: rotate(3deg); }
+}
+
+@keyframes dot {
+  50% { opacity: 0.25; }
+}
+
+@keyframes nod {
+  40% { transform: rotate(4deg) translateY(1px); }
+}
+
+/* Drawn avatar editor (ADR 0013) */
+.appearance-editor h3 {
+  margin: 0;
+}
+
+.appearance-layout {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-6);
+  align-items: flex-start;
+}
+
+.appearance-preview {
+  border-radius: 50%;
+  box-shadow: 0 0 0 2px var(--olive-300);
+}
+
+.appearance-fields {
+  display: grid;
+  gap: var(--space-3);
+  min-width: 220px;
+  flex: 1;
+}
+
+.appearance-fields > label {
+  display: grid;
+  gap: var(--space-1);
+}
+
+.appearance-colors {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-4);
+}
+
+.color-field {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.color-field input {
+  width: 36px;
+  height: 36px;
+  padding: 2px;
+  border: 1px solid var(--border);
+  border-radius: 50%;
+  background: var(--surface);
+  cursor: pointer;
+}

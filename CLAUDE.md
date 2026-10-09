@@ -184,10 +184,11 @@ Type: Inter (self-hosted); icons: lucide-react. Full token set and components: `
 - Chirp 3 speech adaptation (phrase sets) in location `eu` — verify. (Availability verified: `eu` yes, `europe-west4` no.)
 - Vertex abuse-monitoring exception — must be requested for zero retention.
 - Final product name ("Sessio" is a placeholder).
-- Rive characters not yet delivered — placeholder images in use (`public/avatar/placeholder-0..2.png`; drop the file in as `public/avatar/sessio-avatar.riv`, contract in the `avatar-and-ui` skill).
+- Rive character not yet delivered — the SVG stand-in `DrawnFace` is used (drop the file in as `public/avatar/sessio-avatar.riv`, contract in the `avatar-and-ui` skill).
+- "Drawn from my photo" sends the photo to Gemini without EU/zero-retention checks — prototype and test photos only (ADR 0013); decide before real users.
 - Legal: DPIA, DPAs, §203 contracts, final consent texts — parked, lawyer review pending.
 
-Decided (see `docs/adr/`): GCS `europe-west4` for storage (0001); placeholder consent texts v0 for the prototype (0002); email-code login via Resend EU, open signup (0003); interim server key for client data (0004); Gemini API in dev only, Vertex in prod (0005); transcript is part of the record, kept 10 years (0006); LLM sees plain text in memory only, names replaced by placeholders (0007); AI documents what was said, never assesses (0008); UI foundation Inter + Lucide + raised-panel shell (0009); Rive avatar, binary listening ring, voice activity in its own worklet, mic health (0010); profile photo encrypted in the users row, not the bucket (0011); three ready-made characters instead of an avatar builder (0012).
+Decided (see `docs/adr/`): GCS `europe-west4` for storage (0001); placeholder consent texts v0 for the prototype (0002); email-code login via Resend EU, open signup (0003); interim server key for client data (0004); Gemini API in dev only, Vertex in prod (0005); transcript is part of the record, kept 10 years (0006); LLM sees plain text in memory only, names replaced by placeholders (0007); AI documents what was said, never assesses (0008); UI foundation Inter + Lucide + raised-panel shell (0009); Rive avatar, binary listening ring, voice activity in its own worklet, mic health (0010); profile photo encrypted in the users row, not the bucket (0011); three ready-made characters instead of an avatar builder (0012); drawn avatar from a photo, parts + colours via Rive data binding (0013).
 
 ## 9. Skills index
 

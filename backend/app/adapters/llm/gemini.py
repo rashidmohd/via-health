@@ -36,6 +36,16 @@ class GeminiProvider:
             )
 
     def generate_json(self, *, system: str, prompt: str, schema: dict[str, Any]) -> dict[str, Any]:
+        return self._json(system, [prompt], schema)
+
+    def describe_image_json(
+        self, *, system: str, prompt: str, image: bytes, mime_type: str, schema: dict[str, Any]
+    ) -> dict[str, Any]:
+        return self._json(
+            system, [types.Part.from_bytes(data=image, mime_type=mime_type), prompt], schema
+        )
+
+    def _json(self, system: str, contents: list[Any], schema: dict[str, Any]) -> dict[str, Any]:
         config = types.GenerateContentConfig(
             system_instruction=system,
             temperature=0.2,
@@ -44,7 +54,7 @@ class GeminiProvider:
         )
         try:
             response = self._client.models.generate_content(
-                model=self.model, contents=prompt, config=config
+                model=self.model, contents=contents, config=config
             )
         except gerrors.APIError as error:
             raise LlmError(

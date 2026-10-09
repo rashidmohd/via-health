@@ -55,7 +55,9 @@
     "report_not_approved": "Addenda are only possible for approved notes.",
     "photo_missing": "No photo uploaded yet.",
     "photo_invalid": "This photo could not be used. Please choose another image.",
-    "photo_too_large": "The photo is too large."
+    "photo_too_large": "The photo is too large.",
+    "appearance_missing": "Create the drawn avatar first.",
+    "appearance_failed": "The photo could not be turned into a drawing. Try another photo, or adjust the drawing by hand."
   },
   "language": {
     "label": "Language"
@@ -545,7 +547,48 @@
       },
       "characterTitle": "Character",
       "characterHint": "Pick one of three illustrated characters.",
-      "characterOption": "Character {{n}}"
+      "characterOption": "Character {{n}}",
+      "drawn": "Drawn from my photo",
+      "drawnHint": "An animated drawing that looks like you, made from a photo. The photo is not stored.",
+      "createDrawn": "Create my drawn avatar",
+      "editDrawn": "Edit my drawn avatar",
+      "editor": {
+        "title": "Your drawn avatar",
+        "fromPhoto": "Start from a photo",
+        "describing": "Looking at the photo…",
+        "suggested": "Suggested from your photo. Check it and change anything that is not right.",
+        "hairStyle": "Hairstyle",
+        "glasses": "Glasses",
+        "beard": "Beard",
+        "hair_color": "Hair",
+        "skin_color": "Skin",
+        "eye_color": "Eyes",
+        "privacy": "The photo is sent once to Google Gemini to suggest the drawing, then discarded. Only the drawing is saved.",
+        "save": "Use this avatar",
+        "cancel": "Cancel"
+      },
+      "hair": {
+        "shaved": "Shaved",
+        "short": "Short",
+        "medium": "Medium",
+        "long": "Long",
+        "curly_short": "Curly, short",
+        "curly_long": "Curly, long",
+        "tied_back": "Tied back",
+        "bun": "Bun",
+        "headscarf": "Headscarf"
+      },
+      "glassesOptions": {
+        "none": "None",
+        "round": "Round",
+        "rectangular": "Rectangular"
+      },
+      "beardOptions": {
+        "none": "None",
+        "stubble": "Stubble",
+        "short": "Short",
+        "full": "Full"
+      }
     },
     "reactions": {
       "title": "Avatar during recordings",

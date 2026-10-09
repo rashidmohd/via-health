@@ -1,6 +1,8 @@
 import { Component, lazy, Suspense, useEffect, useState, type ReactNode } from 'react'
+import { PRESETS, type Appearance } from './appearance'
+import { DrawnFace } from './DrawnFace'
 import type { Mood } from './mood'
-import { loadRiveFile, placeholderSrc, type Character } from './rive'
+import { loadRiveFile } from './rive'
 
 const RiveCanvas = lazy(() => import('./RiveCanvas'))
 
@@ -19,18 +21,18 @@ class Fallback extends Component<{ fallback: ReactNode; children: ReactNode }, {
 
 /**
  * The illustrated character (plan 0011). Reacts only to app state (`mood` from `useAvatarMood`).
- * Until the designer's .riv exists, or if it fails to load, a static placeholder image is shown
- * with the same props — callers never care which one they get. Decorative: `aria-hidden`.
+ * Until the designer's .riv exists, or if it fails to load, the SVG stand-in draws the same
+ * appearance with the same props — callers never care which one they get. Decorative: `aria-hidden`.
  */
 export function RiveAvatar({
   mood,
-  character = 0,
+  appearance = PRESETS[0],
   recording = false,
   nod = false,
   size = 160,
 }: {
   mood: Mood
-  character?: Character
+  appearance?: Appearance
   recording?: boolean
   nod?: boolean
   size?: number
@@ -50,16 +52,7 @@ export function RiveAvatar({
   }, [])
 
   const placeholder = (
-    <img
-      className="avatar-image"
-      src={placeholderSrc(character)}
-      width={size}
-      height={size}
-      alt=""
-      aria-hidden="true"
-      data-avatar="placeholder"
-      data-mood={mood}
-    />
+    <DrawnFace appearance={appearance} mood={mood} size={size} nod={nod} recording={recording} />
   )
   if (!file || failed) return placeholder
 
@@ -69,7 +62,7 @@ export function RiveAvatar({
         <RiveCanvas
           file={file}
           mood={mood}
-          character={character}
+          appearance={appearance}
           recording={recording}
           nod={nod}
           size={size}

@@ -179,3 +179,92 @@ def test_character_out_of_range_rejected(
     response = client.patch("/auth/me", json={"avatar_character": value})
     assert response.status_code == 422
     assert client.get("/auth/me").json()["avatar_character"] == 0
+
+
+# --- drawn avatar from a photo (ADR 0013) ------------------------------------------
+
+APPEARANCE = {
+    "hair_style": "bun",
+    "hair_color": "#a0522d",
+    "skin_color": "#f2d3b8",
+    "eye_color": "#3a6b5a",
+    "glasses": "round",
+    "beard": "none",
+}
+
+
+def test_describe_suggests_appearance_and_keeps_no_photo(
+    client: TestClient, mail: FakeEmailSender, owner: Engine
+) -> None:
+    from app.adapters.llm import get_llm
+    from app.adapters.llm.fake import FAKE_APPEARANCE, FakeLlmProvider
+    from app.main import app
+
+    fake = FakeLlmProvider()
+    app.dependency_overrides[get_llm] = lambda: fake
+    try:
+        me = login(client, mail, "anna@example.com")
+        response = client.post("/auth/me/avatar/describe", content=CLEAN_WEBP)
+    finally:
+        app.dependency_overrides.pop(get_llm)
+    assert response.status_code == 200
+    assert response.json() == FAKE_APPEARANCE
+    assert fake.calls[-1]["image"] == CLEAN_WEBP
+    with owner.connect() as c:
+        row = c.execute(
+            text("SELECT avatar_photo_enc, avatar_appearance FROM users WHERE id = :id"),
+            {"id": me["id"]},
+        ).one()
+    assert row == (None, None)  # a suggestion only: nothing stored until the user saves
+
+
+def test_describe_rejects_photos_with_metadata(client: TestClient, mail: FakeEmailSender) -> None:
+    login(client, mail, "anna@example.com")
+    response = client.post("/auth/me/avatar/describe", content=jpeg(segment(0xE1, GPS_EXIF)))
+    assert response.status_code == 400
+
+
+@pytest.mark.parametrize(
+    "answer", [{**APPEARANCE, "hair_style": "mohawk"}, {**APPEARANCE, "skin_color": "pink"}, {}]
+)
+def test_describe_reports_unusable_answers(
+    client: TestClient, mail: FakeEmailSender, answer: dict[str, str]
+) -> None:
+    from app.adapters.llm import get_llm
+    from app.adapters.llm.fake import FakeLlmProvider
+    from app.main import app
+
+    app.dependency_overrides[get_llm] = lambda: FakeLlmProvider(lambda *_: answer)
+    try:
+        login(client, mail, "anna@example.com")
+        response = client.post("/auth/me/avatar/describe", content=CLEAN_WEBP)
+    finally:
+        app.dependency_overrides.pop(get_llm)
+    assert response.status_code == 503
+    assert response.json() == {"code": "appearance_failed"}
+
+
+def test_drawn_avatar_saved_after_review(client: TestClient, mail: FakeEmailSender) -> None:
+    login(client, mail, "anna@example.com")
+    assert client.patch("/auth/me", json={"avatar_kind": "drawn"}).json() == {
+        "code": "appearance_missing"
+    }
+    response = client.patch(
+        "/auth/me", json={"avatar_kind": "drawn", "avatar_appearance": APPEARANCE}
+    )
+    assert response.status_code == 200
+    me = client.get("/auth/me").json()
+    assert (me["avatar_kind"], me["avatar_appearance"]) == ("drawn", APPEARANCE)
+
+
+@pytest.mark.parametrize(
+    "change",
+    [{"hair_style": "mohawk"}, {"skin_color": "#FFF"}, {"glasses": "monocle"}, {"age": 40}],
+)
+def test_invalid_appearance_rejected(
+    client: TestClient, mail: FakeEmailSender, change: dict[str, object]
+) -> None:
+    login(client, mail, "anna@example.com")
+    response = client.patch("/auth/me", json={"avatar_appearance": {**APPEARANCE, **change}})
+    assert response.status_code == 422
+    assert client.get("/auth/me").json()["avatar_appearance"] is None

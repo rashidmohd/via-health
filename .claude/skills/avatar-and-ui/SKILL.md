@@ -62,8 +62,8 @@ Files: `src/avatar/` — `mood.ts` (state machine, tested), `events.ts` (payload
 `RiveCanvas.tsx` (Rive hooks, code-split), `AvatarRing.tsx` + `ring.ts`, `AppAvatar.tsx`
 (`UserAvatar` = chosen kind, `AppAvatar` = avatar + ring for non-recording screens), `settings.ts`.
 
-Assets: `public/avatar/sessio-avatar.riv` (not delivered yet) and one placeholder per character,
-`public/avatar/placeholder-0.png` … `placeholder-2.png`.
+Assets: `public/avatar/sessio-avatar.riv` (not delivered yet). Until then `DrawnFace` (SVG) draws
+the same appearance with the same moods, eye tracking, nod and recording pose.
 `RiveAvatar` fetches the .riv once; if it is missing or doesn't start with `RIVE`, the placeholder
 image is shown with the same props and no Rive code/WASM is loaded. The Rive WASM is bundled and
 served from our origin (`RuntimeLoader.setWasmUrl` + `setWasmFallbackUrl`) — never the CDN default.
@@ -79,9 +79,20 @@ Artboard `Avatar`, state machine `Avatar`.
 | `emotion` | Number | 0 attentive · 1 welcome · 2 thinking · 3 encouraging · 4 pleased · 5 concern · 6 still |
 | `recording` | Boolean | true → no tracking, calm still pose |
 | `noted` | Trigger | ≤1 s glance/nod for a new capture chip (only if the therapist enabled reactions) |
-| `character` | Number | 0, 1, 2 — which of the three ready-made characters (ADR 0012) |
 
-Three ready-made characters on one shared rig, picked in Settings — no per-feature builder (ADR 0012).
+Appearance (ADR 0013) — data binding, view model `Avatar`, set from `appearance.ts`:
+
+| Property | Type | Values |
+|---|---|---|
+| `hairStyle` | Enum | shaved, short, medium, long, curly_short, curly_long, tied_back, bun, headscarf |
+| `glasses` | Enum | none, round, rectangular |
+| `beard` | Enum | none, stubble, short, full |
+| `hairColor`, `skinColor`, `eyeColor` | Color | any (set with `setRgb`) |
+
+Every part combination works with every emotion and with tracking. The three ready-made
+characters (ADR 0012) are `PRESETS` of this description; "Drawn from my photo" is a description
+suggested by Gemini from a cropped photo (`POST /auth/me/avatar/describe`, photo never stored),
+always reviewed and corrected by the user before saving.
 
 ### App event → emotion
 
@@ -128,16 +139,17 @@ Ring rules:
 
 ## Profile picture (Settings)
 
-Exactly three options; no per-feature avatar builder and no AI-generated avatar from a photo (ADR 0012).
+Four options. No step-by-step feature questions: users pick a preset, or start from a photo and adjust (ADRs 0012, 0013).
 
 | Option | Status | Notes |
 |---|---|---|
-| Illustrated avatar (Rive) | built (default) | one of three ready-made characters (`avatar_character`), animated, all emotions |
+| Illustrated avatar (Rive) | built (default) | one of three ready-made presets (`avatar_character`), animated, all emotions |
+| Drawn from my photo | built (prototype only, ADR 0013) | Gemini suggests parts + colours from a cropped photo; user corrects; saved as `avatar_appearance`; photo not stored |
 | Initials | built | olive-100 circle, olive-800 text (`Initials` with `size`) |
 | My photo | built (plan 0012, ADR 0011) | static photo in the ring (`PhotoAvatar`); optional ±4° tilt toward the pointer, off while recording and with reduced motion; crop on a canvas + 512×512 WebP/JPEG re-encode (strips EXIF), server rejects metadata; encrypted in the users row; removable, goes with the account |
 
-Settings live on the account (`/auth/me`: `avatar_kind`, `avatar_character`, `avatar_reactions`,
-`avatar_tilt`, `has_photo`; read via `useAvatarSettings`). The photo is shown as a `data:` URL — the CSP allows
+Settings live on the account (`/auth/me`: `avatar_kind`, `avatar_character`, `avatar_appearance`,
+`avatar_reactions`, `avatar_tilt`, `has_photo`; read via `useAvatarSettings`). The photo is shown as a `data:` URL — the CSP allows
 no `blob:` images. Clients never get photo uploads; client avatars stay initials.
 
 ## Accessibility

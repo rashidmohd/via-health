@@ -55,7 +55,9 @@
     "report_not_approved": "Nachträge sind nur bei freigegebener Dokumentation möglich.",
     "photo_missing": "Es wurde noch kein Foto hochgeladen.",
     "photo_invalid": "Dieses Foto kann nicht verwendet werden. Bitte wählen Sie ein anderes Bild.",
-    "photo_too_large": "Das Foto ist zu groß."
+    "photo_too_large": "Das Foto ist zu groß.",
+    "appearance_missing": "Erstellen Sie zuerst den gezeichneten Avatar.",
+    "appearance_failed": "Aus dem Foto konnte keine Zeichnung erstellt werden. Versuchen Sie ein anderes Foto oder passen Sie die Zeichnung von Hand an."
   },
   "language": {
     "label": "Sprache"
@@ -545,7 +547,48 @@
       },
       "characterTitle": "Figur",
       "characterHint": "Wählen Sie eine von drei illustrierten Figuren.",
-      "characterOption": "Figur {{n}}"
+      "characterOption": "Figur {{n}}",
+      "drawn": "Gezeichnet nach meinem Foto",
+      "drawnHint": "Eine animierte Zeichnung, die Ihnen ähnelt, erstellt aus einem Foto. Das Foto wird nicht gespeichert.",
+      "createDrawn": "Gezeichneten Avatar erstellen",
+      "editDrawn": "Gezeichneten Avatar bearbeiten",
+      "editor": {
+        "title": "Ihr gezeichneter Avatar",
+        "fromPhoto": "Mit einem Foto beginnen",
+        "describing": "Foto wird angesehen …",
+        "suggested": "Vorschlag aus Ihrem Foto. Prüfen Sie ihn und ändern Sie, was nicht stimmt.",
+        "hairStyle": "Frisur",
+        "glasses": "Brille",
+        "beard": "Bart",
+        "hair_color": "Haare",
+        "skin_color": "Haut",
+        "eye_color": "Augen",
+        "privacy": "Das Foto wird einmal an Google Gemini gesendet, um die Zeichnung vorzuschlagen, und dann verworfen. Gespeichert wird nur die Zeichnung.",
+        "save": "Diesen Avatar verwenden",
+        "cancel": "Abbrechen"
+      },
+      "hair": {
+        "shaved": "Rasiert",
+        "short": "Kurz",
+        "medium": "Mittellang",
+        "long": "Lang",
+        "curly_short": "Lockig, kurz",
+        "curly_long": "Lockig, lang",
+        "tied_back": "Zurückgebunden",
+        "bun": "Dutt",
+        "headscarf": "Kopftuch"
+      },
+      "glassesOptions": {
+        "none": "Keine",
+        "round": "Rund",
+        "rectangular": "Eckig"
+      },
+      "beardOptions": {
+        "none": "Keiner",
+        "stubble": "Stoppeln",
+        "short": "Kurz",
+        "full": "Voll"
+      }
     },
     "reactions": {
       "title": "Avatar während der Aufnahme",

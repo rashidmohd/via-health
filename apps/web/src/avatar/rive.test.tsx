@@ -1,4 +1,5 @@
 import { act, fireEvent, render, screen } from '@testing-library/react'
+import { PRESETS } from './appearance'
 import { RiveAvatar } from './RiveAvatar'
 import RiveCanvas from './RiveCanvas'
 import { EMOTION, PAUSE_AFTER_MS, resetRiveFileForTest } from './rive'
@@ -8,6 +9,8 @@ const rive = vi.hoisted(() => ({
   inputs: {} as Record<string, { value: number | boolean; fire: () => void }>,
   params: null as null | { onLoadError?: () => void; buffer?: ArrayBuffer },
   wasm: [] as (string | null)[],
+  props: {} as Record<string, unknown>,
+  viewModel: '' as string | undefined,
 }))
 
 vi.mock('@rive-app/react-canvas', () => ({
@@ -23,6 +26,15 @@ vi.mock('@rive-app/react-canvas', () => ({
     }
   },
   useStateMachineInput: (_rive: unknown, _machine: string, name: string) => (rive.inputs[name] ??= { value: 0, fire: vi.fn() }),
+  useViewModel: (_rive: unknown, params: { name?: string }) => {
+    rive.viewModel = params.name
+    return {}
+  },
+  useViewModelInstance: () => ({}),
+  useViewModelInstanceEnum: (path: string) => ({ setValue: (value: string) => (rive.props[path] = value) }),
+  useViewModelInstanceColor: (path: string) => ({
+    setRgb: (r: number, g: number, b: number) => (rive.props[path] = [r, g, b]),
+  }),
 }))
 
 const RIVE_BYTES = new TextEncoder().encode('RIVE....').buffer
@@ -38,6 +50,7 @@ function setReducedMotion(reduce: boolean) {
 beforeEach(() => {
   resetRiveFileForTest()
   rive.inputs = {}
+  rive.props = {}
   rive.params = null
   rive.instance.play.mockClear()
   rive.instance.pause.mockClear()
@@ -54,15 +67,14 @@ describe('RiveAvatar fallback', () => {
     ['file missing', new Response(null, { status: 404 })],
     ['not a Rive file (e.g. an HTML page)', new Response('<!doctype html>', { status: 200 })],
     ['network error', new Error('offline')],
-  ])('shows the placeholder image when %s', async (_label, response) => {
+  ])('draws the SVG stand-in when %s', async (_label, response) => {
     serve(response)
     const { container } = render(<RiveAvatar mood="welcome" size={96} />)
     await act(async () => {})
-    const img = container.querySelector('img')!
-    expect(img).toHaveAttribute('src', '/avatar/placeholder-0.png')
-    expect(img).toHaveAttribute('aria-hidden', 'true')
-    expect(img).toHaveAttribute('width', '96')
-    expect(img).toHaveAttribute('data-mood', 'welcome')
+    const svg = container.querySelector('svg.drawn-face')!
+    expect(svg).toHaveAttribute('aria-hidden', 'true')
+    expect(svg).toHaveAttribute('width', '96')
+    expect(svg).toHaveAttribute('data-mood', 'welcome')
     expect(screen.queryByTestId('rive')).toBeNull()
   })
 
@@ -72,14 +84,17 @@ describe('RiveAvatar fallback', () => {
     expect(await screen.findByTestId('rive')).toHaveAttribute('aria-hidden', 'true')
     expect(rive.params?.buffer?.byteLength).toBe(RIVE_BYTES.byteLength)
     act(() => rive.params!.onLoadError!())
-    expect(container.querySelector('img')).toHaveAttribute('src', '/avatar/placeholder-0.png')
+    expect(container.querySelector('svg.drawn-face')).not.toBeNull()
   })
 
-  it('shows the placeholder of the chosen character', async () => {
+  it('draws the given appearance in the stand-in', async () => {
     serve(new Response(null, { status: 404 }))
-    const { container } = render(<RiveAvatar mood="attentive" character={2} />)
+    const { container } = render(<RiveAvatar mood="attentive" appearance={PRESETS[2]} />)
     await act(async () => {})
-    expect(container.querySelector('img')).toHaveAttribute('src', '/avatar/placeholder-2.png')
+    const svg = container.querySelector('svg.drawn-face')!
+    expect(svg).toHaveAttribute('data-hair', 'bun')
+    expect(svg.innerHTML).toContain(PRESETS[2].skin_color)
+    expect(svg.querySelector('.drawn-glasses')).not.toBeNull()
   })
 
   it('serves the runtime from our own origin, never a CDN', () => {
@@ -93,7 +108,7 @@ describe('RiveAvatar fallback', () => {
 
 describe('RiveCanvas', () => {
   const file = new ArrayBuffer(8)
-  const props = { file, character: 0 as const, nod: false, size: 120, onError: () => {} }
+  const props = { file, appearance: PRESETS[0], nod: false, size: 120, onError: () => {} }
 
   it('sets the emotion from the app mood', () => {
     const { rerender } = render(<RiveCanvas {...props} mood="thinking" recording={false} />)
@@ -102,11 +117,12 @@ describe('RiveCanvas', () => {
     expect(rive.inputs.emotion.value).toBe(5)
   })
 
-  it('selects the chosen character', () => {
-    const { rerender } = render(<RiveCanvas {...props} character={1} mood="attentive" recording={false} />)
-    expect(rive.inputs.character.value).toBe(1)
-    rerender(<RiveCanvas {...props} character={2} mood="attentive" recording={false} />)
-    expect(rive.inputs.character.value).toBe(2)
+  it('applies the appearance through the Avatar view model', () => {
+    const { rerender } = render(<RiveCanvas {...props} mood="attentive" recording={false} />)
+    expect(rive.viewModel).toBe('Avatar')
+    expect(rive.props).toMatchObject({ hairStyle: 'short', glasses: 'none', beard: 'none', skinColor: [233, 195, 159] })
+    rerender(<RiveCanvas {...props} appearance={PRESETS[2]} mood="attentive" recording={false} />)
+    expect(rive.props).toMatchObject({ hairStyle: 'bun', glasses: 'round', hairColor: [160, 82, 45], eyeColor: [58, 107, 90] })
   })
 
   it('pauses shortly after recording starts and plays again afterwards', () => {

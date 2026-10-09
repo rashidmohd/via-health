@@ -18,13 +18,13 @@ models and the Gemini API are cleared for the prototype only (see "Before real c
 | Speaker accuracy | Whole-session speaker check after Stop; therapist can switch a line, swap from a line on, undo | plan 0008 |
 | Live transcript | In-browser preview (sherpa-onnx + Kroko, German and English), replaced by server text with speakers | plan 0007 |
 | Capture chips | Task / appointment chips (fixed de/en rules) and bookmarks; keep/remove after the session | plan 0007 |
-| Avatar | Rive character with placeholder image until the designer's file arrives; moods from app events only (no emotion recognition); paused while recording; ring shows voice activity (binary) and processing; Settings: one of three illustrated characters, initials or own photo (cropped and re-encoded in the browser, encrypted on the server, optional tilt), opt-in glance on new chips | plans 0007, 0011, 0012, ADRs 0010–0012 |
+| Avatar | Rive character with placeholder image until the designer's file arrives; moods from app events only (no emotion recognition); paused while recording; ring shows voice activity (binary) and processing; Settings: one of three illustrated presets, a drawn avatar suggested from the user's photo (Gemini, photo not stored, user corrects), initials or own photo (cropped and re-encoded in the browser, encrypted on the server, optional tilt), opt-in glance on new chips | plans 0007, 0011, 0012, ADRs 0010–0013 |
 | Mic health | Voice activity in its own worklet during every recording; level meter + voice indicator; warning after 2 min without speech; 5 s mic test before the first recording; mic choice for the next recording | plan 0011, ADR 0010 |
 | Session note | German Verlaufsdokumentation; Gemini drafts only "what was said and done" with sources, a second pass checks each sentence; therapist writes the clinical fields, resolves flags, approves; addenda after approval; names hidden from the AI; note topics on the session card (not on Today) | plan 0009, ADRs 0006–0008 |
 | Notifications | Tab with unread badge: transcript ready / failed, note draft ready / failed / no AI consent; ids only in the DB | plan 0010 (part 1) |
 | UI design system | Inter + Lucide icons, tokens and shared components, sidebar + top bar shell (drawer on small screens); all built screens redesigned (Today tiles, client and session tables with filters, record screen, note editor with "Next to check", print view) | ADR 0009 |
 
-Tests: backend 225, web 171 (lint, typecheck, build green).
+Tests: backend 235, web 172 (lint, typecheck, build green).
 
 ## Not built yet (in order)
 
@@ -35,7 +35,7 @@ Tests: backend 225, web 171 (lint, typecheck, build green).
 3. **Deletion jobs** — crypto-shred audio on signing, `retention_sweep` for unsigned sessions,
    clean-up of leftover transcript windows. Until then the bucket's 30-day rule is the safety net.
 4. **Settings page, rest** — practice term list (term chips), live-preview switch. Profile picture, avatar reactions and microphone settings are built.
-5. **Rive characters** — designer delivers `sessio-avatar.riv` with three characters (contract in the `avatar-and-ui` skill); no code change needed.
+5. **Rive character** — designer delivers `sessio-avatar.riv` with interchangeable parts and bound colours (contract in the `avatar-and-ui` skill); no code change needed.
 6. **Later:** passkeys, other report templates, client documents and data export.
 
 ## Before real clients (blocking)

@@ -9,6 +9,7 @@ from pydantic import BaseModel, Field
 from sqlalchemy import ColumnElement, func, select, text, update
 
 from app.adapters.email import EmailSender, EmailSendError, get_email_sender
+from app.adapters.llm import LlmError, LlmProvider, get_llm
 from app.api.deps import AUTH_COOKIE, CurrentUserId, Db, session_token_hash
 from app.api.errors import ApiError
 from app.core.config import get_settings
@@ -21,6 +22,12 @@ from app.core.security import (
     normalize_email,
 )
 from app.db.models import AuditLog, AuthSession, LoginCode, User
+from app.domain.appearance import (
+    APPEARANCE_SCHEMA,
+    DESCRIBE_PROMPT,
+    DESCRIBE_SYSTEM,
+    Appearance,
+)
 from app.domain.avatar_photo import MAX_PHOTO_BYTES, PhotoInvalid, photo_type
 from app.domain.login_email import login_code_email
 
@@ -33,7 +40,7 @@ MAX_CODES_PER_IP_PER_HOUR = 30
 SESSION_TTL = timedelta(hours=12)
 
 Language = Literal["de", "en"]
-AvatarKind = Literal["illustrated", "initials", "photo"]
+AvatarKind = Literal["illustrated", "drawn", "initials", "photo"]
 AvatarCharacter = Annotated[int, Field(ge=0, le=2)]
 Email = Annotated[
     str, Field(min_length=3, max_length=254, pattern=r"^\s*[^@\s]+@[^@\s]+\.[^@\s]+\s*$")
@@ -62,6 +69,7 @@ class MeResponse(BaseModel):
     avatar_reactions: bool
     avatar_tilt: bool
     avatar_character: int
+    avatar_appearance: Appearance | None
     has_photo: bool
 
 
@@ -72,6 +80,7 @@ class UpdateMeRequest(BaseModel):
     avatar_reactions: bool | None = None
     avatar_tilt: bool | None = None
     avatar_character: AvatarCharacter | None = None
+    avatar_appearance: Appearance | None = None
 
 
 def _me(user: User) -> MeResponse:
@@ -84,6 +93,9 @@ def _me(user: User) -> MeResponse:
         avatar_reactions=user.avatar_reactions,
         avatar_tilt=user.avatar_tilt,
         avatar_character=user.avatar_character,
+        avatar_appearance=(
+            Appearance.model_validate(user.avatar_appearance) if user.avatar_appearance else None
+        ),
         has_photo=user.avatar_photo_enc is not None,
     )
 
@@ -224,9 +236,13 @@ def update_me(body: UpdateMeRequest, user_id: CurrentUserId, db: Db) -> MeRespon
         user.display_name = body.display_name.strip()
     if body.ui_language is not None:
         user.ui_language = body.ui_language
+    if body.avatar_appearance is not None:
+        user.avatar_appearance = body.avatar_appearance.model_dump()
     if body.avatar_kind is not None:
         if body.avatar_kind == "photo" and user.avatar_photo_enc is None:
             raise ApiError("photo_missing", 409)
+        if body.avatar_kind == "drawn" and user.avatar_appearance is None:
+            raise ApiError("appearance_missing", 409)
         user.avatar_kind = body.avatar_kind
     if body.avatar_reactions is not None:
         user.avatar_reactions = body.avatar_reactions
@@ -276,6 +292,32 @@ def set_photo(
     )
     db.flush()
     return _me(user)
+
+
+@router.post("/me/avatar/describe")
+def describe_photo(
+    data: Annotated[bytes, Depends(photo_body)],
+    _user_id: CurrentUserId,
+    llm: Annotated[LlmProvider, Depends(get_llm)],
+) -> Appearance:
+    """Suggest a drawn-avatar description from a photo the user chose (ADR 0013). The photo is
+    used for this one call only: not stored, not logged. The user reviews the suggestion."""
+    try:
+        answer = llm.describe_image_json(
+            system=DESCRIBE_SYSTEM,
+            prompt=DESCRIBE_PROMPT,
+            image=data,
+            mime_type=photo_type(data),
+            schema=APPEARANCE_SCHEMA,
+        )
+    except LlmError:
+        raise ApiError("appearance_failed", 503) from None
+    try:
+        return Appearance.model_validate(
+            {k: v.lower() if isinstance(v, str) else v for k, v in answer.items()}
+        )
+    except ValueError:
+        raise ApiError("appearance_failed", 503) from None
 
 
 @router.get("/me/avatar")

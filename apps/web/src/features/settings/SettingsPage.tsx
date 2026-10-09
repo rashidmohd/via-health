@@ -1,15 +1,17 @@
-import { ImageUp, Trash2 } from 'lucide-react'
+import { ImageUp, PenLine, Trash2 } from 'lucide-react'
 import { useState, type ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
 import { ApiError } from '../../api/client'
 import { useDeletePhoto, useMe, usePhoto, useUpdateMe, useUploadPhoto, type AvatarKind } from '../../api/auth'
 import { PhotoAvatar } from '../../avatar/PhotoAvatar'
 import { RiveAvatar } from '../../avatar/RiveAvatar'
-import { CHARACTERS } from '../../avatar/rive'
+import { CHARACTERS, PRESETS } from '../../avatar/appearance'
+import { DrawnFace } from '../../avatar/DrawnFace'
 import { useAvatarSettings } from '../../avatar/settings'
 import { Initials } from '../../design/Initials'
 import { errorMessage } from '../../i18n/errors'
 import { MicPicker } from '../sessions/MicHealth'
+import { AppearanceEditor } from './AppearanceEditor'
 import { PhotoCropper } from './PhotoCropper'
 
 /** Settings (plans 0011, 0012): profile picture, avatar reactions, microphone. Templates and
@@ -23,10 +25,20 @@ export function SettingsPage() {
   const upload = useUploadPhoto()
   const remove = useDeletePhoto()
   const [file, setFile] = useState<File | null>(null)
+  const [editing, setEditing] = useState(false)
 
   const error = update.error ?? upload.error ?? remove.error
   const options: { kind: AvatarKind; preview: ReactNode; disabled?: boolean }[] = [
-    { kind: 'illustrated', preview: <RiveAvatar mood="attentive" character={settings.character} size={48} /> },
+    { kind: 'illustrated', preview: <RiveAvatar mood="attentive" appearance={PRESETS[settings.character]} size={48} /> },
+    {
+      kind: 'drawn',
+      preview: settings.drawn ? (
+        <RiveAvatar mood="attentive" appearance={settings.drawn} size={48} />
+      ) : (
+        <span className="photo-empty" aria-hidden="true" />
+      ),
+      disabled: !settings.drawn,
+    },
     { kind: 'initials', preview: <Initials name={me?.display_name ?? ''} size={48} /> },
     {
       kind: 'photo',
@@ -93,12 +105,33 @@ export function SettingsPage() {
                     disabled={update.isPending}
                     onChange={() => update.mutate({ avatar_character: character })}
                   />
-                  <RiveAvatar mood="attentive" character={character} size={72} />
+                  <DrawnFace appearance={PRESETS[character]} mood="attentive" size={72} trackPointer={false} />
                   <span className="small">{t('settings.avatar.characterOption', { n: character + 1 })}</span>
                 </label>
               ))}
             </div>
           </fieldset>
+        )}
+
+        {editing ? (
+          <AppearanceEditor
+            initial={settings.drawn ?? settings.appearance}
+            busy={update.isPending}
+            onCancel={() => setEditing(false)}
+            onSave={(appearance) =>
+              update.mutate(
+                { avatar_kind: 'drawn', avatar_appearance: appearance },
+                { onSuccess: () => setEditing(false) },
+              )
+            }
+          />
+        ) : (
+          <div className="actions">
+            <button className="secondary" onClick={() => setEditing(true)}>
+              <PenLine className="icon" aria-hidden="true" />
+              {t(settings.drawn ? 'settings.avatar.editDrawn' : 'settings.avatar.createDrawn')}
+            </button>
+          </div>
         )}
 
         {file ? (

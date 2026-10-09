@@ -22,6 +22,24 @@ class FakeLlmProvider:
             return self._answer(system, prompt, schema)
         return default_answer(prompt, schema)
 
+    def describe_image_json(
+        self, *, system: str, prompt: str, image: bytes, mime_type: str, schema: dict[str, Any]
+    ) -> dict[str, Any]:
+        self.calls.append({"system": system, "prompt": prompt, "schema": schema, "image": image})
+        if self._answer is not None:
+            return self._answer(system, prompt, schema)
+        return dict(FAKE_APPEARANCE)
+
+
+FAKE_APPEARANCE = {
+    "hair_style": "curly_short",
+    "hair_color": "#3b2a20",
+    "skin_color": "#c68a5e",
+    "eye_color": "#4a3a2a",
+    "glasses": "round",
+    "beard": "none",
+}
+
 
 def default_answer(prompt: str, schema: dict[str, Any]) -> dict[str, Any]:
     properties = schema.get("properties", {})
