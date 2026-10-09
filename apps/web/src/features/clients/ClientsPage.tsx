@@ -1,10 +1,11 @@
-import { ChevronRight, FileSignature, Mic, Search, UserPlus, Users } from 'lucide-react'
+import { ChevronRight, FileSignature, Mic, Search, UserPlus } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Link } from 'react-router-dom'
 import { useClients, type ClientSummary } from '../../api/clients'
 import { ApiError } from '../../api/client'
 import { Initials } from '../../design/Initials'
+import peopleIllustration from '../../design/illustrations/people.svg'
 import { ListSkeleton } from '../../design/ListSkeleton'
 import { errorMessage } from '../../i18n/errors'
 import { formatDate } from '../format'
@@ -58,9 +59,7 @@ export function ClientsPage() {
 
       {clients && clients.length === 0 && (
         <div className="empty">
-          <span className="empty-icon">
-            <Users className="icon" aria-hidden="true" />
-          </span>
+          <img className="empty-illustration" src={peopleIllustration} alt="" aria-hidden="true" />
           <p>{t('clients.empty')}</p>
           <Link className="button primary" to="/clients/new">
             {t('clients.addFirst')}

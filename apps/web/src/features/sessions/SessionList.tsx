@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next'
 import { Link } from 'react-router-dom'
 import { useSessions, type ServerSession } from '../../api/sessions'
 import { Initials } from '../../design/Initials'
+import scheduleIllustration from '../../design/illustrations/schedule.svg'
 import { ListSkeleton } from '../../design/ListSkeleton'
 import { db } from '../../recorder/db'
 import { useLocal } from '../../recorder/useLocal'
@@ -46,6 +47,15 @@ export function SessionList({
 
   if (isPending && !local?.length) return <ListSkeleton rows={4} />
   if (!localShown.length && !serverOnly.length) {
+    // First run on the sessions page: nothing recorded yet, no filter or search narrowing it.
+    if (showClient && filter === 'all' && !needle && !server?.length && !local?.length) {
+      return (
+        <div className="table-empty muted table-empty-first">
+          <img className="empty-illustration" src={scheduleIllustration} alt="" aria-hidden="true" />
+          <p>{t('sessions.none')}</p>
+        </div>
+      )
+    }
     return <p className="table-empty muted">{t(filter === 'all' && !needle ? 'sessions.none' : 'sessions.noMatch')}</p>
   }
 

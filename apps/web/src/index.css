@@ -226,6 +226,16 @@
   text-align: center;
 }
 
+.table-empty-first {
+  display: grid;
+  gap: var(--space-3);
+  justify-items: center;
+}
+
+.table-empty-first p {
+  margin: 0;
+}
+
 .cell-person {
   display: flex;
   align-items: center;
@@ -1847,6 +1857,18 @@
 }
 
 /* Login */
+.auth-illustration {
+  justify-self: center;
+  width: clamp(120px, 45%, 180px);
+  height: auto;
+}
+
+@media (max-height: 640px) {
+  .auth-illustration {
+    display: none;
+  }
+}
+
 .auth-heading {
   display: grid;
   gap: 4px;

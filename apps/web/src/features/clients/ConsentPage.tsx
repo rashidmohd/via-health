@@ -1,4 +1,4 @@
-import { ChevronLeft, CircleCheck, FileSignature } from 'lucide-react'
+import { ChevronLeft, FileSignature } from 'lucide-react'
 import { useState, type FormEvent } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Link, useNavigate, useParams } from 'react-router-dom'
@@ -12,6 +12,7 @@ import {
   type ConsentKind,
 } from '../../api/clients'
 import { Initials } from '../../design/Initials'
+import signedDocument from '../../design/illustrations/signed-document.svg'
 import { ListSkeleton } from '../../design/ListSkeleton'
 import { errorMessage } from '../../i18n/errors'
 import { SignaturePad } from './SignaturePad'
@@ -88,9 +89,7 @@ export function ConsentPage() {
 
       {open.length === 0 ? (
         <div className="empty">
-          <span className="empty-icon">
-            <CircleCheck className="icon" aria-hidden="true" />
-          </span>
+          <img className="empty-illustration" src={signedDocument} alt="" aria-hidden="true" />
           <p>{t('consent.allGiven')}</p>
         </div>
       ) : (

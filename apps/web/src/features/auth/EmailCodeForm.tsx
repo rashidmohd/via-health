@@ -6,6 +6,8 @@ import { ApiError } from '../../api/client'
 import { ME_KEY, startEmailLogin, verifyEmailCode } from '../../api/auth'
 import { errorMessage } from '../../i18n/errors'
 import { currentLanguage, setLanguage } from '../../i18n/language'
+import authentication from '../../design/illustrations/authentication.svg'
+import messageSent from '../../design/illustrations/message-sent.svg'
 import { Logo } from '../../design/Logo'
 import { LanguageSwitch } from '../LanguageSwitch'
 
@@ -75,6 +77,12 @@ export function EmailCodeForm({ mode }: { mode: Mode }) {
           </span>
           <LanguageSwitch />
         </div>
+        <img
+          className="auth-illustration"
+          src={step === 'email' ? authentication : messageSent}
+          alt=""
+          aria-hidden="true"
+        />
         <div className="auth-heading">
           <h1>{t(mode === 'signup' ? 'auth.signupTitle' : 'auth.loginTitle')}</h1>
           <p className="muted small">{t('auth.tagline')}</p>

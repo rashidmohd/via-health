@@ -406,6 +406,12 @@ label > select {
   color: var(--olive-700);
 }
 
+/* Spot illustration in a full-page empty state (ADR 0015) */
+.empty-illustration {
+  width: clamp(120px, 40%, 200px);
+  height: auto;
+}
+
 /* Stat tiles: counts of work only — never scores about clients (CLAUDE.md rule 11) */
 .stats {
   display: grid;

@@ -2,6 +2,7 @@ import { AudioLines, Bell, CircleAlert, FileText, type LucideIcon } from 'lucide
 import { useTranslation } from 'react-i18next'
 import { Link } from 'react-router-dom'
 import { notificationPath, useMarkRead, useNotifications } from '../../api/notifications'
+import emptyMailbox from '../../design/illustrations/empty-mailbox.svg'
 import { ListSkeleton } from '../../design/ListSkeleton'
 
 function formatWhen(iso: string, language: string): string {
@@ -45,9 +46,7 @@ export function NotificationsPage() {
 
       {data.items.length === 0 ? (
         <div className="empty">
-          <span className="empty-icon">
-            <Bell className="icon" aria-hidden="true" />
-          </span>
+          <img className="empty-illustration" src={emptyMailbox} alt="" aria-hidden="true" />
           <p>{t('notifications.empty')}</p>
         </div>
       ) : (

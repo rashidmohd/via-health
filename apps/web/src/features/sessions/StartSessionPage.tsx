@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next'
 import { Link } from 'react-router-dom'
 import { useClients } from '../../api/clients'
 import { Initials } from '../../design/Initials'
+import peopleIllustration from '../../design/illustrations/people.svg'
 import { ListSkeleton } from '../../design/ListSkeleton'
 import { db } from '../../recorder/db'
 import { useLocal } from '../../recorder/useLocal'
@@ -51,6 +52,7 @@ export function StartSessionPage() {
       {!choices && <ListSkeleton rows={4} />}
       {choices && choices.length === 0 && (
         <div className="empty">
+          <img className="empty-illustration" src={peopleIllustration} alt="" aria-hidden="true" />
           <p>{t('clients.empty')}</p>
           <Link className="button primary" to="/clients/new">
             {t('clients.addFirst')}
