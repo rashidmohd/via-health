@@ -10,6 +10,7 @@ import {
   useWithdrawConsent,
   type ConsentRecord,
 } from '../../api/clients'
+import { confirmDialog } from '../../design/confirm'
 import { Initials } from '../../design/Initials'
 import { ListSkeleton } from '../../design/ListSkeleton'
 import { errorMessage } from '../../i18n/errors'
@@ -45,10 +46,12 @@ export function ClientPage() {
   const active = client.status === 'active'
   const mutationError = update.error ?? withdraw.error
 
-  function confirmWithdraw(consent: ConsentRecord) {
-    if (window.confirm(t('consent.withdrawConfirm', { kind: t(`consent.kinds.${consent.kind}`) }))) {
-      withdraw.mutate(consent.id)
-    }
+  async function confirmWithdraw(consent: ConsentRecord) {
+    const confirmed = await confirmDialog({
+      message: t('consent.withdrawConfirm', { kind: t(`consent.kinds.${consent.kind}`) }),
+      confirmLabel: t('consent.withdraw'),
+    })
+    if (confirmed) withdraw.mutate(consent.id)
   }
 
   return (
@@ -167,7 +170,7 @@ export function ClientPage() {
                   {!consent.withdrawn_at && (
                     <button
                       className="link danger"
-                      onClick={() => confirmWithdraw(consent)}
+                      onClick={() => void confirmWithdraw(consent)}
                       disabled={withdraw.isPending}
                     >
                       {t('consent.withdraw')}

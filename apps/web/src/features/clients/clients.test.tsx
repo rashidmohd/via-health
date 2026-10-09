@@ -1,7 +1,7 @@
 import { fireEvent, screen, waitFor, within } from '@testing-library/react'
 import type { ClientDetail } from '../../api/clients'
 import i18n from '../../i18n'
-import { ME, mockApi, renderApp } from '../../test-utils'
+import { confirmInDialog, ME, mockApi, renderApp } from '../../test-utils'
 
 const PNG = 'data:image/png;base64,iVBORw0KGgo='
 
@@ -129,6 +129,46 @@ describe('clients', () => {
     expect(post?.body).toMatchObject({ name: 'Anna Weber', preferred_language: 'de', email: null })
   })
 
+  it('takes the date of birth typed or picked, in the app\'s own date field', async () => {
+    const calls = mockApi((url, init) => {
+      if (url.endsWith('/auth/me')) return { status: 200, body: ME }
+      if (url.endsWith('/clients') && init.method === 'POST') return { status: 201, body: clientDetail() }
+      if (url.includes('/consent-texts')) return { status: 200, body: TEXTS('de') }
+      return { status: 200, body: clientDetail() }
+    })
+    renderApp('/clients/new')
+    fireEvent.change(await screen.findByLabelText('Name'), { target: { value: 'Anna Weber' } })
+    const dob = screen.getByLabelText(/Date of birth/)
+    const save = screen.getByRole('button', { name: 'Save' })
+
+    // Not a real date: error after leaving the field, saving blocked.
+    fireEvent.change(dob, { target: { value: '31/02/1990' } })
+    fireEvent.blur(dob)
+    expect(dob).toHaveAttribute('aria-invalid', 'true')
+    expect(screen.getByText('Enter a valid date, e.g. 31/12/1990.')).toBeInTheDocument()
+    expect(save).toBeDisabled()
+
+    // Short forms are completed on leaving the field.
+    fireEvent.change(dob, { target: { value: '1.2.90' } })
+    fireEvent.blur(dob)
+    expect(dob).toHaveValue('01/02/1990')
+    expect(dob).not.toHaveAttribute('aria-invalid')
+
+    // The calendar opens on the chosen month; picking a day fills the field.
+    fireEvent.click(screen.getByRole('button', { name: 'Choose date' }))
+    const calendar = screen.getByRole('dialog', { name: 'Choose date' })
+    expect(within(calendar).getByRole('combobox', { name: 'Month' })).toHaveValue('2')
+    expect(within(calendar).getByRole('combobox', { name: 'Year' })).toHaveValue('1990')
+    fireEvent.change(within(calendar).getByRole('combobox', { name: 'Year' }), { target: { value: '1985' } })
+    fireEvent.click(within(calendar).getByRole('button', { name: /14 February 1985/ }))
+    expect(screen.queryByRole('dialog', { name: 'Choose date' })).not.toBeInTheDocument()
+    expect(dob).toHaveValue('14/02/1985')
+
+    fireEvent.click(save)
+    expect(await screen.findByRole('heading', { name: 'Consent' })).toBeInTheDocument()
+    expect(calls.find((c) => c.method === 'POST')?.body).toMatchObject({ date_of_birth: '1985-02-14' })
+  })
+
   it('records consent: nothing pre-ticked, each kind separate, signature required', async () => {
     stubCanvas()
     let granted = false
@@ -207,9 +247,9 @@ describe('clients', () => {
         }),
       }
     })
-    vi.spyOn(window, 'confirm').mockReturnValue(true)
     renderApp('/clients/c1')
     fireEvent.click(await screen.findByRole('button', { name: 'Withdraw' }))
+    await confirmInDialog('Withdraw')
     expect(await screen.findByText(/withdrawn 9 Oct 2026/)).toBeInTheDocument()
     expect(calls.some((c) => c.url.endsWith('/consents/k1/withdraw'))).toBe(true)
     expect(screen.getByText('Consent withdrawn')).toBeInTheDocument()

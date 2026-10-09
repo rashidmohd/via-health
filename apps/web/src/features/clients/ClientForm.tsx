@@ -1,7 +1,9 @@
-import { useState, type FormEvent, type ReactNode } from 'react'
+import { useId, useState, type FormEvent, type ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
 import type { Language } from '../../api/auth'
 import type { Identity } from '../../api/clients'
+import { DateField } from '../../design/DateField'
+import { todayDate, toIso } from '../../design/dateInput'
 
 export interface ClientFormValues {
   identity: Identity
@@ -23,7 +25,9 @@ export function ClientForm({
 }) {
   const { t } = useTranslation()
   const [name, setName] = useState(initial?.identity.name ?? '')
-  const [dob, setDob] = useState(initial?.identity.date_of_birth ?? '')
+  // null while the typed date of birth is not a valid date.
+  const [dob, setDob] = useState<string | null>(initial?.identity.date_of_birth ?? '')
+  const dobId = useId()
   const [email, setEmail] = useState(initial?.identity.email ?? '')
   const [phone, setPhone] = useState(initial?.identity.phone ?? '')
   const [language, setLanguage] = useState<Language>(initial?.preferred_language ?? 'de')
@@ -47,12 +51,15 @@ export function ClientForm({
         {t('clients.fields.name')}
         <input value={name} onChange={(e) => setName(e.target.value)} maxLength={200} required />
       </label>
-      <label>
-        <span>
-          {t('clients.fields.dateOfBirth')} <span className="muted small">{t('common.optional')}</span>
-        </span>
-        <input type="date" value={dob} onChange={(e) => setDob(e.target.value)} />
-      </label>
+      {/* Not a wrapping <label>: the calendar inside would become part of the field's name. */}
+      <div className="field">
+        <label htmlFor={dobId}>
+          <span>
+            {t('clients.fields.dateOfBirth')} <span className="muted small">{t('common.optional')}</span>
+          </span>
+        </label>
+        <DateField id={dobId} value={dob ?? ''} onChange={setDob} min="1900-01-01" max={toIso(todayDate())} />
+      </div>
       <label>
         <span>
           {t('clients.fields.email')} <span className="muted small">{t('common.optional')}</span>
@@ -73,7 +80,7 @@ export function ClientForm({
         </select>
       </label>
       <div className="actions span-2">
-        <button className="primary" type="submit" disabled={busy || !name.trim()}>
+        <button className="primary" type="submit" disabled={busy || !name.trim() || dob === null}>
           {submitLabel}
         </button>
         {children}

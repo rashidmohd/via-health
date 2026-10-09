@@ -12,7 +12,7 @@ export function formatClock(ms: number): string {
   return `${Math.floor(total / 60)}:${String(total % 60).padStart(2, '0')}`
 }
 
-function locale(language: string): string {
+export function locale(language: string): string {
   return language.startsWith('en') ? 'en-GB' : 'de-DE'
 }
 

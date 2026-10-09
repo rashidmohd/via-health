@@ -1,6 +1,6 @@
 import { fireEvent, screen, waitFor, within } from '@testing-library/react'
 import i18n from '../../i18n'
-import { ME, mockApi, renderApp } from '../../test-utils'
+import { confirmInDialog, ME, mockApi, renderApp } from '../../test-utils'
 
 const SESSION = {
   id: 's1', client_id: 'c1', client_name: 'Anna Weber', started_at: '2026-10-08T10:00:00Z',
@@ -68,7 +68,6 @@ function api(handler: (url: string, init: RequestInit) => { status: number; body
 describe('session note', () => {
   beforeEach(async () => {
     await i18n.changeLanguage('en')
-    vi.stubGlobal('confirm', () => true)
   })
   afterEach(() => vi.unstubAllGlobals())
 
@@ -113,6 +112,7 @@ describe('session note', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Keep' }))
     expect(approve).toBeEnabled()
     fireEvent.click(approve)
+    await confirmInDialog('Approve')
 
     expect(await screen.findByText(/Read-only/)).toBeInTheDocument()
     const put = calls.find((c) => c.method === 'PUT')?.body as {

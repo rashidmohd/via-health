@@ -8,6 +8,7 @@ import { RiveAvatar } from '../../avatar/RiveAvatar'
 import { CHARACTERS, PRESETS } from '../../avatar/appearance'
 import { DrawnFace } from '../../avatar/DrawnFace'
 import { useAvatarSettings } from '../../avatar/settings'
+import { confirmDialog } from '../../design/confirm'
 import { Initials } from '../../design/Initials'
 import { errorMessage } from '../../i18n/errors'
 import { MicPicker } from '../sessions/MicHealth'
@@ -160,7 +161,12 @@ export function SettingsPage() {
               <button
                 className="ghost"
                 disabled={remove.isPending}
-                onClick={() => window.confirm(t('settings.avatar.removeConfirm')) && remove.mutate()}
+                onClick={() =>
+                  void confirmDialog({
+                    message: t('settings.avatar.removeConfirm'),
+                    confirmLabel: t('settings.avatar.removePhoto'),
+                  }).then((confirmed) => confirmed && remove.mutate())
+                }
               >
                 <Trash2 className="icon" aria-hidden="true" />
                 {t('settings.avatar.removePhoto')}

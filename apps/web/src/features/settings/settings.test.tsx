@@ -1,6 +1,6 @@
 import { fireEvent, screen, waitFor } from '@testing-library/react'
 import i18n from '../../i18n'
-import { ME, mockApi, renderApp } from '../../test-utils'
+import { confirmInDialog, ME, mockApi, renderApp } from '../../test-utils'
 
 type Me = typeof ME & {
   avatar_kind: string
@@ -153,7 +153,6 @@ describe('settings', () => {
 
   it('crops, re-encodes and uploads a photo, then offers tilt and removal', async () => {
     const drawImage = stubCanvas()
-    vi.spyOn(window, 'confirm').mockReturnValue(true)
     renderApp('/settings')
 
     const original = new File(['jpeg with GPS EXIF'], 'me.jpg', { type: 'image/jpeg' })
@@ -175,6 +174,7 @@ describe('settings', () => {
     await waitFor(() => expect(me.avatar_tilt).toBe(true))
 
     fireEvent.click(screen.getByRole('button', { name: 'Remove photo' }))
+    await confirmInDialog('Remove photo')
     await waitFor(() => expect(me.has_photo).toBe(false))
     expect(await screen.findByRole('radio', { name: /Illustrated avatar/ })).toBeChecked()
   })

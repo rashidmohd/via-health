@@ -3,8 +3,10 @@ import { useTranslation } from 'react-i18next'
 import { Link, NavLink } from 'react-router-dom'
 import { useLogout, type Me } from '../../api/auth'
 import { useNotifications } from '../../api/notifications'
+import { confirmDialog } from '../../design/confirm'
 import { Initials } from '../../design/Initials'
 import { Logo } from '../../design/Logo'
+import { getActiveRecorder, stopActiveRecording } from '../../recorder/active'
 import { LanguageSwitch } from '../LanguageSwitch'
 import { NAV_GROUPS, NAV_ICONS, NAV_ITEMS } from '../nav'
 import { SyncBadge } from '../sessions/SyncBadge'
@@ -12,6 +14,18 @@ import { SyncBadge } from '../sessions/SyncBadge'
 export function Sidebar({ me, onClose }: { me: Me; onClose: () => void }) {
   const { t } = useTranslation()
   const logout = useLogout()
+
+  async function signOut() {
+    if (getActiveRecorder()) {
+      const confirmed = await confirmDialog({
+        message: t('record.signOutConfirm'),
+        confirmLabel: t('record.stopAndSignOut'),
+      })
+      if (!confirmed) return
+      await stopActiveRecording()
+    }
+    logout.mutate()
+  }
 
   return (
     <aside className="sidebar" id="sidebar">
@@ -66,7 +80,7 @@ export function Sidebar({ me, onClose }: { me: Me; onClose: () => void }) {
             <button
               type="button"
               className="icon-button bare"
-              onClick={() => logout.mutate()}
+              onClick={() => void signOut()}
               disabled={logout.isPending}
               aria-label={t('auth.signOut')}
               title={t('auth.signOut')}

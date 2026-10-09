@@ -11,7 +11,8 @@ import { useAvatarMood } from '../../avatar/useAvatarMood'
 import { Initials } from '../../design/Initials'
 import { prewarmLivePreview } from '../../live-stt/preview'
 import { LIVE_STT_LANGUAGES, type LiveSttLanguage } from '../../live-stt/version'
-import { getActiveRecorder, setActiveRecorder, useActiveRecorder } from '../../recorder/active'
+import { confirmDialog } from '../../design/confirm'
+import { reportRecorderProblem, setActiveRecorder, stopActiveRecording, useActiveRecording } from '../../recorder/active'
 import { db } from '../../recorder/db'
 import { playCue } from '../../recorder/cues'
 import { micTested } from '../../recorder/micDevice'
@@ -19,29 +20,10 @@ import { useVoiceState } from '../../recorder/micMonitor'
 import { RecorderError, SessionRecorder, type RecorderProblem } from '../../recorder/recorder'
 import { useLocal } from '../../recorder/useLocal'
 import { useDeviceSetting } from '../settings/deviceSettings'
+import { formatElapsed, useElapsed } from './elapsed'
 import { LivePanel } from './LivePanel'
 import { MicHealth, MicTest } from './MicHealth'
 import { useLivePreview } from './useLivePreview'
-
-function formatElapsed(ms: number): string {
-  const total = Math.floor(ms / 1000)
-  const h = Math.floor(total / 3600)
-  const m = Math.floor((total % 3600) / 60)
-  const s = total % 60
-  const mm = String(m).padStart(2, '0')
-  const ss = String(s).padStart(2, '0')
-  return h > 0 ? `${h}:${mm}:${ss}` : `${mm}:${ss}`
-}
-
-function useElapsed(recorder: SessionRecorder | null): number {
-  const [, setTick] = useState(0)
-  useEffect(() => {
-    if (!recorder) return
-    const timer = setInterval(() => setTick((tick) => tick + 1), 500)
-    return () => clearInterval(timer)
-  }, [recorder])
-  return recorder ? recorder.elapsedMs() : 0
-}
 
 /** Step 2 of a session: record. The recorder keeps running if the user navigates away. */
 export function RecordPage() {
@@ -49,7 +31,8 @@ export function RecordPage() {
   const { t } = useTranslation()
   const { data: client, isError } = useClient(clientId)
   const cached = useLocal(() => db.consent.get(clientId), clientId)
-  const active = useActiveRecorder()
+  const recording = useActiveRecording()
+  const active = recording?.recorder ?? null
   const elapsed = useElapsed(active)
   const [starting, setStarting] = useState(false)
   const [problem, setProblem] = useState<RecorderProblem | null>(null)
@@ -73,7 +56,9 @@ export function RecordPage() {
   const name = client?.name ?? cached?.name ?? ''
   // Online: the server's answer. Offline: the last known consent status on this device.
   const ready = client ? client.ready_to_record : isError ? (cached?.ready ?? false) : false
-  const recordingHere = active !== null && (client?.id ?? clientId) === clientId
+  const recordingHere = recording?.clientId === clientId
+  // Start errors are local; problems of a running recording live with the recorder.
+  const shownProblem = problem ?? (recordingHere ? recording.problem : null)
   const { mood, nod } = useAvatarMood()
   const live = useLivePreview(recordingHere ? active : null, client?.preferred_language ?? 'de')
 
@@ -87,23 +72,18 @@ export function RecordPage() {
     return prewarmLivePreview(liveLanguage as LiveSttLanguage)
   }, [livePreview, active, liveLanguage])
 
-  useEffect(() => {
-    if (!active) return
-    const warn = (event: BeforeUnloadEvent) => event.preventDefault()
-    window.addEventListener('beforeunload', warn)
-    return () => window.removeEventListener('beforeunload', warn)
-  }, [active])
-
   async function start() {
     setStarting(true)
     setProblem(null)
     setStoppedSessionId(null)
     try {
+      let started: SessionRecorder | null = null
       const recorder = await SessionRecorder.start(
         { id: clientId, name },
-        { onProblem: (p) => setProblem(p) },
+        { onProblem: (p) => started && reportRecorderProblem(started, p) },
       )
-      setActiveRecorder(recorder)
+      started = recorder
+      setActiveRecorder(recorder, { id: clientId, name })
       playCue('start')
     } catch (error) {
       setProblem(error instanceof RecorderError ? error.problem : 'unsupported')
@@ -113,12 +93,10 @@ export function RecordPage() {
   }
 
   async function stop() {
-    const recorder = getActiveRecorder()
-    if (!recorder || !window.confirm(t('record.stopConfirm'))) return
-    await recorder.stop()
-    playCue('stop') // after stop, so the sound is not in the recording
-    setActiveRecorder(null)
-    setStoppedSessionId(recorder.sessionId)
+    const confirmed = await confirmDialog({ message: t('record.stopConfirm'), confirmLabel: t('record.stop') })
+    if (!confirmed) return
+    const sessionId = await stopActiveRecording()
+    if (sessionId) setStoppedSessionId(sessionId)
   }
 
   if (!client && !cached && !isError) return <p className="muted">{t('common.loading')}</p>
@@ -144,9 +122,9 @@ export function RecordPage() {
         {!recordingHere && <AppAvatar size={56} problem={!ready} done={stoppedSession?.status === 'synced'} />}
       </header>
 
-      {problem && (
+      {shownProblem && (
         <p className="banner danger" role="alert">
-          {t(`record.problem.${problem}`)}
+          {t(`record.problem.${shownProblem}`)}
         </p>
       )}
 

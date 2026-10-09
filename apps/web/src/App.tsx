@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Navigate, Route, Routes, useLocation } from 'react-router-dom'
 import { useMe } from './api/auth'
+import { ConfirmHost } from './design/ConfirmDialog'
 import { PlaceholderPage } from './features/PlaceholderPage'
 import { EmailCodeForm } from './features/auth/EmailCodeForm'
 import { ClientPage } from './features/clients/ClientPage'
@@ -15,6 +16,7 @@ import { ReportPage } from './features/reports/ReportPage'
 import { ReportsPage } from './features/reports/ReportsPage'
 import { RecordPage } from './features/sessions/RecordPage'
 import { SessionPage } from './features/sessions/SessionPage'
+import { RecordingDock } from './features/sessions/RecordingDock'
 import { RecoveryBanner } from './features/sessions/RecoveryBanner'
 import { SessionsPage } from './features/sessions/SessionsPage'
 import { SettingsPage } from './features/settings/SettingsPage'
@@ -23,6 +25,7 @@ import { Sidebar } from './features/shell/Sidebar'
 import { ModelPreloadBanner } from './features/shell/ModelPreloadBanner'
 import { Topbar } from './features/shell/Topbar'
 import { TodayPage } from './features/today/TodayPage'
+import { useWarnBeforeUnloadWhileRecording } from './recorder/active'
 import { startSync } from './recorder/sync'
 
 export default function App() {
@@ -36,6 +39,7 @@ export default function App() {
   const setNavOpen = (open: boolean) => setNavOpenOn(open ? pathname : null)
 
   useEffect(() => (loggedIn ? startSync() : undefined), [loggedIn])
+  useWarnBeforeUnloadWhileRecording()
 
   if (isPending) {
     return <p className="center muted">{t('common.loading')}</p>
@@ -92,7 +96,9 @@ export default function App() {
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
         </main>
+        <RecordingDock />
       </div>
+      <ConfirmHost />
     </div>
   )
 }

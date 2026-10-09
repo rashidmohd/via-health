@@ -2,6 +2,7 @@ import { ArrowDown, Check, CircleAlert, PenLine, Plus, Quote, RefreshCw, Sparkle
 import { useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { ApiError } from '../../api/client'
+import { confirmDialog } from '../../design/confirm'
 import {
   AI_FIELDS,
   MODES,
@@ -98,13 +99,22 @@ export function ReportEditor({
   }
 
   async function regenerate(field: AiField | null) {
-    if (field === null && !window.confirm(t('report.regenerateAllConfirm'))) return
+    if (
+      field === null &&
+      !(await confirmDialog({ message: t('report.regenerateAllConfirm'), confirmLabel: t('report.regenerateAll') }))
+    )
+      return
     if (dirty && !(await saveNow())) return
     requestDraft.mutate(field)
   }
 
   async function approveNow() {
-    if (!window.confirm(t('report.approveConfirm'))) return
+    const confirmed = await confirmDialog({
+      message: t('report.approveConfirm'),
+      confirmLabel: t('report.approve'),
+      tone: 'primary',
+    })
+    if (!confirmed) return
     if (dirty && !(await saveNow())) return
     approve.mutate(undefined, { onSuccess: () => emitAvatarEvent('report.signed') })
   }

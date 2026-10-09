@@ -1,10 +1,10 @@
-import { act, fireEvent, screen, waitFor } from '@testing-library/react'
+import { act, fireEvent, screen, waitFor, within } from '@testing-library/react'
 import i18n from '../../i18n'
 import { createSessionKey } from '../../recorder/crypto'
 import { db } from '../../recorder/db'
 import { setVoiceStateForTest } from '../../recorder/micMonitor'
 import { installFakeMicrophone } from '../../recorder/testing'
-import { ME, mockApi, renderApp } from '../../test-utils'
+import { confirmInDialog, ME, mockApi, renderApp } from '../../test-utils'
 
 function summary(id: string, name: string, ready: boolean) {
   return {
@@ -81,7 +81,6 @@ describe('start session flow', () => {
 
   it('records after choosing the client, then stops with confirmation', async () => {
     installFakeMicrophone()
-    vi.spyOn(window, 'confirm').mockReturnValue(true)
     api()
     renderApp('/sessions/record/c1')
 
@@ -97,6 +96,7 @@ describe('start session flow', () => {
     expect(screen.getByText('Voice detected')).toBeInTheDocument()
 
     fireEvent.click(screen.getByRole('button', { name: 'Stop recording' }))
+    await confirmInDialog('Stop recording')
     expect(await screen.findByText('Recording saved.')).toBeInTheDocument()
     const [session] = await db.sessions.toArray()
     expect(screen.getByRole('link', { name: 'Open session' })).toHaveAttribute(
@@ -105,6 +105,64 @@ describe('start session flow', () => {
     )
     expect(session.clientId).toBe('c1')
     expect(['stopped', 'synced']).toContain(session.status)
+  })
+
+  it('minimises a running recording to a dock on other screens, with problems and stop', async () => {
+    const track = installFakeMicrophone()
+    api()
+    renderApp('/sessions/record/c1')
+    fireEvent.click(await screen.findByRole('button', { name: 'Start recording' }))
+    await screen.findByLabelText('Recording time')
+    expect(screen.queryByRole('complementary', { name: 'Running recording' })).not.toBeInTheDocument()
+
+    // Leaving the recording screen keeps recording and says so.
+    fireEvent.click(screen.getByRole('link', { name: 'Clients' }))
+    const dock = await screen.findByRole('complementary', { name: 'Running recording' })
+    expect(within(dock).getByText('Anna Weber')).toBeInTheDocument()
+    expect(within(dock).getByText('The recording continues in the background.')).toBeInTheDocument()
+    expect(within(dock).getByRole('link', { name: 'Back to recording' })).toHaveAttribute('href', '/sessions/record/c1')
+
+    // A problem reaches the user on whatever screen they are on.
+    act(() => track.onended?.())
+    expect(within(dock).getByRole('alert')).toHaveTextContent('The microphone was disconnected.')
+
+    // Cancel keeps recording; confirming stops and opens the session.
+    fireEvent.click(within(dock).getByRole('button', { name: 'Stop recording' }))
+    fireEvent.click(within(await screen.findByRole('alertdialog')).getByRole('button', { name: 'Cancel' }))
+    expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument()
+    expect(screen.getByRole('complementary', { name: 'Running recording' })).toBeInTheDocument()
+
+    fireEvent.click(within(dock).getByRole('button', { name: 'Stop recording' }))
+    await confirmInDialog('Stop recording')
+    await waitFor(() =>
+      expect(screen.queryByRole('complementary', { name: 'Running recording' })).not.toBeInTheDocument(),
+    )
+    const [session] = await db.sessions.toArray()
+    expect(['stopped', 'synced']).toContain(session.status)
+  })
+
+  it('asks before signing out while recording', async () => {
+    installFakeMicrophone()
+    const calls = api()
+    renderApp('/sessions/record/c1')
+    fireEvent.click(await screen.findByRole('button', { name: 'Start recording' }))
+    await screen.findByLabelText('Recording time')
+
+    fireEvent.click(screen.getByRole('button', { name: 'Sign out' }))
+    const dialog = await screen.findByRole('alertdialog')
+    expect(dialog).toHaveTextContent('A recording is running.')
+    // Destructive questions start on Cancel; Escape cancels.
+    expect(within(dialog).getByRole('button', { name: 'Cancel' })).toHaveFocus()
+    fireEvent.keyDown(dialog, { key: 'Escape' })
+    expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument()
+    expect(calls.some((c) => c.url.endsWith('/auth/logout'))).toBe(false)
+    expect(screen.getByLabelText('Recording time')).toBeInTheDocument()
+
+    fireEvent.click(screen.getByRole('button', { name: 'Sign out' }))
+    await confirmInDialog('Stop and sign out')
+    await waitFor(() => expect(calls.some((c) => c.url.endsWith('/auth/logout'))).toBe(true))
+    const [session] = await db.sessions.toArray()
+    expect(session.status).not.toBe('recording')
   })
 
   it('does not allow recording without consent', async () => {

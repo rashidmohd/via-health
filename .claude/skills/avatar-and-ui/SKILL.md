@@ -30,6 +30,9 @@ Building blocks (classes in `base.css`):
 - Tables: `table-card` > `table-toolbar` (`search` with icon, `segmented` filter with counts) + `<table className="table">`; rows open via a `stretched` link on the name, other row controls get `above`. Collapse to stacked rows under 720 px (see `.clients-table`).
 - Lists in cards: `item-list` > `item` (`Initials` or `item-time`, `item-main`, badge/`item-action`); empty inside a card: `card-empty`. `ListSkeleton` while loading.
 - Shared helpers: `Initials` (design/), `sessionStatus()` (features/sessions/status.ts) for one status label per session, `formatTime`/`formatLongDate`/`isSameDay` (features/format.ts).
+- Confirmations: `confirmDialog({ message, confirmLabel, tone })` from `design/confirm.ts` — never `window.confirm`/`alert`. The button names the action; `tone: 'primary'` only for non-destructive ones. Buttons: `danger` class for stop/withdraw/delete.
+- Dates: `DateField` (`design/DateField.tsx`) with a sibling `<label htmlFor>` inside a `field` div — never `type="date"`.
+- Running recording on other screens: `RecordingDock` (ADR 0016); recorder state + problems in `recorder/active.ts`.
 - New nav items: add to `features/nav.ts` with a `group` and an icon in `NAV_ICONS`; breadcrumbs follow automatically.
 
 - Primary button: olive-700, white text. Secondary: white, hairline border, charcoal text.

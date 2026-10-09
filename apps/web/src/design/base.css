@@ -603,3 +603,208 @@ a.stat:hover {
 .stack > button {
   justify-self: start;
 }
+
+/* Danger button: stop, withdraw, delete. Always says what it does. */
+.danger {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  min-height: 38px;
+  padding: 8px 16px;
+  border-radius: var(--radius);
+  font-size: var(--text-base);
+  font-weight: 550;
+  line-height: 1.2;
+  white-space: nowrap;
+  background: var(--danger);
+  color: #fff;
+  border: 1px solid #a83524;
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 12%),
+    var(--shadow-xs);
+  transition: background-color 150ms var(--ease), transform 150ms var(--ease);
+}
+
+.danger:hover:not(:disabled) {
+  background: #a83524;
+}
+
+.danger:active:not(:disabled) {
+  transform: translateY(1px);
+}
+
+/* Confirm dialog (design/ConfirmDialog.tsx) — replaces window.confirm. */
+.dialog-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  display: grid;
+  place-items: center;
+  padding: var(--space-4);
+  background: rgb(43 42 38 / 32%);
+}
+
+.dialog {
+  width: min(440px, 100%);
+  padding: var(--space-6);
+  border-radius: var(--radius-card);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow-md);
+}
+
+.dialog-message {
+  margin: 0 0 var(--space-6);
+  font-size: var(--text-md);
+  line-height: 1.5;
+}
+
+.dialog-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: var(--space-2);
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .dialog-backdrop {
+    animation: fade-in 150ms var(--ease);
+  }
+
+  .dialog {
+    animation: rise-in 180ms var(--ease);
+  }
+}
+
+@keyframes fade-in {
+  from {
+    opacity: 0;
+  }
+}
+
+@keyframes rise-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+}
+
+/* Field whose <label> is a sibling (not a wrapper), e.g. around DateField. */
+.field {
+  display: grid;
+  gap: 6px;
+  align-content: start;
+  min-width: 0;
+}
+
+.field-error {
+  margin: 0;
+  color: var(--danger);
+  font-size: var(--text-sm);
+}
+
+input[aria-invalid='true'] {
+  border-color: var(--danger);
+}
+
+/* Date field (design/DateField.tsx) — same look in every browser. */
+.date-field {
+  position: relative;
+  display: grid;
+  gap: 6px;
+}
+
+.date-field-control {
+  position: relative;
+}
+
+.date-field-control input {
+  width: 100%;
+  min-width: 0;
+  padding-right: 44px;
+}
+
+.date-field-toggle {
+  position: absolute;
+  top: 50%;
+  right: 4px;
+  transform: translateY(-50%);
+}
+
+.date-popover {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  z-index: 50;
+  width: 300px;
+  max-width: calc(100vw - 32px);
+  padding: var(--space-3);
+  border-radius: var(--radius-card);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow-md);
+}
+
+.date-popover-header {
+  display: grid;
+  grid-template-columns: auto 1fr auto auto;
+  gap: var(--space-1);
+  align-items: center;
+  margin-bottom: var(--space-2);
+}
+
+.date-popover-header select {
+  min-width: 0;
+  padding: 6px 8px;
+  font-size: var(--text-sm);
+}
+
+.date-row {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 2px;
+}
+
+.date-weekday {
+  padding: var(--space-1) 0;
+  text-align: center;
+  font-size: var(--text-xs);
+  font-weight: 600;
+  color: var(--text-subtle);
+}
+
+.date-day {
+  width: 100%;
+  aspect-ratio: 1;
+  border: 1px solid transparent;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  font-size: var(--text-sm);
+  font-variant-numeric: tabular-nums;
+}
+
+.date-day:hover:not(:disabled) {
+  background: var(--olive-50);
+}
+
+.date-day:focus-visible {
+  outline: none;
+  box-shadow: var(--ring);
+}
+
+.date-day.is-today {
+  border-color: var(--olive-300);
+  font-weight: 600;
+}
+
+.date-day.is-selected {
+  background: var(--olive-700);
+  border-color: var(--olive-800);
+  color: #fff;
+}
+
+.date-day:disabled {
+  color: var(--text-subtle);
+  opacity: 0.4;
+}

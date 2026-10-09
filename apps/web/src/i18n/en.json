@@ -258,7 +258,14 @@
     "openSession": "Open session",
     "bookmark": "Bookmark",
     "bookmarks_one": "{{count}} bookmark set",
-    "bookmarks_other": "{{count}} bookmarks set"
+    "bookmarks_other": "{{count}} bookmarks set",
+    "dock": {
+      "label": "Running recording",
+      "open": "Back to recording",
+      "continues": "The recording continues in the background."
+    },
+    "signOutConfirm": "A recording is running. Stop it and sign out? Everything recorded so far is kept and uploads after the next sign-in.",
+    "stopAndSignOut": "Stop and sign out"
   },
   "mic": {
     "voice": "Voice detected",
@@ -630,5 +637,14 @@
     "failed": "The live transcript model could not be loaded. It will be tried again next time; recording works without it.",
     "hide": "Hide",
     "progress": "Download progress"
+  },
+  "dateField": {
+    "placeholder": "DD/MM/YYYY",
+    "choose": "Choose date",
+    "invalid": "Enter a valid date, e.g. {{example}}.",
+    "month": "Month",
+    "year": "Year",
+    "previousMonth": "Previous month",
+    "nextMonth": "Next month"
   }
 }

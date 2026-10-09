@@ -1,5 +1,5 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import { render } from '@testing-library/react'
+import { fireEvent, render, screen, within } from '@testing-library/react'
 import { MemoryRouter } from 'react-router-dom'
 import App from './App'
 
@@ -41,3 +41,9 @@ export const ME = {
   display_name: 'Anna',
   ui_language: 'en',
 } as const
+
+/** Answer the in-app confirm dialog (design/ConfirmDialog.tsx) with its action button. */
+export async function confirmInDialog(action: string) {
+  const dialog = await screen.findByRole('alertdialog')
+  fireEvent.click(within(dialog).getByRole('button', { name: action }))
+}

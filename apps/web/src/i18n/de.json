@@ -258,7 +258,14 @@
     "openSession": "Sitzung öffnen",
     "bookmark": "Lesezeichen",
     "bookmarks_one": "{{count}} Lesezeichen gesetzt",
-    "bookmarks_other": "{{count}} Lesezeichen gesetzt"
+    "bookmarks_other": "{{count}} Lesezeichen gesetzt",
+    "dock": {
+      "label": "Laufende Aufnahme",
+      "open": "Zur Aufnahme",
+      "continues": "Die Aufnahme läuft im Hintergrund weiter."
+    },
+    "signOutConfirm": "Eine Aufnahme läuft. Aufnahme beenden und abmelden? Alles bisher Aufgenommene bleibt erhalten und wird nach der nächsten Anmeldung hochgeladen.",
+    "stopAndSignOut": "Beenden und abmelden"
   },
   "mic": {
     "voice": "Stimme erkannt",
@@ -630,5 +637,14 @@
     "failed": "Das Modell für das Live-Transkript konnte nicht geladen werden. Beim nächsten Mal wird es erneut versucht; die Aufnahme funktioniert auch ohne.",
     "hide": "Ausblenden",
     "progress": "Fortschritt des Downloads"
+  },
+  "dateField": {
+    "placeholder": "TT.MM.JJJJ",
+    "choose": "Datum auswählen",
+    "invalid": "Bitte ein gültiges Datum eingeben, z. B. {{example}}.",
+    "month": "Monat",
+    "year": "Jahr",
+    "previousMonth": "Vorheriger Monat",
+    "nextMonth": "Nächster Monat"
   }
 }
