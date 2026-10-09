@@ -43,6 +43,8 @@ class FakeContext {
   close = async () => {}
 }
 
+const fakeStream = { getAudioTracks: () => [{ getSettings: () => ({ sampleRate: 48_000 }) }] } as unknown as MediaStream
+
 async function load() {
   vi.resetModules()
   return import('./preview')
@@ -70,7 +72,7 @@ describe('live preview engine warm-up', () => {
     // Recording starts: the page releases first, then the live panel starts (React order).
     release()
     const events: PreviewEvent[] = []
-    await LivePreview.start({} as MediaStream, 0, 'de', (event) => events.push(event))
+    await LivePreview.start(fakeStream, 0, 'de', (event) => events.push(event))
 
     expect(FakeWorker.all).toHaveLength(1)
     expect(events).toEqual([{ type: 'ready' }])
@@ -104,7 +106,7 @@ describe('live preview engine warm-up', () => {
   it('starts a fresh engine for another language', async () => {
     const { prewarmLivePreview, LivePreview } = await load()
     prewarmLivePreview('de')
-    await LivePreview.start({} as MediaStream, 0, 'en', () => {})
+    await LivePreview.start(fakeStream, 0, 'en', () => {})
     expect(FakeWorker.all).toHaveLength(2)
     expect(FakeWorker.all[1].url).toContain('lang=en')
   })

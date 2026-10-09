@@ -1,25 +1,49 @@
 import { Printer } from 'lucide-react'
-import { useState } from 'react'
+import { useState, type ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
-import { ApiError } from '../../api/client'
-import { AI_FIELDS, THERAPIST_FIELDS, useAddAddendum, type Report } from '../../api/reports'
+import { AI_FIELDS, THERAPIST_FIELDS, type ReportContent } from '../../api/reports'
 import type { ServerSession } from '../../api/sessions'
-import { errorMessage } from '../../i18n/errors'
+import { errorCode, errorMessage } from '../../i18n/errors'
 import { formatDate } from '../format'
 
-/** An approved note: read-only, with dated addenda ("Nachtrag", §630f BGB). */
-export function ReportView({ report, session }: { report: Report; session: ServerSession }) {
+/** A note as shown read-only: decrypted from the signed record, or (approved before signing
+ *  existed) as the server still has it. Statements need only `id` and `text`. */
+export interface ReadableNote {
+  content: ReportContent
+  aiAssisted: boolean
+  approvedAt: string
+  signedAt: string | null
+  defaultSessionNo: number | string | null
+  addenda: { version: number; created_at: string; text: string }[]
+}
+
+export interface AddendumAction {
+  add: (text: string, onDone: () => void) => void
+  pending: boolean
+  error: unknown
+}
+
+/** An approved note: read-only, with dated addenda ("Nachtrag", §630f BGB). Without
+ *  `addendum` no new addenda can be written (a note approved but not yet signed). */
+export function ReportView({
+  note,
+  session,
+  notice,
+  addendum,
+}: {
+  note: ReadableNote
+  session: ServerSession
+  notice: ReactNode
+  addendum?: AddendumAction
+}) {
   const { t, i18n } = useTranslation()
-  const addendum = useAddAddendum(session.id)
   const [text, setText] = useState('')
-  const { header } = report.content
-  const addenda = report.versions.filter((v) => v.kind === 'addendum')
+  const { header } = note.content
+  const lang = i18n.language
 
   return (
     <div className="stack narrow-report">
-      <p className="banner info-banner" role="status">
-        {t('report.approvedOn', { date: formatDate(report.approved_at ?? '', i18n.language) })}
-      </p>
+      {notice}
       <article className="card stack report-print">
         <header className="doc-header">
           <div>
@@ -33,9 +57,9 @@ export function ReportView({ report, session }: { report: Report; session: Serve
         </header>
         <dl className="details">
           <dt>{t('report.date')}</dt>
-          <dd>{formatDate(session.started_at, i18n.language)}</dd>
+          <dd>{formatDate(session.started_at, lang)}</dd>
           <dt>{t('report.sessionNo')}</dt>
-          <dd>{header.session_no ?? report.default_session_no}</dd>
+          <dd>{header.session_no ?? note.defaultSessionNo}</dd>
           <dt>{t('report.sessionType')}</dt>
           <dd>{header.session_type ? t(`report.sessionTypes.${header.session_type}`) : t('report.sessionTypeNone')}</dd>
           <dt>{t('report.setting')}</dt>
@@ -55,61 +79,70 @@ export function ReportView({ report, session }: { report: Report; session: Serve
             </>
           )}
         </dl>
-        {AI_FIELDS.map((code) => (
+        {AI_FIELDS.map((code) => {
+          const statements = note.content.ai[code]?.statements ?? []
+          return (
+            <section key={code}>
+              <h3>{t(`report.fields.${code}`)}</h3>
+              {statements.length === 0 ? (
+                <p className="muted small">{t('report.notDiscussed')}</p>
+              ) : (
+                <ul>
+                  {statements.map((s) => (
+                    <li key={s.id}>{s.text}</li>
+                  ))}
+                </ul>
+              )}
+            </section>
+          )
+        })}
+        {THERAPIST_FIELDS.filter((code) => note.content.therapist[code]?.trim()).map((code) => (
           <section key={code}>
             <h3>{t(`report.fields.${code}`)}</h3>
-            {report.content.ai[code].statements.length === 0 ? (
-              <p className="muted small">{t('report.notDiscussed')}</p>
-            ) : (
-              <ul>
-                {report.content.ai[code].statements.map((s) => (
-                  <li key={s.id}>{s.text}</li>
-                ))}
-              </ul>
-            )}
-          </section>
-        ))}
-        {THERAPIST_FIELDS.filter((code) => report.content.therapist[code].trim()).map((code) => (
-          <section key={code}>
-            <h3>{t(`report.fields.${code}`)}</h3>
-            <p className="pre-line">{report.content.therapist[code]}</p>
+            <p className="pre-line">{note.content.therapist[code]}</p>
           </section>
         ))}
         <p className="muted small">
-          {report.ai_assisted ? t('report.footerAi') : t('report.footerManual')}{' '}
-          {t('report.footerApproved', { date: formatDate(report.approved_at ?? '', i18n.language) })}
+          {note.aiAssisted ? t('report.footerAi') : t('report.footerManual')}{' '}
+          {note.signedAt
+            ? t('report.footerSigned', { date: formatDate(note.signedAt, lang) })
+            : t('report.footerApproved', { date: formatDate(note.approvedAt, lang) })}
         </p>
       </article>
 
       <div className="card stack">
         <h2>{t('report.addenda')}</h2>
-        {addenda.length === 0 && <p className="muted small">{t('report.noAddenda')}</p>}
+        {note.addenda.length === 0 && <p className="muted small">{t('report.noAddenda')}</p>}
         <ul className="addenda">
-          {addenda.map((v) => (
+          {note.addenda.map((v) => (
             <li key={v.version}>
-              <span className="muted small">{formatDate(v.created_at, i18n.language)}</span>
+              <span className="muted small">{formatDate(v.created_at, lang)}</span>
               <p className="pre-line">{v.text}</p>
             </li>
           ))}
         </ul>
-        <label className="report-field no-print">
-          <span className="field-label">{t('report.newAddendum')}</span>
-          <textarea value={text} rows={3} maxLength={5000} onChange={(e) => setText(e.target.value)} />
-        </label>
-        {addendum.error && (
-          <p className="form-error" role="alert">
-            {errorMessage(t, addendum.error instanceof ApiError ? addendum.error.code : 'unknown')}
-          </p>
+        {addendum && (
+          <>
+            <label className="report-field no-print">
+              <span className="field-label">{t('report.newAddendum')}</span>
+              <textarea value={text} rows={3} maxLength={5000} onChange={(e) => setText(e.target.value)} />
+            </label>
+            {Boolean(addendum.error) && (
+              <p className="form-error" role="alert">
+                {errorMessage(t, errorCode(addendum.error))}
+              </p>
+            )}
+            <div className="actions no-print">
+              <button
+                className="secondary"
+                disabled={!text.trim() || addendum.pending}
+                onClick={() => addendum.add(text.trim(), () => setText(''))}
+              >
+                {t('report.addAddendum')}
+              </button>
+            </div>
+          </>
         )}
-        <div className="actions no-print">
-          <button
-            className="secondary"
-            disabled={!text.trim() || addendum.isPending}
-            onClick={() => addendum.mutate(text, { onSuccess: () => setText('') })}
-          >
-            {t('report.addAddendum')}
-          </button>
-        </div>
       </div>
     </div>
   )

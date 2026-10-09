@@ -11,7 +11,7 @@ async function pgp() {
   return { lib, config }
 }
 
-export type PgpErrorCode = 'passphrase_wrong' | 'key_invalid' | 'decrypt_failed' | 'signature_invalid'
+export type PgpErrorCode = 'passphrase_wrong' | 'key_invalid' | 'decrypt_failed' | 'signature_invalid' | 'key_locked'
 
 export class PgpError extends Error {
   readonly code: PgpErrorCode
@@ -135,6 +135,32 @@ export async function signAndEncrypt(text: string, signingKey: UnlockedKey, reci
     signingKeys: signingKey,
     config,
   })
+}
+
+/** Step C: the session's raw AES key, encrypted to the therapist public key only (no unlock
+ *  needed), so the audio stays readable to the therapist after the server's processing key is
+ *  destroyed at signing. */
+export async function wrapSessionKey(raw: Uint8Array, therapistPublicKey: string): Promise<string> {
+  const { lib, config } = await pgp()
+  let encryptionKeys: openpgp.Key
+  try {
+    encryptionKeys = await lib.readKey({ armoredKey: therapistPublicKey })
+  } catch {
+    throw new PgpError('key_invalid')
+  }
+  return lib.encrypt({ message: await lib.createMessage({ binary: raw }), encryptionKeys, config })
+}
+
+/** Opens a session key wrapped with `wrapSessionKey`. */
+export async function unwrapSessionKey(armoredMessage: string, decryptionKey: UnlockedKey): Promise<Uint8Array> {
+  const { lib, config } = await pgp()
+  try {
+    const message = await lib.readMessage({ armoredMessage })
+    const { data } = await lib.decrypt({ message, decryptionKeys: decryptionKey, format: 'binary', config })
+    return data
+  } catch {
+    throw new PgpError('decrypt_failed')
+  }
 }
 
 /** Decrypts a record and checks it was signed by `signerPublicKey`. */

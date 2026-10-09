@@ -38,8 +38,11 @@ async function syncSession(session: LocalSession): Promise<void> {
   }
   if (!session.keyUploaded) {
     if (!session.rawKey) throw new ApiError('key_missing', 0)
-    await api(`/sessions/${id}/key`, { method: 'POST', body: { key: session.rawKey } })
-    await db.sessions.update(id, { keyUploaded: true, rawKey: undefined })
+    await api(`/sessions/${id}/key`, {
+      method: 'POST',
+      body: { key: session.rawKey, therapist_key: session.therapistKey },
+    })
+    await db.sessions.update(id, { keyUploaded: true, rawKey: undefined, therapistKey: undefined })
   }
 
   // Bookmarks (documentation chips the therapist set) go up once the session exists.

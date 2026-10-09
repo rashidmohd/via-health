@@ -58,6 +58,15 @@ describe('upload queue', () => {
     expect(stored?.keyUploaded).toBe(true)
   })
 
+  it('sends the therapist-wrapped copy of the key with the raw key (plan 0014 step C)', async () => {
+    const session = await addSession({ therapistKey: '-----BEGIN PGP MESSAGE-----' })
+    const calls = mockApi(() => ({ status: 204 }))
+    await runSyncOnce()
+    const keyCall = calls.find((c) => c.url.endsWith('/sessions/s1/key'))
+    expect(keyCall?.body).toEqual({ key: session.rawKey, therapist_key: '-----BEGIN PGP MESSAGE-----' })
+    expect((await db.sessions.get('s1'))?.therapistKey).toBeUndefined()
+  })
+
   it('finishes a stopped session once every chunk is uploaded', async () => {
     const session = await addSession({ status: 'stopped', durationMs: 20_000, endedAt: '2026-10-08T10:00:20.000Z' })
     await addChunks(session, 2)

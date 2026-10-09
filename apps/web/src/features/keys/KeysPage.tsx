@@ -323,7 +323,15 @@ function KeyOverview({ keys }: { keys: Keys }) {
 }
 
 /** Passphrase → unlocked key in memory. Reused wherever a key is needed (plan 0014 step B). */
-export function UnlockForm({ keys, onUnlocked }: { keys: Keys; onUnlocked?: () => void }) {
+export function UnlockForm({
+  keys,
+  onUnlocked,
+  autoFocus = false,
+}: {
+  keys: Keys
+  onUnlocked?: () => void
+  autoFocus?: boolean
+}) {
   const { t } = useTranslation()
   const [passphrase, setPassphrase] = useState('')
   const [problem, setProblem] = useState<string | null>(null)
@@ -351,6 +359,7 @@ export function UnlockForm({ keys, onUnlocked }: { keys: Keys; onUnlocked?: () =
         <input
           type="password"
           autoComplete="current-password"
+          autoFocus={autoFocus}
           value={passphrase}
           onChange={(e) => setPassphrase(e.target.value)}
           aria-invalid={problem !== null}

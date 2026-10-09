@@ -539,7 +539,12 @@ def refine_speakers(
 
     with DbSession(engine) as db, db.begin():
         transcript = db.get(Transcript, session_id)
-        if transcript is None or transcript.refine_status != "running":
+        # Signed meanwhile: the server copy is gone and stays gone (plan 0014).
+        if (
+            transcript is None
+            or transcript.refine_status != "running"
+            or transcript.segments_enc is None
+        ):
             return "skipped"
         try:
             data = decrypt_json(transcript.segments_enc, transcript_aad(session_id))

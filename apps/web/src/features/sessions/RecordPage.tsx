@@ -3,6 +3,7 @@ import { useCallback, useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Link, useParams } from 'react-router-dom'
 import { useClient } from '../../api/clients'
+import { useMyKeys } from '../../api/keys'
 import { useSession } from '../../api/sessions'
 import { AppAvatar, UserAvatar } from '../../avatar/AppAvatar'
 import { AvatarRing } from '../../avatar/AvatarRing'
@@ -33,6 +34,9 @@ export function RecordPage() {
   const { clientId = '' } = useParams()
   const { t } = useTranslation()
   const { data: client, isError } = useClient(clientId)
+  // The session key is also wrapped to the therapist key (plan 0014 step C). Works offline:
+  // the keys come from the device copy then.
+  const { data: keys } = useMyKeys()
   const cached = useLocal(() => db.consent.get(clientId), clientId)
   const recording = useActiveRecording()
   const active = recording?.recorder ?? null
@@ -76,6 +80,7 @@ export function RecordPage() {
   }, [livePreview, active, liveLanguage])
 
   async function start() {
+    if (!keys) return
     setStarting(true)
     setProblem(null)
     setStoppedSessionId(null)
@@ -84,6 +89,7 @@ export function RecordPage() {
       const recorder = await SessionRecorder.start(
         { id: clientId, name },
         { onProblem: (p) => started && reportRecorderProblem(started, p) },
+        keys.therapist_public_key,
       )
       started = recorder
       setActiveRecorder(recorder, { id: clientId, name })
@@ -232,13 +238,18 @@ export function RecordPage() {
               {t('consent.missingShort')} · <Link to={`/clients/${clientId}/consent`}>{t('consent.record')}</Link>
             </p>
           )}
+          {keys === null && (
+            <p className="banner warning">
+              {t('record.keysNeeded')} · <Link to="/keys">{t('keys.setUp')}</Link>
+            </p>
+          )}
           {!tested ? (
             <MicTest onPassed={onMicPassed} />
           ) : (
             <button
               className="record-orb"
               onClick={() => void start()}
-              disabled={!ready || starting || active !== null}
+              disabled={!ready || !keys || starting || active !== null}
             >
               <span className="orb" aria-hidden="true">
                 <Mic className="icon" />

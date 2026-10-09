@@ -63,7 +63,13 @@
     "passphrase_wrong": "The passphrase is not correct.",
     "key_invalid": "This key could not be read.",
     "decrypt_failed": "This record could not be decrypted with your key.",
-    "signature_invalid": "The signature on this record could not be confirmed. It may have been changed."
+    "signature_invalid": "The signature on this record could not be confirmed. It may have been changed.",
+    "report_signed": "This note is already signed.",
+    "report_changed": "The note changed in the meantime. Please sign again.",
+    "report_not_signed": "Sign the note first, then you can add addenda.",
+    "key_mismatch": "The key on this device does not match your account. Reload the page.",
+    "record_signed": "This record is signed and can only be read with your unlocked key.",
+    "key_locked": "Your key is locked. Unlock it with your passphrase."
   },
   "language": {
     "label": "Language"
@@ -262,7 +268,8 @@
       "mic_lost": "The microphone was disconnected. Recording has no sound. Reconnect it, stop and start a new recording.",
       "storage_low": "Not enough free storage on this device (at least 500 MB needed). Free up space, then try again.",
       "storage_full": "The device storage is full. The recording was stopped; everything saved so far is kept.",
-      "write_failed": "Audio could not be saved on this device. The recording was stopped; everything saved so far is kept."
+      "write_failed": "Audio could not be saved on this device. The recording was stopped; everything saved so far is kept.",
+      "keys_missing": "Set up your keys first. Without them the recording cannot be encrypted for you."
     },
     "transcribedSoFar_one": "Transcribed so far: {{count}} minute",
     "transcribedSoFar_other": "Transcribed so far: {{count}} minutes",
@@ -276,7 +283,8 @@
       "continues": "The recording continues in the background."
     },
     "signOutConfirm": "A recording is running. Stop it and sign out? Everything recorded so far is kept and uploads after the next sign-in.",
-    "stopAndSignOut": "Stop and sign out"
+    "stopAndSignOut": "Stop and sign out",
+    "keysNeeded": "Set up your keys first. Without them the recording cannot be encrypted for you."
   },
   "mic": {
     "voice": "Voice detected",
@@ -329,7 +337,8 @@
     "switchTo": "Switch to {{role}}",
     "switchLabel": "{{role}} at {{time}} — switch to {{other}}",
     "swapFrom": "Swap from here",
-    "swapFromLabel": "Swap therapist and client from {{time}} on"
+    "swapFromLabel": "Swap therapist and client from {{time}} on",
+    "signedHint": "Signed – part of the record, no longer editable."
   },
   "live": {
     "title": "Transcript so far",
@@ -448,11 +457,11 @@
     "regenerateAllConfirm": "Draft all AI fields again? Your changes to those fields will be replaced. Your clinical part and the session details are kept.",
     "blocking_one": "{{count}} AI sentence still needs your check (keep, edit or delete).",
     "blocking_other": "{{count}} AI sentences still need your check (keep, edit or delete).",
-    "approveHint": "After approval the note can no longer be changed; later changes are added as dated addenda.",
-    "approveConfirm": "Approve this note? It can no longer be changed afterwards.",
+    "approveHint": "On approval the note is signed with your key and can no longer be changed; later changes are added as dated addenda.",
+    "approveConfirm": "Approve and sign this note? It can no longer be changed afterwards, and only you can read it.",
     "save": "Save",
     "saved": "Saved",
-    "approve": "Approve",
+    "approve": "Approve and sign",
     "reviewHint": "Check the transcript before the AI drafts the note. Lines you leave out are not sent to the AI; they stay in the session record.",
     "leaveOut": "Leave out",
     "includeAgain": "Include again",
@@ -492,9 +501,10 @@
       "pending": "Waiting for the AI draft…",
       "drafting": "Writing the draft…",
       "draft": "Draft – ready to review",
-      "approved": "Approved",
+      "approved": "Approved, not signed",
       "failed": "Draft failed",
-      "no_consent": "No AI consent – write manually"
+      "no_consent": "No AI consent – write manually",
+      "signed": "Signed"
     },
     "cardBlocking_one": "Draft – {{count}} sentence to check",
     "cardBlocking_other": "Draft – {{count}} sentences to check",
@@ -508,7 +518,18 @@
     "nextToCheck": "Next to check",
     "actions": "Note actions",
     "print": "Print",
-    "sessionTypeNone": "Not specified"
+    "sessionTypeNone": "Not specified",
+    "signing": "Signing…",
+    "unlockToSign": "Unlock to sign",
+    "unlockToSignHint": "The note is signed with your key and encrypted so that only you can read it. Sessio then deletes its readable copy and the transcript on the server.",
+    "keysNeeded": "Set up your keys first to sign notes.",
+    "signedOn": "Signed on {{date}}. Only you can read this note.",
+    "footerSigned": "Approved and signed on {{date}}.",
+    "unlockToRead": "Unlock to read",
+    "unlockToReadHint": "This note is signed and encrypted. Unlock your key to open it on this device.",
+    "notSigned": "This note was approved before signing existed. Sign it so that only you can read it. Addenda are possible again afterwards.",
+    "signNow": "Sign now",
+    "opening": "Opening…"
   },
   "reports": {
     "count_one": "{{count}} approved note",
@@ -525,7 +546,8 @@
       "client": "Client",
       "type": "Type",
       "approved": "Approved"
-    }
+    },
+    "unlockForDetails": "Unlock your key to see number, type and topics of signed notes."
   },
   "hiddenNames": {
     "title": "Names hidden from the AI",
@@ -722,7 +744,8 @@
       "title": "Your keys are not set up yet",
       "body": "Without keys you cannot sign session notes. Set them up once, so that only you can read your signed records.",
       "action": "Set up keys"
-    }
+    },
+    "setUp": "Set up keys"
   },
   "welcome": {
     "title": "Welcome to Sessio, {{name}}",

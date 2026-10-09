@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { loadDeviceKeys, saveDeviceKeys } from '../crypto/keyStore'
-import { ME_KEY, type Me } from './auth'
+import { ME_KEY, useMe, type Me } from './auth'
 import { api, ApiError } from './client'
 
 /** Therapist and recovery keys (plan 0014). The private key is passphrase-encrypted. */
@@ -58,4 +58,10 @@ export function useEmailCheckCode() {
         body: { check_code: checkCode, consent: true },
       }),
   })
+}
+
+/** The signed-in therapist's keys (null: not set up; undefined: still loading). */
+export function useMyKeys() {
+  const { data: me } = useMe()
+  return useKeys(me?.id)
 }

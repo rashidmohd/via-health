@@ -29,7 +29,7 @@ from app.domain.report_template import AI_FIELDS, THERAPIST_FIELDS, draft_schema
 from app.domain.transcript import Segment, Word, apply_corrections
 from app.workers.report import draft_report, draft_report_unconfigured, find_draft_work
 from app.workers.transcribe import TransientFailure, transcript_aad
-from tests.api_helpers import PNG, FakeEmailSender, login
+from tests.api_helpers import KEYS, PNG, SIGNED_BY, FakeEmailSender, login, message, sign_note
 
 # --- names (ADR 0007) -----------------------------------------------------------------
 
@@ -156,7 +156,9 @@ def worker(fresh_db_url: str) -> Iterator[Engine]:
 
 @pytest.fixture
 def therapist(client: TestClient, mail: FakeEmailSender) -> dict[str, str]:
-    return login(client, mail, "therapist@example.com", display_name="Tara Berg")
+    me = login(client, mail, "therapist@example.com", display_name="Tara Berg")
+    assert client.put("/keys", json=KEYS).status_code == 201
+    return me
 
 
 TRANSCRIPT = [
@@ -320,7 +322,7 @@ def test_flagged_statements_block_approval_until_resolved(
     assert statement["support"] == "unsupported"
     assert statement["ai_wording"] == ["wirkte", "traurig"]
     assert report["blocking"] == 1
-    assert client.post(f"/sessions/{session_id}/report/approve").json() == {
+    assert client.post(f"/sessions/{session_id}/report/sign/prepare").json() == {
         "code": "report_unresolved"
     }
 
@@ -335,13 +337,15 @@ def test_flagged_statements_block_approval_until_resolved(
     assert kept["origin"] == "ai" and kept["wording"] == ["traurig"]
     assert saved["blocking"] == 0
 
-    approved = client.post(f"/sessions/{session_id}/report/approve").json()
-    assert approved["status"] == "approved"
-    assert approved["content"]["header"]["session_no"] == "1"
-    assert [v["kind"] for v in approved["versions"]] == ["approval"]
+    prepared = client.post(f"/sessions/{session_id}/report/sign/prepare").json()
+    assert prepared["note"]["content"]["header"]["session_no"] == "1"
+    assert prepared["index"]["session_no"] == "1"
+    signed = sign_note(client, session_id)
+    assert signed["status"] == "signed"
+    assert [v["kind"] for v in signed["versions"]] == ["approval"]
 
 
-def test_approved_note_is_read_only_and_takes_addenda(
+def test_signed_note_is_read_only_and_takes_signed_addenda(
     client: TestClient, therapist: dict[str, str], owner: Engine, worker: Engine
 ) -> None:
     session_id = setup_session(client, owner)
@@ -351,7 +355,7 @@ def test_approved_note_is_read_only_and_takes_addenda(
         report, therapist={**report["content"]["therapist"], "progress": "Fortschritt"}
     )
     client.put(f"/sessions/{session_id}/report", json=body)
-    client.post(f"/sessions/{session_id}/report/approve")
+    sign_note(client, session_id)
 
     assert client.put(f"/sessions/{session_id}/report", json=body).json() == {
         "code": "report_approved"
@@ -359,20 +363,21 @@ def test_approved_note_is_read_only_and_takes_addenda(
     assert client.post(f"/sessions/{session_id}/report/draft", json={}).json() == {
         "code": "report_approved"
     }
-    added = client.post(
-        f"/sessions/{session_id}/report/addenda", json={"text": "Nachtrag: Termin verschoben"}
-    ).json()
+    url = f"/sessions/{session_id}/report/addenda"
+    # Plain text is no longer accepted: an addendum is signed like the note.
+    assert client.post(url, json={"text": "Nachtrag"}).status_code == 422
+    added = client.post(url, json={"message": message("addendum"), **SIGNED_BY}).json()
     assert [(v["version"], v["kind"], v["text"]) for v in added["versions"]] == [
         (1, "approval", None),
-        (2, "addendum", "Nachtrag: Termin verschoben"),
+        (2, "addendum", None),
     ]
-    assert added["content"]["therapist"]["progress"] == "Fortschritt"
+    assert added["versions"][1]["message"] == message("addendum")
 
-    with owner.begin() as c:  # even the owner cannot change approved records
+    with owner.begin() as c:  # even the owner cannot change signed records
         with pytest.raises(DBAPIError), c.begin_nested():
             c.execute(text("UPDATE reports SET content_enc = '\\x00'"))
         with pytest.raises(DBAPIError), c.begin_nested():
-            c.execute(text("UPDATE report_versions SET content_enc = '\\x00'"))
+            c.execute(text("UPDATE report_versions SET pgp_message = 'x'"))
         with pytest.raises(DBAPIError), c.begin_nested():
             c.execute(text("DELETE FROM report_versions"))
 
@@ -413,7 +418,7 @@ def test_manual_note_without_ai(
     saved = client.put(f"/sessions/{session_id}/report", json=body).json()
     assert saved["status"] == "draft" and saved["ai_assisted"] is False
     assert saved["content"]["ai"]["topics"]["statements"][0]["origin"] == "therapist"
-    assert client.post(f"/sessions/{session_id}/report/approve").json()["status"] == "approved"
+    assert sign_note(client, session_id)["status"] == "signed"
 
 
 def test_withdrawn_consent_means_no_draft(
@@ -551,7 +556,7 @@ def test_third_party_placeholder_in_output_is_restored_and_blocks() -> None:
     assert plain["text"] == "Klient:in berichtet" and not is_blocking(plain)
 
 
-def test_reports_page_lists_only_approved_notes(
+def test_reports_page_lists_only_signed_notes(
     client: TestClient,
     mail: FakeEmailSender,
     therapist: dict[str, str],
@@ -568,15 +573,25 @@ def test_reports_page_lists_only_approved_notes(
     body["ai"]["topics"] = {"statements": [{"id": "0123456789ab", "text": "Schlaf"}]}
     body["header"]["session_type"] = "probatory"
     client.put(f"/sessions/{approved_id}/report", json=body)
-    assert client.post(f"/sessions/{approved_id}/report/approve").status_code == 200
-    client.post(f"/sessions/{approved_id}/report/addenda", json={"text": "Nachtrag"})
+    prepared = client.post(f"/sessions/{approved_id}/report/sign/prepare").json()
+    assert prepared["index"] == {
+        "session_no": "1",
+        "session_type": "probatory",
+        "topics": ["Schlaf"],
+    }
+    sign_note(client, approved_id)
+    client.post(
+        f"/sessions/{approved_id}/report/addenda", json={"message": message("a"), **SIGNED_BY}
+    )
 
     listed = client.get("/reports").json()
     assert [r["session_id"] for r in listed] == [approved_id]
     row = listed[0]
     assert row["client_name"] == "Anna Schmidt"
-    assert (row["session_type"], row["topics"], row["addenda"]) == ("probatory", ["Schlaf"], 1)
-    assert row["session_no"] is not None and row["approved_at"]
+    # Signed: number, type and topics only in the encrypted index, for the browser.
+    assert (row["signed"], row["index"], row["addenda"]) == (True, message("index"), 1)
+    assert (row["session_no"], row["session_type"], row["topics"]) == (None, None, [])
+    assert row["approved_at"]
     assert client.get(f"/reports?client_id={uuid.uuid4()}").json() == []
 
     client.cookies.clear()
@@ -632,8 +647,9 @@ def test_turns_are_locked_while_drafting_and_after_approval(
         report, therapist={**report["content"]["therapist"], "progress": "Fortschritt"}
     )
     client.put(f"/sessions/{session_id}/report", json=body)
-    assert client.post(f"/sessions/{session_id}/report/approve").status_code == 200
-    assert client.post(url, json={**turn, "excluded": False}).json() == {"code": "report_approved"}
+    sign_note(client, session_id)
+    # Signed: the transcript is no longer readable on the server at all.
+    assert client.post(url, json={**turn, "excluded": False}).json() == {"code": "record_signed"}
 
 
 def test_other_therapist_cannot_leave_out_turns(

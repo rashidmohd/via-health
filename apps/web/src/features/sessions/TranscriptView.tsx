@@ -35,10 +35,13 @@ export function TranscriptView({
   sessionId,
   transcript,
   clientName,
+  readOnly = false,
 }: {
   sessionId: string
   transcript: Transcript
   clientName: string
+  /** Signed: part of the record, shown as signed, no more corrections (plan 0014). */
+  readOnly?: boolean
 }) {
   const { t } = useTranslation()
   const setTherapist = useSetTherapistSpeaker(sessionId)
@@ -46,12 +49,12 @@ export function TranscriptView({
   const undo = useUndoSpeakerCorrection(sessionId)
   const [choosing, setChoosing] = useState(false)
   const therapist = transcript.therapist_speaker
-  const askWho = therapist === null || choosing
+  const askWho = !readOnly && (therapist === null || choosing)
   // The client's label: the most-speaking label that is not the therapist (2 speakers usual).
   const client = speakers(transcript).find((s) => s.label !== therapist)?.label ?? null
-  const canCorrect = therapist !== null && client !== null && !choosing
+  const canCorrect = !readOnly && therapist !== null && client !== null && !choosing
   const busy = correct.isPending || undo.isPending
-  const checking = transcript.refine_status === 'pending' || transcript.refine_status === 'running'
+  const checking = !readOnly && (transcript.refine_status === 'pending' || transcript.refine_status === 'running')
 
   const roleOf = useSpeakerName(therapist, clientName)
 
@@ -95,7 +98,7 @@ export function TranscriptView({
             <AudioLines className="icon" aria-hidden="true" />
             {t('transcript.title')}
           </h2>
-          {therapist !== null && !choosing && (
+          {!readOnly && therapist !== null && !choosing && (
             <button className="ghost small-button" onClick={() => setChoosing(true)}>
               <Users className="icon" aria-hidden="true" />
               {t('transcript.changeSpeaker')}
@@ -107,7 +110,13 @@ export function TranscriptView({
             {t('transcript.checking')}
           </p>
         )}
-        {transcript.refine_status === 'done' && (
+        {readOnly && (
+          <p className="muted small icon-line">
+            <CircleCheck className="icon" aria-hidden="true" />
+            {t('transcript.signedHint')}
+          </p>
+        )}
+        {!readOnly && transcript.refine_status === 'done' && (
           <p className="muted small icon-line">
             <CircleCheck className="icon" aria-hidden="true" />
             {t('transcript.checked')}
@@ -182,7 +191,7 @@ export function TranscriptView({
             )
           })}
         </ol>
-        <p className="muted small">{t('transcript.reviewNote')}</p>
+        {!readOnly && <p className="muted small">{t('transcript.reviewNote')}</p>}
       </div>
     </div>
   )

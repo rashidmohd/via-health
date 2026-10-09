@@ -2,19 +2,30 @@ import { ChevronRight, Search } from 'lucide-react'
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Link } from 'react-router-dom'
-import { useApprovedReports, type ApprovedReport } from '../../api/reports'
+import { useMyKeys } from '../../api/keys'
+import { useApprovedReports, type ApprovedReport, type NoteIndex } from '../../api/reports'
+import { useUnlocked } from '../../crypto/keyring'
 import { Initials } from '../../design/Initials'
 import notedIllustration from '../../design/illustrations/noted.svg'
 import { ListSkeleton } from '../../design/ListSkeleton'
 import { formatDate, formatTime } from '../format'
+import { UnlockPanel } from '../keys/UnlockPanel'
+import { useOpenedIndexes } from './useOpened'
 
-/** Approved session notes (plan 0013). Drafts stay on their session until approved. */
+/** Approved session notes (plans 0013, 0014). Drafts stay on their session until approved.
+ *  For signed notes, number, type and topics are decrypted here once the key is unlocked. */
 export function ReportsPage() {
   const { t } = useTranslation()
   const { data: reports, isPending } = useApprovedReports()
+  const { data: keys } = useMyKeys()
+  const unlocked = useUnlocked()
+  const { data: indexes } = useOpenedIndexes(reports, keys)
   const [query, setQuery] = useState('')
   const needle = query.trim().toLocaleLowerCase()
-  const shown = (reports ?? []).filter((r) => r.client_name.toLocaleLowerCase().includes(needle))
+  const shown = (reports ?? [])
+    .filter((r) => r.client_name.toLocaleLowerCase().includes(needle))
+    .map((r) => withIndex(r, indexes?.get(r.session_id)))
+  const anySigned = (reports ?? []).some((r) => r.signed)
 
   return (
     <section className="page">
@@ -24,6 +35,9 @@ export function ReportsPage() {
           {reports && reports.length > 0 && <p className="muted">{t('reports.count', { count: reports.length })}</p>}
         </div>
       </header>
+      {anySigned && keys && !unlocked && (
+        <UnlockPanel keys={keys} title={t('report.unlockToRead')} hint={t('reports.unlockForDetails')} autoFocus={false} />
+      )}
       <div className="table-card">
         {reports && reports.length > 0 && (
           <div className="table-toolbar">
@@ -50,14 +64,25 @@ export function ReportsPage() {
         ) : !shown.length ? (
           <p className="table-empty muted">{t('reports.noMatch')}</p>
         ) : (
-          <ReportTable reports={shown} />
+          <ReportTable reports={shown} hidden={(r) => r.signed && !indexes?.has(r.session_id)} />
         )}
       </div>
     </section>
   )
 }
 
-function ReportTable({ reports }: { reports: ApprovedReport[] }) {
+function withIndex(r: ApprovedReport, index: NoteIndex | undefined): ApprovedReport {
+  return index ? { ...r, session_no: index.session_no, session_type: index.session_type, topics: index.topics } : r
+}
+
+function ReportTable({
+  reports,
+  hidden,
+}: {
+  reports: ApprovedReport[]
+  /** Signed and not decrypted (key locked): type unknown here, not "not specified". */
+  hidden: (r: ApprovedReport) => boolean
+}) {
   const { t, i18n } = useTranslation()
   const lang = i18n.language
   return (
@@ -99,7 +124,13 @@ function ReportTable({ reports }: { reports: ApprovedReport[] }) {
                 </span>
               </span>
             </td>
-            <td className="muted">{r.session_type ? t(`report.sessionTypes.${r.session_type}`) : t('report.sessionTypeNone')}</td>
+            <td className="muted">
+              {hidden(r)
+                ? '—'
+                : r.session_type
+                  ? t(`report.sessionTypes.${r.session_type}`)
+                  : t('report.sessionTypeNone')}
+            </td>
             <td>
               <span className="cell-date">
                 <span>{formatDate(r.approved_at, lang)}</span>

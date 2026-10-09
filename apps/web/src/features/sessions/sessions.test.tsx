@@ -4,7 +4,13 @@ import { createSessionKey } from '../../recorder/crypto'
 import { db } from '../../recorder/db'
 import { setVoiceStateForTest } from '../../recorder/micMonitor'
 import { installFakeMicrophone } from '../../recorder/testing'
-import { confirmInDialog, ME, mockApi, renderApp } from '../../test-utils'
+import { confirmInDialog, ME, mockApi, renderApp, TEST_KEYS } from '../../test-utils'
+
+// Wrapping the session key to the therapist key (plan 0014 step C); real OpenPGP in crypto tests.
+vi.mock('../../crypto/pgp', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('../../crypto/pgp')>()),
+  wrapSessionKey: vi.fn(async () => '-----BEGIN PGP MESSAGE-----'),
+}))
 
 function summary(id: string, name: string, ready: boolean) {
   return {
@@ -31,12 +37,20 @@ function api(overrides: (url: string, init: RequestInit) => { status: number; bo
     const special = overrides(url, init)
     if (special) return special
     if (url.endsWith('/auth/me')) return { status: 200, body: ME }
+    if (url.endsWith('/keys')) return { status: 200, body: TEST_KEYS }
     if (url.endsWith('/clients')) return { status: 200, body: [ANNA, BEN] }
     if (url.endsWith('/clients/c1')) return { status: 200, body: { ...ANNA, identity: { name: 'Anna Weber' }, consents: [] } }
     if (url.endsWith('/clients/c2')) return { status: 200, body: { ...BEN, identity: { name: 'Ben Braun' }, consents: [] } }
     if (url.includes('/sessions') && (init.method ?? 'GET') === 'GET') return { status: 200, body: [] }
     return { status: 204 }
   })
+}
+
+/** The button is enabled once consent and the therapist keys are loaded. */
+async function startRecording() {
+  const button = await screen.findByRole('button', { name: 'Start recording' })
+  await waitFor(() => expect(button).toBeEnabled())
+  fireEvent.click(button)
 }
 
 describe('start session flow', () => {
@@ -79,12 +93,21 @@ describe('start session flow', () => {
     expect(screen.getByRole('link', { name: /Anna Weber/ })).toBeInTheDocument()
   })
 
+  it('needs the therapist keys before recording (plan 0014 step C)', async () => {
+    installFakeMicrophone()
+    api((url) => (url.endsWith('/keys') ? { status: 404, body: { code: 'keys_missing' } } : null))
+    renderApp('/sessions/record/c1')
+    expect(await screen.findByText(/Set up your keys first/)).toBeInTheDocument()
+    expect(screen.getByRole('link', { name: 'Set up keys' })).toHaveAttribute('href', '/keys')
+    expect(screen.getByRole('button', { name: 'Start recording' })).toBeDisabled()
+  })
+
   it('records after choosing the client, then stops with confirmation', async () => {
     installFakeMicrophone()
     api()
     renderApp('/sessions/record/c1')
 
-    fireEvent.click(await screen.findByRole('button', { name: 'Start recording' }))
+    await startRecording()
     expect(await screen.findByRole('status')).toHaveTextContent('Recording')
     expect(screen.getByLabelText('Recording time')).toHaveTextContent('00:00')
 
@@ -111,7 +134,7 @@ describe('start session flow', () => {
     const track = installFakeMicrophone()
     api()
     renderApp('/sessions/record/c1')
-    fireEvent.click(await screen.findByRole('button', { name: 'Start recording' }))
+    await startRecording()
     await screen.findByLabelText('Recording time')
     expect(screen.queryByRole('complementary', { name: 'Running recording' })).not.toBeInTheDocument()
 
@@ -145,7 +168,7 @@ describe('start session flow', () => {
     installFakeMicrophone()
     const calls = api()
     renderApp('/sessions/record/c1')
-    fireEvent.click(await screen.findByRole('button', { name: 'Start recording' }))
+    await startRecording()
     await screen.findByLabelText('Recording time')
 
     fireEvent.click(screen.getByRole('button', { name: 'Sign out' }))

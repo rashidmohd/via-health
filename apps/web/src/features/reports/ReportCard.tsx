@@ -8,6 +8,7 @@ export function ReportCard({ sessionId }: { sessionId: string }) {
   const { t } = useTranslation()
   const { data: report } = useReport(sessionId)
   if (!report) return null
+  const done = report.status === 'signed' || report.status === 'approved'
   const label =
     report.status === 'draft' && report.blocking > 0
       ? t('report.cardBlocking', { count: report.blocking })
@@ -23,8 +24,8 @@ export function ReportCard({ sessionId }: { sessionId: string }) {
           {label}
         </p>
       </div>
-      <Link className={`button ${report.status === 'approved' ? 'secondary' : 'primary'}`} to={`/sessions/${sessionId}/report`}>
-        {t(report.status === 'approved' ? 'report.open' : 'report.review')}
+      <Link className={`button ${done ? 'secondary' : 'primary'}`} to={`/sessions/${sessionId}/report`}>
+        {t(done ? 'report.open' : 'report.review')}
       </Link>
     </div>
   )

@@ -11,9 +11,9 @@ import { errorMessage } from '../../i18n/errors'
 import { formatDate } from '../format'
 import { ReportEditor } from './ReportEditor'
 import { SourceTranscript } from './SourceTranscript'
-import { ReportView } from './ReportView'
+import { ApprovedUnsignedReport, SignedReport } from './SignedReport'
 
-/** Session note (plan 0009): AI draft → therapist review → approval → addenda. */
+/** Session note (plans 0009, 0014): AI draft → therapist review → approve and sign → addenda. */
 export function ReportPage() {
   const { id = '' } = useParams()
   const { t, i18n } = useTranslation()
@@ -42,6 +42,7 @@ export function ReportPage() {
 
   const mutationError = requestDraft.error ?? startManual.error
   const busy = report.status === 'pending' || report.status === 'drafting'
+  const done = report.status === 'approved' || report.status === 'signed'
   const start = report.status === 'none' || report.status === 'failed' || report.status === 'no_consent'
   // Before the first draft the therapist reviews the transcript and may leave lines out (ADR 0018).
   const review = start && transcript !== undefined
@@ -63,12 +64,12 @@ export function ReportPage() {
           </div>
         </div>
         <div className="row">
-          {(report.status === 'draft' || report.status === 'approved') && (
-            <span className={`badge ${report.status === 'draft' ? 'attention' : 'neutral'}`}>
+          {(report.status === 'draft' || done) && (
+            <span className={`badge ${report.status === 'signed' ? 'neutral' : 'attention'}`}>
               {t(`report.status.${report.status}`)}
             </span>
           )}
-          <AppAvatar size={56} processing={busy} problem={report.status === 'failed'} done={report.status === 'approved'} />
+          <AppAvatar size={56} processing={busy} problem={report.status === 'failed'} done={done} />
         </div>
       </header>
 
@@ -144,7 +145,8 @@ export function ReportPage() {
       {report.status === 'draft' && (
         <ReportEditor report={report} session={session} transcript={transcript} />
       )}
-      {report.status === 'approved' && <ReportView report={report} session={session} />}
+      {report.status === 'approved' && <ApprovedUnsignedReport report={report} session={session} />}
+      {report.status === 'signed' && <SignedReport report={report} session={session} />}
     </section>
   )
 }

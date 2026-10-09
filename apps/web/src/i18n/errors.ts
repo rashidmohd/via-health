@@ -1,4 +1,6 @@
 import type { TFunction } from 'i18next'
+import { ApiError } from '../api/client'
+import { PgpError } from '../crypto/pgp'
 
 // Must cover backend/app/db/errors.py DB_ERROR_CODES and the API error codes.
 export const ERROR_CODES = [
@@ -45,11 +47,17 @@ export const ERROR_CODES = [
   'keys_missing',
   'keys_exist',
   'keys_immutable',
+  'report_signed',
+  'report_changed',
+  'report_not_signed',
+  'key_mismatch',
+  'record_signed',
   // Browser-side OpenPGP codes (crypto/pgp.ts)
   'passphrase_wrong',
   'key_invalid',
   'decrypt_failed',
   'signature_invalid',
+  'key_locked',
 ] as const
 
 export type ErrorCode = (typeof ERROR_CODES)[number]
@@ -58,4 +66,10 @@ export function errorMessage(t: TFunction, code: string | null | undefined): str
   return (ERROR_CODES as readonly string[]).includes(code ?? '')
     ? t(`errors.${code}`)
     : t('errors.unknown')
+}
+
+/** The stable code of an API or OpenPGP error, for `errorMessage`. */
+export function errorCode(error: unknown): string {
+  if (error instanceof ApiError || error instanceof PgpError) return error.code
+  return 'unknown'
 }

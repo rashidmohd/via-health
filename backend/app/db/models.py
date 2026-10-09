@@ -313,7 +313,9 @@ class Transcript(Base):
     __tablename__ = "transcripts"
 
     session_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("sessions.id"), primary_key=True)
-    segments_enc: Mapped[bytes]
+    # NULL once the note is signed (plan 0014): the record then exists only as an OpenPGP
+    # message the server cannot read (report_versions.transcript_pgp). A DB trigger keeps it so.
+    segments_enc: Mapped[bytes | None]
     # Which speaker label is the therapist, e.g. {"therapist": "1"}; set by the therapist.
     speaker_roles: Mapped[dict[str, Any] | None]
     language: Mapped[str] = mapped_column(Text)
@@ -375,12 +377,14 @@ class Capture(Base):
     )
 
 
-REPORT_STATUSES = ("pending", "drafting", "draft", "approved", "failed", "no_consent")
+REPORT_STATUSES = ("pending", "drafting", "draft", "approved", "failed", "no_consent", "signed")
 
 
 class Report(Base):
     """Session note (plan 0009). `draft_enc` is what the AI wrote (kept unchanged),
-    `content_enc` the therapist's current text. Read-only once approved (DB trigger)."""
+    `content_enc` the therapist's current text. Read-only once approved (DB trigger).
+    Signing (plan 0014) clears both; the note then lives in `report_versions` as OpenPGP
+    messages, and `index_pgp` holds session no., type and topics for the Reports page."""
 
     __tablename__ = "reports"
 
@@ -401,6 +405,10 @@ class Report(Base):
     updated_at: Mapped[datetime] = _created_at()
     approved_at: Mapped[datetime | None]
     approved_by: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("users.id"))
+    signed_at: Mapped[datetime | None]
+    signer_fingerprint: Mapped[str | None] = mapped_column(Text)
+    encrypted_to: Mapped[list[Any] | None] = mapped_column(JSONB)
+    index_pgp: Mapped[str | None] = mapped_column(Text)
 
     __table_args__ = (
         UniqueConstraint("session_id", "kind", name="uq_reports_session_id_kind"),
@@ -410,18 +418,33 @@ class Report(Base):
             "status <> 'approved' OR (approved_at IS NOT NULL AND approved_by IS NOT NULL)",
             name="approval_complete",
         ),
+        CheckConstraint(
+            "status <> 'signed' OR ("
+            "signed_at IS NOT NULL AND signer_fingerprint IS NOT NULL AND encrypted_to IS NOT NULL"
+            " AND index_pgp IS NOT NULL AND approved_at IS NOT NULL AND approved_by IS NOT NULL"
+            " AND content_enc IS NULL AND draft_enc IS NULL)",
+            name="signed_complete",
+        ),
     )
 
 
 class ReportVersion(Base):
-    """Append-only (DB trigger): version 1 is the approved note, later ones are addenda."""
+    """Append-only (DB trigger): version 1 is the approved note, later ones are addenda.
+    Either server-encrypted (`content_enc`, notes approved before signing) or signed
+    (`pgp_message`, plan 0014). The one allowed update seals the first form into the second."""
 
     __tablename__ = "report_versions"
 
     report_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("reports.id"))
     version: Mapped[int] = mapped_column(Integer)
     kind: Mapped[str] = mapped_column(Text)
-    content_enc: Mapped[bytes]
+    content_enc: Mapped[bytes | None]
+    # Armored OpenPGP messages, signed by the therapist key and encrypted to the therapist and
+    # recovery keys in the browser. The server stores them and never parses them.
+    pgp_message: Mapped[str | None] = mapped_column(Text)
+    transcript_pgp: Mapped[str | None] = mapped_column(Text)  # version 1 only
+    signer_fingerprint: Mapped[str | None] = mapped_column(Text)
+    encrypted_to: Mapped[list[Any] | None] = mapped_column(JSONB)
     created_at: Mapped[datetime] = _created_at()
     created_by: Mapped[uuid.UUID] = mapped_column(ForeignKey("users.id"))
 
@@ -429,6 +452,14 @@ class ReportVersion(Base):
         PrimaryKeyConstraint("report_id", "version", name="pk_report_versions"),
         CheckConstraint(_in("kind", ("approval", "addendum")), name="kind"),
         CheckConstraint("version >= 1", name="version_positive"),
+        CheckConstraint("(content_enc IS NULL) <> (pgp_message IS NULL)", name="one_form"),
+        CheckConstraint(
+            "pgp_message IS NULL OR (signer_fingerprint IS NOT NULL AND encrypted_to IS NOT NULL)",
+            name="pgp_complete",
+        ),
+        CheckConstraint(
+            "transcript_pgp IS NULL OR kind = 'approval'", name="transcript_on_approval"
+        ),
     )
 
 

@@ -63,7 +63,13 @@
     "passphrase_wrong": "Die Passphrase ist nicht richtig.",
     "key_invalid": "Dieser Schlüssel konnte nicht gelesen werden.",
     "decrypt_failed": "Dieser Eintrag konnte mit Ihrem Schlüssel nicht entschlüsselt werden.",
-    "signature_invalid": "Die Signatur dieses Eintrags konnte nicht bestätigt werden. Er wurde möglicherweise verändert."
+    "signature_invalid": "Die Signatur dieses Eintrags konnte nicht bestätigt werden. Er wurde möglicherweise verändert.",
+    "report_signed": "Diese Dokumentation ist bereits signiert.",
+    "report_changed": "Die Dokumentation wurde inzwischen geändert. Bitte noch einmal signieren.",
+    "report_not_signed": "Signieren Sie die Dokumentation zuerst, dann können Sie Nachträge hinzufügen.",
+    "key_mismatch": "Der Schlüssel auf diesem Gerät passt nicht zu Ihrem Konto. Laden Sie die Seite neu.",
+    "record_signed": "Dieser Eintrag ist signiert und lässt sich nur mit Ihrem entsperrten Schlüssel lesen.",
+    "key_locked": "Ihr Schlüssel ist gesperrt. Entsperren Sie ihn mit Ihrer Passphrase."
   },
   "language": {
     "label": "Sprache"
@@ -221,7 +227,7 @@
       "uploaded": "Hochgeladen",
       "processing": "In Verarbeitung",
       "draft_ready": "Entwurf bereit",
-      "signed": "Unterschrieben",
+      "signed": "Signiert",
       "failed": "Fehlgeschlagen",
       "transcribed": "Transkript bereit"
     },
@@ -262,7 +268,8 @@
       "mic_lost": "Das Mikrofon wurde getrennt. Die Aufnahme hat keinen Ton. Schließen Sie es wieder an, beenden Sie die Aufnahme und starten Sie eine neue.",
       "storage_low": "Nicht genug freier Speicher auf diesem Gerät (mindestens 500 MB nötig). Geben Sie Speicher frei und versuchen Sie es erneut.",
       "storage_full": "Der Gerätespeicher ist voll. Die Aufnahme wurde beendet; alles bisher Gespeicherte bleibt erhalten.",
-      "write_failed": "Audiodaten konnten auf diesem Gerät nicht gespeichert werden. Die Aufnahme wurde beendet; alles bisher Gespeicherte bleibt erhalten."
+      "write_failed": "Audiodaten konnten auf diesem Gerät nicht gespeichert werden. Die Aufnahme wurde beendet; alles bisher Gespeicherte bleibt erhalten.",
+      "keys_missing": "Richten Sie zuerst Ihre Schlüssel ein. Ohne sie kann die Aufnahme nicht für Sie verschlüsselt werden."
     },
     "transcribedSoFar_one": "Bisher transkribiert: {{count}} Minute",
     "transcribedSoFar_other": "Bisher transkribiert: {{count}} Minuten",
@@ -276,7 +283,8 @@
       "continues": "Die Aufnahme läuft im Hintergrund weiter."
     },
     "signOutConfirm": "Eine Aufnahme läuft. Aufnahme beenden und abmelden? Alles bisher Aufgenommene bleibt erhalten und wird nach der nächsten Anmeldung hochgeladen.",
-    "stopAndSignOut": "Beenden und abmelden"
+    "stopAndSignOut": "Beenden und abmelden",
+    "keysNeeded": "Richten Sie zuerst Ihre Schlüssel ein. Ohne sie kann die Aufnahme nicht für Sie verschlüsselt werden."
   },
   "mic": {
     "voice": "Stimme erkannt",
@@ -329,7 +337,8 @@
     "switchTo": "Zu {{role}} wechseln",
     "switchLabel": "{{role}} bei {{time}} – zu {{other}} wechseln",
     "swapFrom": "Ab hier tauschen",
-    "swapFromLabel": "Therapeut:in und Klient:in ab {{time}} tauschen"
+    "swapFromLabel": "Therapeut:in und Klient:in ab {{time}} tauschen",
+    "signedHint": "Signiert – Teil der Dokumentation, nicht mehr änderbar."
   },
   "live": {
     "title": "Bisheriges Transkript",
@@ -448,11 +457,11 @@
     "regenerateAllConfirm": "Alle KI-Felder neu entwerfen? Ihre Änderungen in diesen Feldern werden ersetzt. Ihr klinischer Teil und die Kopfdaten bleiben erhalten.",
     "blocking_one": "{{count}} KI-Satz muss noch geprüft werden (beibehalten, bearbeiten oder löschen).",
     "blocking_other": "{{count}} KI-Sätze müssen noch geprüft werden (beibehalten, bearbeiten oder löschen).",
-    "approveHint": "Nach der Freigabe kann die Dokumentation nicht mehr geändert werden; spätere Änderungen werden als datierte Nachträge ergänzt.",
-    "approveConfirm": "Diese Dokumentation freigeben? Danach kann sie nicht mehr geändert werden.",
+    "approveHint": "Nach der Freigabe wird die Dokumentation mit Ihrem Schlüssel signiert und kann nicht mehr geändert werden; spätere Änderungen werden als datierte Nachträge ergänzt.",
+    "approveConfirm": "Diese Dokumentation freigeben und signieren? Danach kann sie nicht mehr geändert werden, und nur Sie können sie lesen.",
     "save": "Speichern",
     "saved": "Gespeichert",
-    "approve": "Freigeben",
+    "approve": "Freigeben und signieren",
     "reviewHint": "Prüfen Sie das Transkript, bevor die KI die Dokumentation entwirft. Ausgelassene Zeilen werden nicht an die KI gesendet; sie bleiben Teil der Sitzungsakte.",
     "leaveOut": "Auslassen",
     "includeAgain": "Wieder einbeziehen",
@@ -492,9 +501,10 @@
       "pending": "Warten auf den KI-Entwurf …",
       "drafting": "Entwurf wird geschrieben …",
       "draft": "Entwurf – bereit zur Prüfung",
-      "approved": "Freigegeben",
+      "approved": "Freigegeben, nicht signiert",
       "failed": "Entwurf fehlgeschlagen",
-      "no_consent": "Keine KI-Einwilligung – selbst schreiben"
+      "no_consent": "Keine KI-Einwilligung – selbst schreiben",
+      "signed": "Signiert"
     },
     "cardBlocking_one": "Entwurf – {{count}} Satz zu prüfen",
     "cardBlocking_other": "Entwurf – {{count}} Sätze zu prüfen",
@@ -508,7 +518,18 @@
     "nextToCheck": "Zum nächsten Satz",
     "actions": "Aktionen zur Dokumentation",
     "print": "Drucken",
-    "sessionTypeNone": "Nicht angegeben"
+    "sessionTypeNone": "Nicht angegeben",
+    "signing": "Wird signiert…",
+    "unlockToSign": "Zum Signieren entsperren",
+    "unlockToSignHint": "Die Dokumentation wird mit Ihrem Schlüssel signiert und so verschlüsselt, dass nur Sie sie lesen können. Danach löscht Sessio seine lesbare Kopie und das Transkript auf dem Server.",
+    "keysNeeded": "Richten Sie zuerst Ihre Schlüssel ein, um Dokumentationen zu signieren.",
+    "signedOn": "Signiert am {{date}}. Nur Sie können diese Dokumentation lesen.",
+    "footerSigned": "Freigegeben und signiert am {{date}}.",
+    "unlockToRead": "Zum Lesen entsperren",
+    "unlockToReadHint": "Diese Dokumentation ist signiert und verschlüsselt. Entsperren Sie Ihren Schlüssel, um sie auf diesem Gerät zu öffnen.",
+    "notSigned": "Diese Dokumentation wurde freigegeben, bevor es das Signieren gab. Signieren Sie sie, damit nur Sie sie lesen können. Danach sind Nachträge wieder möglich.",
+    "signNow": "Jetzt signieren",
+    "opening": "Wird geöffnet…"
   },
   "reports": {
     "count_one": "{{count}} freigegebene Dokumentation",
@@ -525,7 +546,8 @@
       "client": "Klient:in",
       "type": "Art",
       "approved": "Freigegeben"
-    }
+    },
+    "unlockForDetails": "Entsperren Sie Ihren Schlüssel, um Nummer, Art und Themen signierter Dokumentationen zu sehen."
   },
   "hiddenNames": {
     "title": "Vor der KI verborgene Namen",
@@ -722,7 +744,8 @@
       "title": "Ihre Schlüssel sind noch nicht eingerichtet",
       "body": "Ohne Schlüssel können Sie keine Verlaufsnotizen signieren. Richten Sie sie einmal ein, damit nur Sie Ihre signierten Unterlagen lesen können.",
       "action": "Schlüssel einrichten"
-    }
+    },
+    "setUp": "Schlüssel einrichten"
   },
   "welcome": {
     "title": "Willkommen bei Sessio, {{name}}",

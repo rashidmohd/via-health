@@ -10,6 +10,8 @@ import {
   sameCheckCode,
   signAndEncrypt,
   unlockPrivateKey,
+  unwrapSessionKey,
+  wrapSessionKey,
   type KeyPair,
   type UnlockedKey,
 } from './pgp'
@@ -124,5 +126,19 @@ describe('records', () => {
       encryptionKeys: await openpgp.readKey({ armoredKey: therapist.publicKey }),
     })
     expect(await code(decryptAndVerify(unsigned, unlocked, therapist.publicKey))).toBe('signature_invalid')
+  })
+})
+
+describe('session key wrapped to the therapist (step C)', () => {
+  it('opens only with the therapist key', async () => {
+    const raw = crypto.getRandomValues(new Uint8Array(32))
+    const wrapped = await wrapSessionKey(raw, therapist.publicKey)
+    expect(wrapped).toMatch(/^-----BEGIN PGP MESSAGE-----/)
+    expect(await unwrapSessionKey(wrapped, unlocked)).toEqual(raw)
+    expect(await code(unwrapSessionKey(wrapped, otherKey))).toBe('decrypt_failed')
+  })
+
+  it('refuses something that is not a public key', async () => {
+    expect(await code(wrapSessionKey(new Uint8Array(32), 'not a key'))).toBe('key_invalid')
   })
 })

@@ -1,5 +1,9 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { unlockedKey } from '../crypto/keyring'
+import { PgpError } from '../crypto/pgp'
+import { signAddendum, signNote, type SignPrepared } from '../crypto/records'
 import { api } from './client'
+import type { Keys } from './keys'
 
 /** Session note template `verlauf` v1 (plan 0009). Labels are UI strings: `report.fields.*`. */
 export const AI_FIELDS = [
@@ -26,7 +30,16 @@ export const MODES = ['in_person', 'video'] as const
 
 export type AiField = (typeof AI_FIELDS)[number]
 export type TherapistField = (typeof THERAPIST_FIELDS)[number]
-export type ReportStatus = 'none' | 'pending' | 'drafting' | 'draft' | 'approved' | 'failed' | 'no_consent'
+export type ReportStatus =
+  | 'none'
+  | 'pending'
+  | 'drafting'
+  | 'draft'
+  /** Approved before signing existed (test data); can be signed later. */
+  | 'approved'
+  | 'signed'
+  | 'failed'
+  | 'no_consent'
 export type Support = 'supported' | 'partly' | 'unsupported'
 
 export interface ReportHeader {
@@ -66,7 +79,41 @@ export interface ReportVersion {
   version: number
   kind: 'approval' | 'addendum'
   created_at: string
+  /** Addendum of an approved, not yet signed note. */
   text: string | null
+  /** Signed addendum: OpenPGP message, opened in the browser. */
+  message: string | null
+}
+
+/** A signed note as the server stores it: messages only the therapist's key opens. */
+export interface SignedRecord {
+  note: string
+  transcript: string | null
+  index: string
+  signer_fingerprint: string
+  encrypted_to: string[]
+  signed_at: string
+}
+
+/** Decrypted `SignedRecord.note` (backend `_note_record`). */
+export interface NoteRecord {
+  session: { id: string; client_id: string; client_name: string; started_at: string }
+  content: ReportContent
+  ai_assisted: boolean
+  approved_at: string
+}
+
+/** Decrypted `SignedRecord.index`: what the Reports page shows. */
+export interface NoteIndex {
+  session_no: string | null
+  session_type: ReportHeader['session_type']
+  topics: string[]
+}
+
+/** Decrypted signed addendum. */
+export interface AddendumRecord {
+  text: string
+  created_at: string
 }
 
 export interface Report {
@@ -85,15 +132,19 @@ export interface Report {
   updated_at: string | null
   approved_at: string | null
   versions: ReportVersion[]
+  signed: SignedRecord | null
 }
 
-/** A row on the Reports page: approved notes only (plan 0013). */
+/** A row on the Reports page: approved and signed notes (plans 0013, 0014). For a signed note
+ *  number, type and topics are only in the encrypted `index`. */
 export interface ApprovedReport {
   session_id: string
   client_id: string
   client_name: string
   started_at: string
   approved_at: string
+  signed: boolean
+  index: string | null
   session_no: string | null
   session_type: ReportHeader['session_type']
   topics: string[]
@@ -170,16 +221,34 @@ export function useRequestDraft(sessionId: string) {
   )
 }
 
-export function useApproveReport(sessionId: string) {
-  return useReportMutation(sessionId, () =>
-    api<Report>(`/sessions/${sessionId}/report/approve`, { method: 'POST' }),
-  )
+function requireUnlocked() {
+  const key = unlockedKey()
+  if (!key) throw new PgpError('key_locked')
+  return key
+}
+
+/** "Approve and sign" (plan 0014): the server checks the note and returns the record, the
+ *  browser signs and encrypts it, the server stores it and drops its readable copies. The key
+ *  must be unlocked first. */
+export function useSignReport(sessionId: string) {
+  const queryClient = useQueryClient()
+  return useReportMutation(sessionId, async (keys: Keys) => {
+    const key = requireUnlocked()
+    const prepared = await api<SignPrepared>(`/sessions/${sessionId}/report/sign/prepare`, { method: 'POST' })
+    const body = await signNote(prepared, key, keys)
+    const report = await api<Report>(`/sessions/${sessionId}/report/sign`, { method: 'POST', body })
+    // The transcript now exists only in the signed record.
+    queryClient.removeQueries({ queryKey: ['transcript', sessionId] })
+    void queryClient.invalidateQueries({ queryKey: ['session', sessionId] })
+    return report
+  })
 }
 
 export function useAddAddendum(sessionId: string) {
-  return useReportMutation(sessionId, (text: string) =>
-    api<Report>(`/sessions/${sessionId}/report/addenda`, { method: 'POST', body: { text } }),
-  )
+  return useReportMutation(sessionId, async ({ text, keys }: { text: string; keys: Keys }) => {
+    const body = await signAddendum(text, requireUnlocked(), keys)
+    return api<Report>(`/sessions/${sessionId}/report/addenda`, { method: 'POST', body })
+  })
 }
 
 export function useHiddenNames(clientId: string) {

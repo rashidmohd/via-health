@@ -20,6 +20,9 @@ export interface LocalSession {
   /** Raw key (base64), kept only until the server has stored it (needed after a crash or
    *  an offline start). */
   rawKey?: string
+  /** The same key, OpenPGP-encrypted to the therapist public key (plan 0014 step C); sent
+   *  with the raw key. Unreadable without the therapist's passphrase. */
+  therapistKey?: string
   serverCreated: boolean
   keyUploaded: boolean
   finished: boolean

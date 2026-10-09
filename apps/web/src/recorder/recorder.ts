@@ -1,3 +1,4 @@
+import { wrapSessionKey } from '../crypto/pgp'
 import { createSessionKey, encryptChunk, sha256Hex, toBase64 } from './crypto'
 import { db } from './db'
 import { audioConstraints } from './micDevice'
@@ -19,6 +20,8 @@ export type RecorderProblem =
   | 'storage_low'
   | 'storage_full'
   | 'write_failed'
+  /** No therapist key to wrap the session key to (plan 0014 step C). */
+  | 'keys_missing'
 
 export class RecorderError extends Error {
   readonly problem: RecorderProblem
@@ -73,14 +76,26 @@ export class SessionRecorder {
     this.startedAt = Date.now()
   }
 
+  /** `therapistPublicKey`: the session key is also wrapped to it, so the audio stays readable
+   *  to the therapist after the server's processing key is destroyed at signing (plan 0014). */
   static async start(
     client: { id: string; name: string },
     events: RecorderEvents,
+    therapistPublicKey: string,
   ): Promise<SessionRecorder> {
     const mimeType = pickMimeType()
     if (!mimeType || !navigator.mediaDevices?.getUserMedia) throw new RecorderError('unsupported')
     if (!(await hasEnoughStorage())) throw new RecorderError('storage_low')
     void navigator.storage?.persist?.()
+
+    // Before the microphone opens, so a key problem never leaves a half-started recording.
+    const { raw, key } = await createSessionKey()
+    let therapistKey: string
+    try {
+      therapistKey = await wrapSessionKey(raw, therapistPublicKey)
+    } catch {
+      throw new RecorderError('keys_missing')
+    }
 
     let stream: MediaStream
     try {
@@ -90,7 +105,6 @@ export class SessionRecorder {
     }
 
     const sessionId = uuidv7()
-    const { raw, key } = await createSessionKey()
     await db.sessions.add({
       id: sessionId,
       clientId: client.id,
@@ -101,6 +115,7 @@ export class SessionRecorder {
       nextSeq: 0,
       key,
       rawKey: toBase64(raw),
+      therapistKey,
       serverCreated: false,
       keyUploaded: false,
       finished: false,

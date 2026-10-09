@@ -3,7 +3,7 @@ import type { ServerSession } from '../../api/sessions'
 
 /** One status per session: the note's status once the transcript is there. */
 export function sessionStatus(t: TFunction, s: ServerSession): { label: string; tone: 'info' | 'attention' | 'neutral' } {
-  if (s.status === 'transcribed' && s.report_status) {
+  if ((s.status === 'transcribed' || s.status === 'signed') && s.report_status) {
     const tone = s.report_status === 'draft' || s.report_status === 'failed' ? 'attention' : 'neutral'
     return { label: t(`report.status.${s.report_status}`), tone }
   }

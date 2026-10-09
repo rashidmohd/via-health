@@ -1,6 +1,38 @@
 import { fireEvent, screen, waitFor, within } from '@testing-library/react'
+import { lock } from '../../crypto/keyring'
 import i18n from '../../i18n'
-import { confirmInDialog, ME, mockApi, renderApp } from '../../test-utils'
+import { confirmInDialog, ME, mockApi, renderApp, TEST_KEYS } from '../../test-utils'
+
+// The page flow only; real signing and decryption are covered in crypto/records.test.ts.
+const PASSPHRASE = 'olive tree quiet harbour'
+vi.mock('../../crypto/pgp', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('../../crypto/pgp')>()),
+  unlockPrivateKey: vi.fn(async (_key: string, passphrase: string) => {
+    const { PgpError } = await import('../../crypto/pgp')
+    if (passphrase !== PASSPHRASE) throw new PgpError('passphrase_wrong')
+    return { clearPrivateParams: vi.fn() }
+  }),
+}))
+const OPENED: Record<string, unknown> = {}
+vi.mock('../../crypto/records', () => ({
+  signNote: vi.fn(async (prepared: { approved_at: string; report_updated_at: string }) => ({
+    note: 'signed-note', transcript: 'signed-transcript', index: 'signed-index', addenda: [],
+    approved_at: prepared.approved_at, report_updated_at: prepared.report_updated_at,
+    signer_fingerprint: 'a'.repeat(64), encrypted_to: ['a'.repeat(64), 'b'.repeat(64)],
+  })),
+  signAddendum: vi.fn(async (text: string) => ({
+    message: `signed:${text}`, signer_fingerprint: 'a'.repeat(64), encrypted_to: ['a'.repeat(64), 'b'.repeat(64)],
+  })),
+  openRecord: vi.fn(async (message: string) => {
+    if (!(message in OPENED)) throw new Error('unknown message')
+    return OPENED[message]
+  }),
+}))
+
+async function unlockWithPassphrase() {
+  fireEvent.change(await screen.findByLabelText('Passphrase'), { target: { value: PASSPHRASE } })
+  fireEvent.click(screen.getByRole('button', { name: 'Unlock' }))
+}
 
 const SESSION = {
   id: 's1', client_id: 'c1', client_name: 'Anna Weber', started_at: '2026-10-08T10:00:00Z',
@@ -54,9 +86,24 @@ function report(status: string, extra: Record<string, unknown> = {}) {
   }
 }
 
+const SIGNED = {
+  note: 'signed-note', transcript: 'signed-transcript', index: 'signed-index',
+  signer_fingerprint: 'a'.repeat(64), encrypted_to: ['a'.repeat(64), 'b'.repeat(64)], signed_at: '2026-10-08T12:00:00Z',
+}
+
+function signedReport(extra: Record<string, unknown> = {}) {
+  return report('signed', {
+    content: report('draft', {}).content, // the server sends an empty note; the browser decrypts it
+    approved_at: '2026-10-08T12:00:00Z', blocking: 0, signed: SIGNED,
+    versions: [{ version: 1, kind: 'approval', created_at: '2026-10-08T12:00:00Z', text: null, message: null }],
+    ...extra,
+  })
+}
+
 function api(handler: (url: string, init: RequestInit) => { status: number; body?: unknown } | undefined) {
   return mockApi((url, init) => {
     if (url.endsWith('/auth/me')) return { status: 200, body: ME }
+    if (url.endsWith('/keys')) return { status: 200, body: TEST_KEYS }
     const result = handler(url, init)
     if (result) return result
     if (url.endsWith('/transcript')) return { status: 200, body: TRANSCRIPT }
@@ -67,7 +114,16 @@ function api(handler: (url: string, init: RequestInit) => { status: number; body
 
 describe('session note', () => {
   beforeEach(async () => {
+    lock()
     await i18n.changeLanguage('en')
+    const note = report('draft').content
+    note.ai.topics.statements[0] = { ...note.ai.topics.statements[0], text: 'Klientin berichtet Erleichterung.' }
+    Object.assign(OPENED, {
+      'signed-note': { session: { id: 's1' }, content: note, ai_assisted: true, approved_at: '2026-10-08T12:00:00Z' },
+      'signed-transcript': TRANSCRIPT,
+      'signed-index': { session_no: '3', session_type: null, topics: [] },
+      'signed:Termin verschoben': { text: 'Termin verschoben', created_at: '2026-10-09T09:00:00Z' },
+    })
   })
   afterEach(() => vi.unstubAllGlobals())
 
@@ -87,16 +143,23 @@ describe('session note', () => {
     expect(screen.queryByRole('button', { name: 'Next to check' })).not.toBeInTheDocument()
   })
 
-  it('blocks approval until flagged AI sentences are checked, then approves', async () => {
+  it('blocks approval until flagged AI sentences are checked, then signs after unlocking', async () => {
     const calls = api((url, init) => {
       if (url.endsWith('/report') && init.method === 'PUT') {
         const current = report('draft')
         current.content.ai.topics.statements[0] = { ...current.content.ai.topics.statements[0], resolved: true, blocking: false }
         return { status: 200, body: { ...current, blocking: 0 } }
       }
-      if (url.endsWith('/report/approve')) {
-        return { status: 200, body: report('approved', { approved_at: '2026-10-08T12:00:00Z', blocking: 0 }) }
+      if (url.endsWith('/report/sign/prepare')) {
+        return {
+          status: 200,
+          body: {
+            note: {}, index: {}, transcript: TRANSCRIPT, addenda: [], approved_at: '2026-10-08T12:00:00Z',
+            report_updated_at: '2026-10-08T11:00:00Z', therapist_fingerprint: 'a'.repeat(64), recovery_fingerprint: 'b'.repeat(64),
+          },
+        }
       }
+      if (url.endsWith('/report/sign')) return { status: 200, body: signedReport() }
       if (url.endsWith('/report')) return { status: 200, body: report('draft') }
       return undefined
     })
@@ -106,15 +169,23 @@ describe('session note', () => {
     expect(screen.getByText('Not found in the transcript')).toBeInTheDocument()
     expect(screen.getByText('Wording: wirkte')).toBeInTheDocument()
     expect(screen.getByText(/1 AI sentence still needs your check/)).toBeInTheDocument()
-    const approve = screen.getByRole('button', { name: 'Approve' })
+    const approve = screen.getByRole('button', { name: 'Approve and sign' })
     expect(approve).toBeDisabled()
 
     fireEvent.click(screen.getByRole('button', { name: 'Keep' }))
-    expect(approve).toBeEnabled()
+    await waitFor(() => expect(approve).toBeEnabled()) // once the keys are loaded
     fireEvent.click(approve)
-    await confirmInDialog('Approve')
+    await confirmInDialog('Approve and sign')
 
-    expect(await screen.findByText(/Read-only/)).toBeInTheDocument()
+    // The key is locked: the passphrase is asked for first, then signing continues.
+    expect(await screen.findByRole('region', { name: 'Unlock to sign' })).toBeInTheDocument()
+    expect(calls.some((c) => c.url.endsWith('/sign/prepare'))).toBe(false)
+    await unlockWithPassphrase()
+
+    expect(await screen.findByText(/Only you can read this note/)).toBeInTheDocument()
+    expect(screen.getByText('Klientin berichtet Erleichterung.')).toBeInTheDocument() // decrypted here
+    const signCall = calls.find((c) => c.url.endsWith('/report/sign'))
+    expect(signCall?.body).toMatchObject({ note: 'signed-note', transcript: 'signed-transcript', index: 'signed-index' })
     const put = calls.find((c) => c.method === 'PUT')?.body as {
       ai: Record<string, { statements: Record<string, unknown>[] }>
     }
@@ -123,8 +194,22 @@ describe('session note', () => {
       id: 'bbbbbbbbbbbb', text: 'Klientin wirkte erleichtert.', resolved: true,
     })
     expect(calls.findIndex((c) => c.method === 'PUT')).toBeLessThan(
-      calls.findIndex((c) => c.url.endsWith('/report/approve')),
+      calls.findIndex((c) => c.url.endsWith('/report/sign/prepare')),
     )
+  })
+
+  it('asks to set up keys before a note can be signed', async () => {
+    mockApi((url) => {
+      if (url.endsWith('/auth/me')) return { status: 200, body: ME }
+      if (url.endsWith('/keys')) return { status: 404, body: { code: 'keys_missing' } }
+      if (url.endsWith('/report')) return { status: 200, body: report('draft', { blocking: 0 }) }
+      if (url.endsWith('/transcript')) return { status: 200, body: TRANSCRIPT }
+      return { status: 200, body: SESSION }
+    })
+    renderApp('/sessions/s1/report')
+    expect(await screen.findByText(/Set up your keys first to sign notes/)).toBeInTheDocument()
+    expect(screen.getByRole('link', { name: 'Set up keys' })).toHaveAttribute('href', '/keys')
+    expect(screen.getByRole('button', { name: 'Approve and sign' })).toBeDisabled()
   })
 
   it('highlights the transcript lines a sentence is based on', async () => {
@@ -198,26 +283,64 @@ describe('session note', () => {
     expect(screen.getByRole('button', { name: 'Write manually' })).toBeEnabled()
   })
 
-  it('adds a dated addendum to an approved note', async () => {
-    const approved = report('approved', { approved_at: '2026-10-08T12:00:00Z', blocking: 0 })
+  it('opens a signed note after unlocking and adds a signed addendum', async () => {
+    const signed = signedReport()
     const calls = api((url, init) => {
       if (url.endsWith('/report/addenda') && init.method === 'POST') {
-        return {
-          status: 200,
-          body: { ...approved, versions: [{ version: 2, kind: 'addendum', created_at: '2026-10-09T09:00:00Z', text: 'Termin verschoben' }] },
-        }
+        const added = { version: 2, kind: 'addendum', created_at: '2026-10-09T09:00:00Z', text: null, message: 'signed:Termin verschoben' }
+        return { status: 200, body: { ...signed, versions: [...signed.versions, added] } }
       }
-      if (url.endsWith('/report')) return { status: 200, body: approved }
+      if (url.endsWith('/report')) return { status: 200, body: signed }
       return undefined
     })
     const { container } = renderApp('/sessions/s1/report')
-    expect(await screen.findByText(/Read-only/)).toBeInTheDocument()
+    expect(await screen.findByRole('region', { name: 'Unlock to read' })).toBeInTheDocument()
+    expect(screen.queryByText('Klientin berichtet Erleichterung.')).not.toBeInTheDocument()
     expect(container.querySelector('.ring-badge')).toHaveAttribute('data-badge', 'done')
-    expect(screen.queryByRole('button', { name: 'Approve' })).not.toBeInTheDocument()
+    await unlockWithPassphrase()
+
+    expect(await screen.findByText('Klientin berichtet Erleichterung.')).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Approve and sign' })).not.toBeInTheDocument()
     fireEvent.change(screen.getByRole('textbox', { name: 'New addendum' }), { target: { value: 'Termin verschoben' } })
     fireEvent.click(screen.getByRole('button', { name: 'Add addendum' }))
     expect(await screen.findByText('Termin verschoben')).toBeInTheDocument()
-    await waitFor(() => expect(calls.find((c) => c.url.endsWith('/addenda'))?.body).toEqual({ text: 'Termin verschoben' }))
+    await waitFor(() =>
+      expect(calls.find((c) => c.url.endsWith('/addenda'))?.body).toEqual({
+        message: 'signed:Termin verschoben', signer_fingerprint: 'a'.repeat(64), encrypted_to: ['a'.repeat(64), 'b'.repeat(64)],
+      }),
+    )
+  })
+
+  it('offers to sign a note approved before signing existed; no addenda until then', async () => {
+    const approved = report('approved', {
+      approved_at: '2026-10-08T12:00:00Z', blocking: 0,
+      versions: [{ version: 2, kind: 'addendum', created_at: '2026-10-09T09:00:00Z', text: 'Alter Nachtrag', message: null }],
+      signed: null,
+    })
+    api((url) => (url.endsWith('/report') ? { status: 200, body: approved } : undefined))
+    renderApp('/sessions/s1/report')
+    expect(await screen.findByText(/approved before signing existed/)).toBeInTheDocument()
+    expect(screen.getByText('Alter Nachtrag')).toBeInTheDocument()
+    expect(screen.queryByRole('textbox', { name: 'New addendum' })).not.toBeInTheDocument()
+    const signNow = await screen.findByRole('button', { name: 'Sign now' })
+    await waitFor(() => expect(signNow).toBeEnabled()) // once the keys are loaded
+    fireEvent.click(signNow)
+    expect(await screen.findByRole('region', { name: 'Unlock to sign' })).toBeInTheDocument()
+  })
+
+  it('shows the signed transcript read-only on the session page', async () => {
+    api((url) => {
+      if (url.endsWith('/report')) return { status: 200, body: signedReport() }
+      if (url.endsWith('/transcript')) return { status: 409, body: { code: 'record_signed' } }
+      if (url.endsWith('/sessions/s1')) return { status: 200, body: { ...SESSION, status: 'signed', report_status: 'signed' } }
+      return undefined
+    })
+    renderApp('/sessions/s1')
+    expect(await screen.findByRole('link', { name: 'Open note' })).toBeInTheDocument()
+    await unlockWithPassphrase()
+    expect(await screen.findByText('Ich habe es an vier Tagen geführt.')).toBeInTheDocument()
+    expect(screen.getByText(/Signed – part of the record/)).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: /That's me/ })).not.toBeInTheDocument()
   })
 
   it('shows the note status on the session page', async () => {

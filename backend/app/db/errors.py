@@ -17,6 +17,7 @@ DB_ERROR_CODES = frozenset(
         "consent_texts_immutable",
         "audit_log_immutable",
         "keys_immutable",
+        "record_signed",
     }
 )
 

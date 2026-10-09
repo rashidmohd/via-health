@@ -105,6 +105,8 @@ def _set_status(engine: Engine, report_id: uuid.UUID, status: str, reason: str |
 
 
 def _segments(transcript: Transcript) -> list[Segment]:
+    if transcript.segments_enc is None:  # signed; a signed note is never drafted again
+        raise DecryptionError("transcript signed")
     data = decrypt_json(transcript.segments_enc, transcript_aad(transcript.session_id))
     if data.get("words"):
         base = words_to_segments(Word(**w) for w in data["words"])

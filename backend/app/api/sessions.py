@@ -7,7 +7,7 @@ from datetime import UTC, datetime, timedelta
 from typing import Annotated, Any, Literal
 
 from fastapi import APIRouter, Depends, Header, Path, Request
-from pydantic import BaseModel, Field, field_validator
+from pydantic import AfterValidator, BaseModel, Field, field_validator
 from sqlalchemy import func, select
 from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.orm import Session as DbSession
@@ -73,8 +73,23 @@ class SessionStart(BaseModel):
         return value
 
 
+PGP_MESSAGE_HEADER = "-----BEGIN PGP MESSAGE-----"
+
+
+def armored_message(value: str) -> str:
+    """Armored OpenPGP message, made in the browser. The server stores it and never parses it."""
+    if not value.lstrip().startswith(PGP_MESSAGE_HEADER):
+        raise ValueError("not an armored PGP message")
+    return value
+
+
 class SessionKey(BaseModel):
     key: str  # base64 raw AES-256 key
+    # Plan 0014 step C: the same key, encrypted in the browser to the therapist public key, so
+    # the audio stays readable to the therapist once the processing key is destroyed.
+    therapist_key: (
+        Annotated[str, Field(max_length=8_000), AfterValidator(armored_message)] | None
+    ) = None
 
     @field_validator("key")
     @classmethod
@@ -253,11 +268,30 @@ def start_session(body: SessionStart, user_id: CurrentUserId, db: Db) -> Session
     return _out(db, session)
 
 
+def _store_therapist_key(db: DbSession, session: Session, armored: str) -> None:
+    """Idempotent: a retry sends the same message again."""
+    ciphertext = armored.encode()
+    existing = db.scalar(
+        select(WrappedKey).where(
+            WrappedKey.session_id == session.id, WrappedKey.kind == "therapist"
+        )
+    )
+    if existing is not None:
+        if existing.ciphertext != ciphertext:
+            raise ApiError("key_conflict", 409)
+        return
+    if session.audio_state != "present":
+        raise ApiError("audio_not_accepted", 409)
+    db.add(WrappedKey(session_id=session.id, kind="therapist", ciphertext=ciphertext))
+
+
 @router.post("/sessions/{session_id}/key", status_code=204)
 def store_session_key(
     session_id: uuid.UUID, body: SessionKey, user_id: CurrentUserId, db: Db, kms: Kms
 ) -> None:
     session = _get_session(db, session_id)
+    if body.therapist_key is not None:
+        _store_therapist_key(db, session, body.therapist_key)
     raw = base64.b64decode(body.key)
     aad = _key_aad(session.id)
     existing = db.scalar(
@@ -370,7 +404,9 @@ class TranscriptUpdate(BaseModel):
     therapist_speaker: Annotated[str, Field(min_length=1, max_length=10)]
 
 
-def _transcript_out(transcript: Transcript) -> TranscriptOut:
+def transcript_out(transcript: Transcript) -> TranscriptOut:
+    if transcript.segments_enc is None:  # signed: only the therapist can read it (plan 0014)
+        raise ApiError("record_signed", 409)
     data = decrypt_json(transcript.segments_enc, f"transcript:{transcript.session_id}:segments")
     if data.get("words"):
         base = words_to_segments(Word(**w) for w in data["words"])
@@ -403,7 +439,7 @@ def get_transcript(session_id: uuid.UUID, user_id: CurrentUserId, db: Db) -> Tra
     transcript = db.get(Transcript, session_id)
     if transcript is None:
         raise ApiError("transcript_not_ready", 404)
-    return _transcript_out(transcript)
+    return transcript_out(transcript)
 
 
 @router.patch("/sessions/{session_id}/transcript")
@@ -411,13 +447,10 @@ def update_transcript(
     session_id: uuid.UUID, body: TranscriptUpdate, user_id: CurrentUserId, db: Db
 ) -> TranscriptOut:
     """The therapist says which speaker label is them; the other is the client."""
-    _get_session(db, session_id)
-    transcript = db.get(Transcript, session_id)
-    if transcript is None:
-        raise ApiError("transcript_not_ready", 404)
+    transcript = _own_transcript(db, session_id)
     transcript.speaker_roles = {"therapist": body.therapist_speaker}
     db.flush()
-    return _transcript_out(transcript)
+    return transcript_out(transcript)
 
 
 SpeakerLabel = Annotated[str, Field(min_length=1, max_length=10)]
@@ -445,6 +478,8 @@ def _own_transcript(db: DbSession, session_id: uuid.UUID) -> Transcript:
     transcript = db.get(Transcript, session_id)
     if transcript is None:
         raise ApiError("transcript_not_ready", 404)
+    if transcript.segments_enc is None:
+        raise ApiError("record_signed", 409)
     return transcript
 
 
@@ -460,7 +495,7 @@ def correct_speakers(
         raise ApiError("too_many_corrections", 409)
     transcript.speaker_overrides = [*overrides, body.correction.model_dump()]
     db.flush()
-    return _transcript_out(transcript)
+    return transcript_out(transcript)
 
 
 @router.post("/sessions/{session_id}/transcript/speakers/undo")
@@ -468,7 +503,7 @@ def undo_speaker_correction(session_id: uuid.UUID, user_id: CurrentUserId, db: D
     transcript = _own_transcript(db, session_id)
     transcript.speaker_overrides = list(transcript.speaker_overrides or [])[:-1]
     db.flush()
-    return _transcript_out(transcript)
+    return transcript_out(transcript)
 
 
 Ms = Annotated[int, Field(ge=0, le=24 * 3600 * 1000)]
@@ -488,7 +523,7 @@ def set_turn_excluded(
     stored; the text stays in the record. Locked while a draft is written and after approval."""
     transcript = _own_transcript(db, session_id)
     status = db.scalar(select(Report.status).where(Report.session_id == session_id))
-    if status == "approved":
+    if status in ("approved", "signed"):
         raise ApiError("report_approved", 409)
     if status in ("pending", "drafting"):
         raise ApiError("report_busy", 409)
@@ -511,7 +546,7 @@ def set_turn_excluded(
         )
     )
     db.flush()
-    return _transcript_out(transcript)
+    return transcript_out(transcript)
 
 
 @router.post("/sessions/{session_id}/retry")

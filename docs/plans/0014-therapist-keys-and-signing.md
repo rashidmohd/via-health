@@ -1,7 +1,7 @@
 # Plan 0014 — Therapist keys and signing
 
-Status: step A built 2026-10-09. Approved by the product owner: `openpgp` 6.x, and the server drops
-its readable copies once a record is signed. Steps B and C open.
+Status: built 2026-10-09 (steps A, B, C; details and deviations in ADR 0021). Approved by the
+product owner: `openpgp` 6.x, and the server drops its readable copies once a record is signed.
 
 ## Goal
 STATUS item 2 / CLAUDE.md rule 7. The therapist creates an OpenPGP key and a recovery key in the

@@ -13,6 +13,7 @@ import { formatDate } from '../format'
 import { ReportCard } from '../reports/ReportCard'
 import { CaptureReview } from './CaptureReview'
 import { TranscriptView } from './TranscriptView'
+import { SignedTranscript } from './SignedTranscript'
 import { TranscribingAnimation } from './TranscribingAnimation'
 
 export function SessionPage() {
@@ -20,6 +21,7 @@ export function SessionPage() {
   const { t, i18n } = useTranslation()
   const { data: session, error } = useSession(id)
   const hasTranscript = session?.status === 'transcribed'
+  const signed = session?.status === 'signed'
   const { data: transcript } = useTranscript(id, hasTranscript)
   const retry = useRetrySession(id)
   const processing = session?.status === 'uploaded' || session?.status === 'processing'
@@ -68,7 +70,7 @@ export function SessionPage() {
             </p>
           </div>
         </div>
-        <AppAvatar size={56} processing={processing} problem={session.status === 'failed'} done={session.report_status === 'approved'} />
+        <AppAvatar size={56} processing={processing} problem={session.status === 'failed'} done={session.report_status === 'approved' || session.report_status === 'signed'} />
       </header>
 
       {session.status === 'recording' && session.transcribed_ms > 0 && (
@@ -109,7 +111,8 @@ export function SessionPage() {
         </div>
       )}
 
-      {hasTranscript && <ReportCard sessionId={id} />}
+      {(hasTranscript || signed) && <ReportCard sessionId={id} />}
+      {signed && <SignedTranscript session={session} />}
       {hasTranscript && transcript && <CaptureReview sessionId={id} transcript={transcript} />}
       {hasTranscript && transcript && <TranscriptView sessionId={id} transcript={transcript} clientName={session.client_name} />}
     </section>

@@ -1,7 +1,6 @@
 import { ArrowDown, Check, CircleAlert, PenLine, Plus, Quote, RefreshCw, Sparkles, Trash2 } from 'lucide-react'
 import { useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { ApiError } from '../../api/client'
 import { confirmDialog } from '../../design/confirm'
 import {
   AI_FIELDS,
@@ -10,7 +9,6 @@ import {
   SETTINGS,
   THERAPIST_FIELDS,
   newStatementId,
-  useApproveReport,
   useRequestDraft,
   useSaveReport,
   type AiField,
@@ -19,11 +17,12 @@ import {
   type Statement,
 } from '../../api/reports'
 import type { ServerSession, Transcript } from '../../api/sessions'
-import { emitAvatarEvent } from '../../avatar/events'
-import { errorMessage } from '../../i18n/errors'
+import { Link } from 'react-router-dom'
+import { errorCode, errorMessage } from '../../i18n/errors'
 import { formatDate } from '../format'
 import { overlaps } from './overlaps'
 import { SourceTranscript } from './SourceTranscript'
+import { useSignFlow } from './useSignFlow'
 
 function statementFlags(s: Statement): string[] {
   const flags: string[] = []
@@ -53,7 +52,7 @@ export function ReportEditor({
 }) {
   const { t, i18n } = useTranslation()
   const save = useSaveReport(session.id)
-  const approve = useApproveReport(session.id)
+  const sign = useSignFlow(session.id)
   const requestDraft = useRequestDraft(session.id)
   const [content, setContent] = useState<ReportContent>(report.content)
   const [dirty, setDirty] = useState(false)
@@ -72,8 +71,8 @@ export function ReportEditor({
   )
   const blocking = statements.filter(blocks).length
   const selectedStatement = statements.find((s) => s.id === selected) ?? null
-  const busy = save.isPending || approve.isPending || requestDraft.isPending
-  const error = save.error ?? approve.error ?? requestDraft.error
+  const busy = save.isPending || sign.pending || requestDraft.isPending
+  const error = save.error ?? sign.error ?? requestDraft.error
 
   function update(next: ReportContent) {
     setContent(next)
@@ -116,7 +115,7 @@ export function ReportEditor({
     })
     if (!confirmed) return
     if (dirty && !(await saveNow())) return
-    approve.mutate(undefined, { onSuccess: () => emitAvatarEvent('report.signed') })
+    sign.request()
   }
 
   function selectSegment(start: number, end: number) {
@@ -404,7 +403,12 @@ export function ReportEditor({
                 {t('report.blocking', { count: blocking })}
               </p>
             ) : (
-              <p className="muted small">{t('report.approveHint')}</p>
+              sign.keys !== null && <p className="muted small">{t('report.approveHint')}</p>
+            )}
+            {sign.keys === null && (
+              <p className="small">
+                {t('report.keysNeeded')} <Link to="/keys">{t('keys.setUp')}</Link>
+              </p>
             )}
             <p className="save-state small">
               <span className={`save-dot${dirty ? ' unsaved' : ''}`} aria-hidden="true" />
@@ -412,7 +416,7 @@ export function ReportEditor({
             </p>
             {error && (
               <p className="form-error" role="alert">
-                {errorMessage(t, error instanceof ApiError ? error.code : 'unknown')}
+                {errorMessage(t, errorCode(error))}
               </p>
             )}
           </div>
@@ -426,12 +430,17 @@ export function ReportEditor({
             <button className="secondary" disabled={busy || !dirty} onClick={() => void saveNow()}>
               {t('report.save')}
             </button>
-            <button className="primary" disabled={busy || blocking > 0} onClick={() => void approveNow()}>
+            <button
+              className="primary"
+              disabled={busy || blocking > 0 || !sign.keys}
+              onClick={() => void approveNow()}
+            >
               <Check className="icon" aria-hidden="true" />
-              {t('report.approve')}
+              {t(sign.pending ? 'report.signing' : 'report.approve')}
             </button>
           </div>
         </div>
+        {sign.unlockPanel}
       </div>
     </div>
   )

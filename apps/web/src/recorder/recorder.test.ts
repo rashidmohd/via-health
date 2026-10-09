@@ -6,6 +6,16 @@ import { RecorderError, SessionRecorder, recoverInterrupted } from './recorder'
 import { FakeMediaRecorder, installFakeMicrophone } from './testing'
 
 vi.mock('./sync', () => ({ kickSync: vi.fn() }))
+// Real OpenPGP wrapping is covered in crypto/pgp.test.ts (node environment).
+vi.mock('../crypto/pgp', () => ({
+  wrapSessionKey: vi.fn(async (_raw: Uint8Array, publicKey: string) => {
+    if (publicKey !== PUBLIC_KEY) throw new Error('key_invalid')
+    return WRAPPED
+  }),
+}))
+
+const PUBLIC_KEY = '-----BEGIN PGP PUBLIC KEY BLOCK-----'
+const WRAPPED = '-----BEGIN PGP MESSAGE-----'
 
 describe('SessionRecorder', () => {
   let track: ReturnType<typeof installFakeMicrophone>
@@ -18,7 +28,7 @@ describe('SessionRecorder', () => {
   afterEach(() => vi.unstubAllGlobals())
 
   it('saves every slice encrypted on the device, then stops cleanly', async () => {
-    const recorder = await SessionRecorder.start({ id: 'c1', name: 'Anna' }, { onProblem: vi.fn() })
+    const recorder = await SessionRecorder.start({ id: 'c1', name: 'Anna' }, { onProblem: vi.fn() }, PUBLIC_KEY)
     const media = FakeMediaRecorder.last!
     expect(media.timeslice).toBe(10_000)
     expect(media.options).toMatchObject({ mimeType: 'audio/webm;codecs=opus', audioBitsPerSecond: 32_000 })
@@ -44,7 +54,7 @@ describe('SessionRecorder', () => {
 
   it('uses the chosen microphone, and records even when voice detection cannot run', async () => {
     localStorage.setItem('sessio.micDevice', 'usb')
-    const recorder = await SessionRecorder.start({ id: 'c1', name: 'Anna' }, { onProblem: vi.fn() })
+    const recorder = await SessionRecorder.start({ id: 'c1', name: 'Anna' }, { onProblem: vi.fn() }, PUBLIC_KEY)
     expect(navigator.mediaDevices.getUserMedia).toHaveBeenCalledWith({
       audio: expect.objectContaining({ deviceId: 'usb', echoCancellation: false, channelCount: 1 }),
     })
@@ -57,16 +67,30 @@ describe('SessionRecorder', () => {
 
   it('alerts loudly when the microphone disconnects', async () => {
     const onProblem = vi.fn()
-    await SessionRecorder.start({ id: 'c1', name: 'Anna' }, { onProblem })
+    await SessionRecorder.start({ id: 'c1', name: 'Anna' }, { onProblem }, PUBLIC_KEY)
     track.onended?.()
     expect(onProblem).toHaveBeenCalledWith('mic_lost')
   })
 
   it('reports a denied microphone', async () => {
     navigator.mediaDevices.getUserMedia = vi.fn(async () => Promise.reject(new Error('denied')))
-    await expect(SessionRecorder.start({ id: 'c1', name: 'A' }, { onProblem: vi.fn() })).rejects.toEqual(
+    await expect(SessionRecorder.start({ id: 'c1', name: 'A' }, { onProblem: vi.fn() }, PUBLIC_KEY)).rejects.toEqual(
       new RecorderError('mic_denied'),
     )
+    expect(await db.sessions.count()).toBe(0)
+  })
+
+  it('wraps the session key to the therapist key (plan 0014 step C)', async () => {
+    const recorder = await SessionRecorder.start({ id: 'c1', name: 'Anna' }, { onProblem: vi.fn() }, PUBLIC_KEY)
+    expect((await db.sessions.get(recorder.sessionId))?.therapistKey).toBe(WRAPPED)
+    await recorder.stop()
+  })
+
+  it('does not open the microphone without a usable therapist key', async () => {
+    await expect(SessionRecorder.start({ id: 'c1', name: 'A' }, { onProblem: vi.fn() }, 'not a key')).rejects.toEqual(
+      new RecorderError('keys_missing'),
+    )
+    expect(navigator.mediaDevices.getUserMedia).not.toHaveBeenCalled()
     expect(await db.sessions.count()).toBe(0)
   })
 
@@ -75,13 +99,13 @@ describe('SessionRecorder', () => {
       configurable: true,
       value: { estimate: async () => ({ quota: 600e6, usage: 200e6 }) },
     })
-    await expect(SessionRecorder.start({ id: 'c1', name: 'A' }, { onProblem: vi.fn() })).rejects.toEqual(
+    await expect(SessionRecorder.start({ id: 'c1', name: 'A' }, { onProblem: vi.fn() }, PUBLIC_KEY)).rejects.toEqual(
       new RecorderError('storage_low'),
     )
   })
 
   it('recovers an interrupted session for upload', async () => {
-    const recorder = await SessionRecorder.start({ id: 'c1', name: 'Anna' }, { onProblem: vi.fn() })
+    const recorder = await SessionRecorder.start({ id: 'c1', name: 'Anna' }, { onProblem: vi.fn() }, PUBLIC_KEY)
     FakeMediaRecorder.last!.emit('a')
     FakeMediaRecorder.last!.emit('b')
     await vi.waitFor(async () => expect((await db.sessions.get(recorder.sessionId))?.nextSeq).toBe(2))

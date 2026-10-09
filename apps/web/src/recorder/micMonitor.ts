@@ -1,10 +1,10 @@
 import { useSyncExternalStore } from 'react'
-import { keepRunning } from './audioContext'
+import { acquireAudioContext } from './audioContext'
 import { VoiceDetector } from './vad'
 
 /**
  * Microphone monitor (plan 0011): voice activity + loudness for the avatar ring and mic health.
- * Its own AudioContext and worklet, a read-only tap on the stream. Any failure here is swallowed
+ * Its own worklet on the shared AudioContext, a read-only tap on the stream. Any failure here is swallowed
  * and reported as `unavailable` — it never touches the recording. Nothing is logged.
  */
 
@@ -13,13 +13,11 @@ export function micMonitorSupported(): boolean {
 }
 
 export class MicMonitor {
-  private readonly context: AudioContext
   private readonly nodes: AudioNode[]
   private readonly release: () => void
   private stopped = false
 
-  private constructor(context: AudioContext, nodes: AudioNode[], release: () => void) {
-    this.context = context
+  private constructor(nodes: AudioNode[], release: () => void) {
     this.nodes = nodes
     this.release = release
   }
@@ -32,10 +30,9 @@ export class MicMonitor {
       onLevel,
     }: { calibrate?: boolean; onVoice: (active: boolean) => void; onLevel?: (rms: number) => void },
   ): Promise<MicMonitor> {
-    const context = new AudioContext()
-    const release = keepRunning(context)
+    const { context, addModule, release } = acquireAudioContext(stream)
     try {
-      await context.audioWorklet.addModule('/mic-level.js')
+      await addModule('/mic-level.js')
       const source = context.createMediaStreamSource(stream)
       const level = new AudioWorkletNode(context, 'mic-level')
       const silent = context.createGain()
@@ -47,10 +44,9 @@ export class MicMonitor {
         if (change !== null) onVoice(change)
         onLevel?.(event.data)
       }
-      return new MicMonitor(context, [source, level, silent], release)
+      return new MicMonitor([source, level, silent], release)
     } catch (error) {
       release()
-      void context.close().catch(() => {})
       throw error
     }
   }
@@ -58,9 +54,8 @@ export class MicMonitor {
   stop(): void {
     if (this.stopped) return
     this.stopped = true
-    this.release()
     this.nodes.forEach((node) => node.disconnect())
-    void this.context.close().catch(() => {})
+    this.release()
   }
 }
 

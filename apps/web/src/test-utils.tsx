@@ -42,6 +42,16 @@ export const ME = {
   ui_language: 'en',
 } as const
 
+/** Therapist keys as the server returns them (plan 0014). Not real keys: tests that need
+ *  OpenPGP mock crypto/pgp; the real library is covered in crypto/*.test.ts. */
+export const TEST_KEYS = {
+  therapist_public_key: 'therapist-public',
+  therapist_private_key: 'therapist-private-locked',
+  recovery_public_key: 'recovery-public',
+  therapist_fingerprint: 'a'.repeat(64),
+  recovery_fingerprint: 'b'.repeat(64),
+}
+
 /** Answer the in-app confirm dialog (design/ConfirmDialog.tsx) with its action button. */
 export async function confirmInDialog(action: string) {
   const dialog = await screen.findByRole('alertdialog')

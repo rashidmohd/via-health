@@ -30,10 +30,12 @@ The server never sees the passphrase or an unencrypted private key.
 
 ## Sign-off and crypto-shredding
 
-On "Sign report" (browser, key unlocked):
-1. Final report JSON → openpgp `sign` with therapist key, then `encrypt` to [therapist public, recovery public].
-2. Upload ciphertext. In one DB transaction: insert `reports(status='signed', pgp_ciphertext, signer_fingerprint)`, delete draft rows, delete `wrapped_keys` where `kind='processing'`, set session `audio_state='shred_pending'`.
-3. `shred_session` job (idempotent): delete all objects under `sessions/{id}/`, delete temp STT objects, mark `audio_state='shredded'`.
+On "Approve and sign" (browser, key unlocked; built, ADR 0021):
+1. `POST /sessions/{id}/report/sign/prepare` → the record to sign: `note` (content + metadata + session), `transcript` (as shown, corrections applied), `index` (session no., type, topics), legacy `addenda`, `approved_at`, `report_updated_at`, fingerprints.
+2. Browser (`crypto/records.ts`): each part as JSON → `signAndEncrypt` to [therapist, recovery], then decrypt + verify with its own key before upload.
+3. `POST .../report/sign`. In one DB transaction: messages on `report_versions` (version 1: `pgp_message`, `transcript_pgp`; `signer_fingerprint`, `encrypted_to`), `reports.index_pgp`, `status='signed'`; `content_enc`, `draft_enc`, `transcripts.segments_enc` set NULL; transcript windows and the `processing` wrapped key deleted; session `status='signed'`, `audio_state='shred_pending'`. DB triggers keep it that way.
+4. Addenda to a signed note: signed messages (`{text, created_at}`), version ≥ 2.
+5. `shred_session` job (idempotent, not built yet): delete all objects under `sessions/{id}/`, delete temp STT objects, mark `audio_state='shredded'`.
 Destroying the processing-wrapped key makes any leftover copies (backups, replicas) unreadable.
 
 Optional later feature (separate consent): keep audio for supervision — only the therapist-wrapped key remains.
