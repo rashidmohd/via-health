@@ -37,6 +37,9 @@ export const ERROR_CODES = [
   'report_not_drafted',
   'report_unresolved',
   'report_not_approved',
+  'photo_missing',
+  'photo_invalid',
+  'photo_too_large',
 ] as const
 
 export type ErrorCode = (typeof ERROR_CODES)[number]

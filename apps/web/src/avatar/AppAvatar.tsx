@@ -1,13 +1,14 @@
-import { useMe } from '../api/auth'
+import { useMe, usePhoto } from '../api/auth'
 import { Initials } from '../design/Initials'
 import { AvatarRing } from './AvatarRing'
 import type { Mood } from './mood'
+import { PhotoAvatar } from './PhotoAvatar'
 import { RiveAvatar } from './RiveAvatar'
 import { ringState, type RingBadge } from './ring'
 import { useAvatarSettings } from './settings'
 import { useAvatarMood } from './useAvatarMood'
 
-/** The user's chosen avatar (Settings): the illustrated character or their initials. */
+/** The user's chosen avatar (Settings): the illustrated character, their initials or photo. */
 export function UserAvatar({
   mood,
   nod = false,
@@ -19,9 +20,12 @@ export function UserAvatar({
   recording?: boolean
   size: number
 }) {
-  const { kind } = useAvatarSettings()
+  const { kind, tilt } = useAvatarSettings()
   const { data: me } = useMe()
-  if (kind === 'initials') return <Initials name={me?.display_name ?? ''} size={size} />
+  const { data: photo } = usePhoto(kind === 'photo')
+  if (kind === 'photo' && photo) return <PhotoAvatar src={photo} size={size} tilt={tilt} recording={recording} />
+  // Initials also while the photo loads.
+  if (kind !== 'illustrated') return <Initials name={me?.display_name ?? ''} size={size} />
   return <RiveAvatar mood={mood} nod={nod} recording={recording} size={size} />
 }
 

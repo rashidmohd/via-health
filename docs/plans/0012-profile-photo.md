@@ -1,6 +1,7 @@
 # Plan 0012 — Profile photo (Settings)
 
-Status: proposed, waiting for approval (touches the DB schema and object storage).
+Status: implemented (2026-10-09). Storage changed from the proposal: encrypted column on `users`
+instead of the object store (ADR 0011).
 Source: `docs/avatar-rive-update.md` section 8. Follows plan 0011.
 
 ## Goal
@@ -12,19 +13,24 @@ motion), no face animation. Clients never get photo uploads; client avatars stay
 - Crop in the browser (circle, zoom/drag), re-encode to 512×512 WebP via canvas. Re-encoding
   drops all metadata, including EXIF/GPS (test: a JPEG with GPS EXIF comes out without it).
 - Shown through `UserAvatar` (kind `photo`) inside `AvatarRing`.
-- Avatar settings move from localStorage to the user's account (`kind`, `nodOnCapture`).
+- Avatar settings moved from localStorage to the user's account (`kind`, reactions, tilt).
+- WebP where the browser can encode it, JPEG otherwise (Safari); preview drawn on a canvas and
+  the photo shown as a `data:` URL, because the CSP allows no `blob:` images.
 
 ## Backend
 - `users`: additive columns `avatar_kind` (`illustrated` | `initials` | `photo`, default
-  `illustrated`), `avatar_reactions` (bool, default false), `avatar_object` (nullable key).
-- `PUT /me/avatar` (presigned upload, WebP only, ≤ 200 KB), `DELETE /me/avatar`,
-  `GET /me/avatar` (short-lived signed URL). Behind `ObjectStore`, bucket `europe-west4`, path
-  per user. User personal data, not health data; access only by the user (RLS).
-- Deleted on "remove photo" and with the account.
+  `illustrated`), `avatar_reactions`, `avatar_tilt` (bool, default false), `avatar_photo_enc`
+  (AES-GCM under the server data key, AAD `user:<id>:avatar-photo`).
+- `PUT /auth/me/avatar` (raw WebP/JPEG, ≤ 300 KB, rejected if it carries EXIF/XMP/IPTC),
+  `GET /auth/me/avatar` (`private, no-store`), `DELETE /auth/me/avatar` (falls back to the
+  illustrated avatar). `PATCH /auth/me` sets kind / reactions / tilt; `photo` needs a photo.
+- User personal data, not health data; RLS on `users`. Removed on "remove photo" and with the
+  account row. Audit log: `avatar_photo_set`, `avatar_photo_removed` (ids only).
 
 ## Tests
-EXIF stripped; wrong type / too large rejected; another user cannot read the photo; delete
-removes the object; tilt off while recording.
+Upload is the canvas output, never the original file; server rejects EXIF/XMP/IPTC, other types
+and > 300 KB; another user cannot read the photo (RLS); delete removes it; photo kind needs a
+photo; tilt off while recording and with reduced motion.
 
 ## Later (not in this plan)
 "Build my avatar" (Rive part variants, config only, picked manually) and "avatar from my photo"

@@ -130,12 +130,13 @@ Ring rules:
 |---|---|---|
 | Illustrated avatar (Rive) | built (default) | animated, all emotions |
 | Initials | built | olive-100 circle, olive-800 text (`Initials` with `size`) |
-| My photo | plan 0012 | static photo in the ring; optional ±4° tilt toward the pointer, off while recording; crop + 512×512 WebP re-encode (strips EXIF); access-controlled object; deleted with the account |
+| My photo | built (plan 0012, ADR 0011) | static photo in the ring (`PhotoAvatar`); optional ±4° tilt toward the pointer, off while recording and with reduced motion; crop on a canvas + 512×512 WebP/JPEG re-encode (strips EXIF), server rejects metadata; encrypted in the users row; removable, goes with the account |
 | Build my avatar | later | Rive part variants; store only a config like `{ "hair":3,"hairColor":2,"skin":4,"glasses":1 }`; every trait picked manually, never detected from a photo |
 | Avatar from my photo | later | check EU availability + zero retention first |
 
-Settings are per device for now (`settings.ts`, localStorage `sessio.avatar`); they move to the
-account with plan 0012. Clients never get photo uploads; client avatars stay initials.
+Settings live on the account (`/auth/me`: `avatar_kind`, `avatar_reactions`, `avatar_tilt`,
+`has_photo`; read via `useAvatarSettings`). The photo is shown as a `data:` URL — the CSP allows
+no `blob:` images. Clients never get photo uploads; client avatars stay initials.
 
 ## Accessibility
 

@@ -52,7 +52,10 @@
     "report_approved": "Diese Dokumentation ist freigegeben und kann nicht mehr geändert werden. Bitte einen Nachtrag hinzufügen.",
     "report_not_drafted": "Für diese Dokumentation gibt es noch keinen Entwurf.",
     "report_unresolved": "Einige KI-Sätze müssen noch geprüft werden, bevor Sie freigeben können.",
-    "report_not_approved": "Nachträge sind nur bei freigegebener Dokumentation möglich."
+    "report_not_approved": "Nachträge sind nur bei freigegebener Dokumentation möglich.",
+    "photo_missing": "Es wurde noch kein Foto hochgeladen.",
+    "photo_invalid": "Dieses Foto kann nicht verwendet werden. Bitte wählen Sie ein anderes Bild.",
+    "photo_too_large": "Das Foto ist zu groß."
   },
   "language": {
     "label": "Sprache"
@@ -524,7 +527,22 @@
       "illustrated": "Illustrierter Avatar",
       "illustratedHint": "Animiert. Reagiert darauf, was die App gerade tut, nie auf das Gesagte.",
       "initials": "Initialen",
-      "initialsHint": "Ihre Initialen im Kreis."
+      "initialsHint": "Ihre Initialen im Kreis.",
+      "photo": "Mein Foto",
+      "photoHint": "Ein Standbild von Ihnen. Verschlüsselt gespeichert; Sie können es jederzeit entfernen.",
+      "choosePhoto": "Foto auswählen",
+      "changePhoto": "Foto ändern",
+      "removePhoto": "Foto entfernen",
+      "removeConfirm": "Foto entfernen?",
+      "tilt": "Foto leicht zum Mauszeiger neigen",
+      "prepareFailed": "Dieses Bild konnte nicht geöffnet werden. Bitte wählen Sie ein anderes.",
+      "crop": {
+        "title": "Foto zuschneiden",
+        "hint": "Ziehen Sie das Foto zurecht. Der Kreis zeigt, was übernommen wird.",
+        "zoom": "Zoom",
+        "save": "Foto verwenden",
+        "cancel": "Abbrechen"
+      }
     },
     "reactions": {
       "title": "Avatar während der Aufnahme",

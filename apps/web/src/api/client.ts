@@ -25,7 +25,7 @@ export async function api<T>(path: string, init: ApiInit = {}): Promise<T> {
   const headers: Record<string, string> = { ...init.headers }
   let body: BodyInit | undefined
   if (init.bytes !== undefined) {
-    headers['Content-Type'] = 'application/octet-stream'
+    headers['Content-Type'] ??= 'application/octet-stream'
     body = init.bytes as Uint8Array<ArrayBuffer>
   } else if (init.body !== undefined) {
     headers['Content-Type'] = 'application/json'

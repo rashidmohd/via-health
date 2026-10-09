@@ -11,7 +11,8 @@ PostgreSQL with SQLAlchemy 2 + Alembic. Access control is enforced by row-level 
 
 ```
 users              id, email, display_name, pgp_public_key, pgp_private_key_enc, recovery_public_key,
-                   key_fingerprints jsonb, created_at
+                   key_fingerprints jsonb, avatar_kind, avatar_reactions, avatar_tilt,
+                   avatar_photo_enc (server data key, ≤ 300 KB, ADR 0011), created_at
 clients            id, user_id → users, identity_enc (PGP: name, dob, contact), preferred_language,
                    hotwords_enc, status ('active'|'restricted'|'archived'), created_at
 consent_texts      id, version, language, kind, body, published_at          -- immutable

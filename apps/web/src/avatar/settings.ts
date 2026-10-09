@@ -1,61 +1,25 @@
-import { useSyncExternalStore } from 'react'
+import { useMe, type AvatarKind } from '../api/auth'
 
-/**
- * The user's avatar settings (plan 0011). Per device for now; moves to the user's account with
- * the profile photo (plan 0012). Not health data.
- */
-export type AvatarKind = 'illustrated' | 'initials'
+/** The user's profile picture settings, stored on the account (plan 0012). Not health data. */
+export type { AvatarKind }
 
 export interface AvatarSettings {
   kind: AvatarKind
   /** Short glance on a new capture chip during a recording. Off by default. */
   nodOnCapture: boolean
-}
-
-const KEY = 'sessio.avatar'
-const DEFAULTS: AvatarSettings = { kind: 'illustrated', nodOnCapture: false }
-const listeners = new Set<() => void>()
-
-function read(): AvatarSettings {
-  try {
-    const stored = JSON.parse(localStorage.getItem(KEY) ?? '{}') as Partial<AvatarSettings>
-    return {
-      kind: stored.kind === 'initials' ? 'initials' : 'illustrated',
-      nodOnCapture: stored.nodOnCapture === true,
-    }
-  } catch {
-    return DEFAULTS
-  }
-}
-
-let current = read()
-
-export function getAvatarSettings(): AvatarSettings {
-  return current
-}
-
-export function setAvatarSettings(change: Partial<AvatarSettings>): void {
-  current = { ...current, ...change }
-  try {
-    localStorage.setItem(KEY, JSON.stringify(current))
-  } catch {
-    // Storage unavailable: the choice applies to this visit only.
-  }
-  listeners.forEach((listener) => listener())
+  /** ±4° photo tilt toward the pointer. Off by default; never while recording. */
+  tilt: boolean
+  hasPhoto: boolean
 }
 
 export function useAvatarSettings(): AvatarSettings {
-  return useSyncExternalStore(
-    (listener) => {
-      listeners.add(listener)
-      return () => listeners.delete(listener)
-    },
-    () => current,
-  )
-}
-
-/** Test hook: reload from storage. */
-export function reloadAvatarSettingsForTest(): void {
-  current = read()
-  listeners.forEach((listener) => listener())
+  const { data: me } = useMe()
+  const hasPhoto = me?.has_photo === true
+  const kind = me?.avatar_kind ?? 'illustrated'
+  return {
+    kind: kind === 'photo' && !hasPhoto ? 'illustrated' : kind,
+    nodOnCapture: me?.avatar_reactions === true,
+    tilt: me?.avatar_tilt === true,
+    hasPhoto,
+  }
 }

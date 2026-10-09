@@ -52,7 +52,10 @@
     "report_approved": "This note is approved and can no longer be changed. Add an addendum instead.",
     "report_not_drafted": "There is no draft for this note yet.",
     "report_unresolved": "Some AI sentences still need your check before you can approve.",
-    "report_not_approved": "Addenda are only possible for approved notes."
+    "report_not_approved": "Addenda are only possible for approved notes.",
+    "photo_missing": "No photo uploaded yet.",
+    "photo_invalid": "This photo could not be used. Please choose another image.",
+    "photo_too_large": "The photo is too large."
   },
   "language": {
     "label": "Language"
@@ -524,7 +527,22 @@
       "illustrated": "Illustrated avatar",
       "illustratedHint": "Animated. Reacts to what the app is doing, never to what is said.",
       "initials": "Initials",
-      "initialsHint": "Your initials in a circle."
+      "initialsHint": "Your initials in a circle.",
+      "photo": "My photo",
+      "photoHint": "A still photo of you. Stored encrypted; you can remove it at any time.",
+      "choosePhoto": "Choose photo",
+      "changePhoto": "Change photo",
+      "removePhoto": "Remove photo",
+      "removeConfirm": "Remove the photo?",
+      "tilt": "Tilt the photo slightly toward the pointer",
+      "prepareFailed": "This image could not be opened. Please choose another one.",
+      "crop": {
+        "title": "Crop the photo",
+        "hint": "Drag to move the photo. The circle shows what is kept.",
+        "zoom": "Zoom",
+        "save": "Use photo",
+        "cancel": "Cancel"
+      }
     },
     "reactions": {
       "title": "Avatar during recordings",

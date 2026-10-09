@@ -20,6 +20,7 @@ from sqlalchemy import (
     PrimaryKeyConstraint,
     Text,
     UniqueConstraint,
+    false,
     func,
     text,
 )
@@ -36,6 +37,7 @@ NAMING_CONVENTION = {
 
 CONSENT_KINDS = ("recording", "ai_processing", "product_improvement")
 LANGUAGES = ("de", "en")
+AVATAR_KINDS = ("illustrated", "initials", "photo")
 
 
 def _in(column: str, values: tuple[str, ...]) -> str:
@@ -74,11 +76,20 @@ class User(Base):
     pgp_private_key_enc: Mapped[bytes | None]
     recovery_public_key: Mapped[str | None] = mapped_column(Text)
     key_fingerprints: Mapped[dict[str, Any] | None]
+    # Plan 0012 / ADR 0011: profile picture. The photo is encrypted (server data key).
+    avatar_kind: Mapped[str] = mapped_column(Text, server_default="illustrated")
+    avatar_reactions: Mapped[bool] = mapped_column(server_default=false())
+    avatar_tilt: Mapped[bool] = mapped_column(server_default=false())
+    avatar_photo_enc: Mapped[bytes | None]
     created_at: Mapped[datetime] = _created_at()
 
     __table_args__ = (
         CheckConstraint(_in("ui_language", LANGUAGES), name="ui_language"),
         CheckConstraint("email = lower(email)", name="email_lowercase"),
+        CheckConstraint(_in("avatar_kind", AVATAR_KINDS), name="avatar_kind"),
+        CheckConstraint(
+            "avatar_kind <> 'photo' OR avatar_photo_enc IS NOT NULL", name="avatar_photo"
+        ),
     )
 
 

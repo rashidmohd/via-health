@@ -1,13 +1,26 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { api, ApiError } from './client'
+import { api, API_URL, ApiError } from './client'
 
 export type Language = 'de' | 'en'
+export type AvatarKind = 'illustrated' | 'initials' | 'photo'
 
 export interface Me {
   id: string
   email: string
   display_name: string
   ui_language: Language
+  avatar_kind?: AvatarKind
+  avatar_reactions?: boolean
+  avatar_tilt?: boolean
+  has_photo?: boolean
+}
+
+export interface MeUpdate {
+  display_name?: string
+  ui_language?: Language
+  avatar_kind?: AvatarKind
+  avatar_reactions?: boolean
+  avatar_tilt?: boolean
 }
 
 export const ME_KEY = ['auth', 'me'] as const
@@ -48,9 +61,61 @@ export function verifyEmailCode(body: {
 export function useUpdateMe() {
   const queryClient = useQueryClient()
   return useMutation({
-    mutationFn: (body: { display_name?: string; ui_language?: Language }) =>
-      api<Me>('/auth/me', { method: 'PATCH', body }),
+    mutationFn: (body: MeUpdate) => api<Me>('/auth/me', { method: 'PATCH', body }),
     onSuccess: (me) => queryClient.setQueryData(ME_KEY, me),
+  })
+}
+
+/* Profile photo (plan 0012). Shown as a data: URL — the CSP allows no blob: images. */
+
+const PHOTO_KEY = ['auth', 'me', 'photo'] as const
+
+async function readPhoto(): Promise<string | null> {
+  let response: Response
+  try {
+    response = await fetch(`${API_URL}/auth/me/avatar`, { credentials: 'include' })
+  } catch {
+    throw new ApiError('network_error', 0)
+  }
+  if (response.status === 404) return null
+  if (!response.ok) throw new ApiError('unknown', response.status)
+  const blob = await response.blob()
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader()
+    reader.onload = () => resolve(reader.result as string)
+    reader.onerror = () => reject(new ApiError('unknown', 0))
+    reader.readAsDataURL(blob)
+  })
+}
+
+export function usePhoto(enabled: boolean) {
+  return useQuery({ queryKey: PHOTO_KEY, queryFn: readPhoto, enabled, staleTime: Infinity })
+}
+
+export function useUploadPhoto() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: async (photo: Blob) =>
+      api<Me>('/auth/me/avatar', {
+        method: 'PUT',
+        bytes: new Uint8Array(await photo.arrayBuffer()),
+        headers: { 'Content-Type': photo.type },
+      }),
+    onSuccess: (me) => {
+      queryClient.setQueryData(ME_KEY, me)
+      void queryClient.invalidateQueries({ queryKey: PHOTO_KEY })
+    },
+  })
+}
+
+export function useDeletePhoto() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: () => api<Me>('/auth/me/avatar', { method: 'DELETE' }),
+    onSuccess: (me) => {
+      queryClient.setQueryData(ME_KEY, me)
+      queryClient.setQueryData(PHOTO_KEY, null)
+    },
   })
 }
 

@@ -1981,3 +1981,62 @@
   border-radius: 50%;
   object-fit: cover;
 }
+
+/* Profile photo (plan 0012) */
+.avatar-option.disabled {
+  cursor: default;
+  opacity: 0.6;
+}
+
+.photo-empty {
+  width: 48px;
+  height: 48px;
+  flex: none;
+  border-radius: 50%;
+  border: 1.5px dashed var(--olive-300);
+}
+
+.file-button {
+  position: relative;
+  cursor: pointer;
+}
+
+.file-button input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.file-button:focus-within {
+  box-shadow: var(--ring);
+}
+
+.photo-cropper h3 {
+  margin: 0;
+}
+
+.crop-view {
+  width: 240px;
+  height: 240px;
+  border-radius: 50%;
+  background: var(--olive-50);
+  box-shadow: 0 0 0 2px var(--olive-300);
+  cursor: grab;
+  touch-action: none;
+}
+
+.crop-view:active {
+  cursor: grabbing;
+}
+
+.crop-zoom {
+  display: grid;
+  gap: var(--space-1);
+  max-width: 240px;
+}
+
+.avatar-photo {
+  transition: transform 120ms ease-out;
+}
