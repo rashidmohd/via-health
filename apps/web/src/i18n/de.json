@@ -482,6 +482,23 @@
     "actions": "Aktionen zur Dokumentation",
     "print": "Drucken"
   },
+  "reports": {
+    "count_one": "{{count}} freigegebene Dokumentation",
+    "count_other": "{{count}} freigegebene Dokumentationen",
+    "search": "Nach Klient:in suchen",
+    "none": "Noch keine freigegebenen Dokumentationen.",
+    "noneHint": "Eine Sitzungsdokumentation erscheint hier, sobald Sie sie freigeben. Entwürfe bleiben bei ihrer Sitzung.",
+    "noMatch": "Keine Dokumentation gefunden.",
+    "sessionNo": "Sitzung {{no}}",
+    "addenda_one": "{{count}} Nachtrag",
+    "addenda_other": "{{count}} Nachträge",
+    "columns": {
+      "session": "Sitzung",
+      "client": "Klient:in",
+      "type": "Art",
+      "approved": "Freigegeben"
+    }
+  },
   "hiddenNames": {
     "title": "Vor der KI verborgene Namen",
     "hint": "Namen anderer Personen, über die die Klient:in spricht (Partner:in, Kinder, Arbeitgeber …). Sie werden durch Platzhalter ersetzt, bevor das Transkript für den KI-Entwurf gesendet wird. Der Name der Klient:in und Ihr eigener Name werden immer verborgen.",

@@ -15,9 +15,9 @@ from sqlalchemy.orm import Session as DbSession
 
 from app.api.deps import CurrentUserId, Db
 from app.api.errors import ApiError
-from app.api.sessions import _get_session, snapshot_llm_names
+from app.api.sessions import _client_name, _get_session, card_topics, snapshot_llm_names
 from app.core.data_crypto import decrypt_json, encrypt_json
-from app.db.models import AuditLog, Report, ReportVersion, Session, Transcript
+from app.db.models import AuditLog, Client, Report, ReportVersion, Session, Transcript
 from app.domain.report_draft import default_content, is_blocking, report_aad, wording_hits
 from app.domain.report_template import (
     AI_FIELDS,
@@ -125,6 +125,20 @@ class ReportOut(BaseModel):
     updated_at: datetime | None
     approved_at: datetime | None
     versions: list[VersionOut]
+
+
+class ApprovedReportOut(BaseModel):
+    """A row on the Reports page (plan 0013): approved notes only."""
+
+    session_id: uuid.UUID
+    client_id: uuid.UUID
+    client_name: str
+    started_at: datetime
+    approved_at: datetime
+    session_no: str | None
+    session_type: SessionType | None
+    topics: list[str]
+    addenda: int
 
 
 class DraftRequest(BaseModel):
@@ -259,6 +273,58 @@ def _audit(db: DbSession, user_id: uuid.UUID, action: str, session_id: uuid.UUID
 
 
 # --- routes -------------------------------------------------------------------------
+
+
+MAX_LISTED = 200
+
+
+@router.get("/reports")
+def list_reports(
+    user_id: CurrentUserId, db: Db, client_id: uuid.UUID | None = None
+) -> list[ApprovedReportOut]:
+    """Approved notes, newest approval first. Drafts stay with their session until approved."""
+    query = (
+        select(Report, Session)
+        .join(Session, Session.id == Report.session_id)
+        .where(Report.status == "approved")
+        .order_by(Report.approved_at.desc())
+        .limit(MAX_LISTED)
+    )
+    if client_id is not None:
+        query = query.where(Session.client_id == client_id)
+    rows = db.execute(query).all()
+    addenda = dict(
+        db.execute(
+            select(ReportVersion.report_id, func.count())
+            .where(
+                ReportVersion.kind == "addendum",
+                ReportVersion.report_id.in_([report.id for report, _ in rows]),
+            )
+            .group_by(ReportVersion.report_id)
+        ).all()
+    )
+    names: dict[uuid.UUID, str] = {}
+    out = []
+    for report, session in rows:
+        if session.client_id not in names:
+            names[session.client_id] = _client_name(db.get(Client, session.client_id))
+        content = _content(report)
+        header = content.get("header", {})
+        assert report.approved_at is not None  # CHECK approval_complete
+        out.append(
+            ApprovedReportOut(
+                session_id=session.id,
+                client_id=session.client_id,
+                client_name=names[session.client_id],
+                started_at=session.started_at,
+                approved_at=report.approved_at,
+                session_no=header.get("session_no"),
+                session_type=header.get("session_type"),
+                topics=card_topics(content),
+                addenda=addenda.get(report.id, 0),
+            )
+        )
+    return out
 
 
 @router.get("/sessions/{session_id}/report")

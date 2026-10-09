@@ -4,7 +4,7 @@ import base64
 import hashlib
 import uuid
 from datetime import UTC, datetime, timedelta
-from typing import Annotated, Literal
+from typing import Annotated, Any, Literal
 
 from fastapi import APIRouter, Depends, Header, Path, Request
 from pydantic import BaseModel, Field, field_validator
@@ -185,9 +185,14 @@ def _report_card(db: DbSession, session_id: uuid.UUID) -> tuple[str | None, list
         content = decrypt_json(report.content_enc, report_aad(report.id, "content"))
     except DecryptionError:
         return report.status, []
+    return report.status, card_topics(content)
+
+
+def card_topics(content: dict[str, Any]) -> list[str]:
+    """The note's topics, shortened for a list row."""
     statements = content.get("ai", {}).get("topics", {}).get("statements", [])
     topics = [str(s.get("text", "")).strip() for s in statements][:CARD_TOPICS]
-    return report.status, [
+    return [
         t if len(t) <= CARD_TOPIC_CHARS else t[: CARD_TOPIC_CHARS - 1].rstrip() + "…"
         for t in topics
         if t

@@ -12,6 +12,7 @@ import { NameStep } from './features/auth/NameStep'
 import { NAV_ITEMS } from './features/nav'
 import { NotificationsPage } from './features/notifications/NotificationsPage'
 import { ReportPage } from './features/reports/ReportPage'
+import { ReportsPage } from './features/reports/ReportsPage'
 import { RecordPage } from './features/sessions/RecordPage'
 import { SessionPage } from './features/sessions/SessionPage'
 import { RecoveryBanner } from './features/sessions/RecoveryBanner'
@@ -79,8 +80,9 @@ export default function App() {
             <Route path="/sessions/record/:clientId" element={<RecordPage />} />
             <Route path="/sessions/:id" element={<SessionPage />} />
             <Route path="/sessions/:id/report" element={<ReportPage />} />
+            <Route path="/reports" element={<ReportsPage />} />
             <Route path="/settings" element={<SettingsPage />} />
-            {NAV_ITEMS.filter((item) => !['today', 'notifications', 'clients', 'sessions', 'settings'].includes(item.key)).map((item) => (
+            {NAV_ITEMS.filter((item) => !['today', 'notifications', 'clients', 'sessions', 'reports', 'settings'].includes(item.key)).map((item) => (
               <Route key={item.key} path={item.path} element={<PlaceholderPage navKey={item.key} />} />
             ))}
             <Route path="/clients" element={<ClientsPage />} />

@@ -482,6 +482,23 @@
     "actions": "Note actions",
     "print": "Print"
   },
+  "reports": {
+    "count_one": "{{count}} approved note",
+    "count_other": "{{count}} approved notes",
+    "search": "Search by client",
+    "none": "No approved notes yet.",
+    "noneHint": "A session note appears here once you approve it. Drafts stay with their session.",
+    "noMatch": "No note matches.",
+    "sessionNo": "Session {{no}}",
+    "addenda_one": "{{count}} addendum",
+    "addenda_other": "{{count}} addenda",
+    "columns": {
+      "session": "Session",
+      "client": "Client",
+      "type": "Type",
+      "approved": "Approved"
+    }
+  },
   "hiddenNames": {
     "title": "Names hidden from the AI",
     "hint": "Names of other people the client talks about (partner, children, employer…). They are replaced by placeholders before the transcript is sent for AI drafting. The client's and your own name are always hidden.",

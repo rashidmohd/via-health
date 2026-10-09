@@ -47,8 +47,8 @@ export function SessionList({
 
   if (isPending && !local?.length) return <ListSkeleton rows={4} />
   if (!localShown.length && !serverOnly.length) {
-    // First run on the sessions page: nothing recorded yet, no filter or search narrowing it.
-    if (showClient && filter === 'all' && !needle && !server?.length && !local?.length) {
+    // Nothing recorded yet (all sessions, or this client's), no filter or search narrowing it.
+    if (filter === 'all' && !needle && !server?.length && !local?.length) {
       return (
         <div className="table-empty muted table-empty-first">
           <img className="empty-illustration" src={scheduleIllustration} alt="" aria-hidden="true" />

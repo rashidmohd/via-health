@@ -87,6 +87,26 @@ export interface Report {
   versions: ReportVersion[]
 }
 
+/** A row on the Reports page: approved notes only (plan 0013). */
+export interface ApprovedReport {
+  session_id: string
+  client_id: string
+  client_name: string
+  started_at: string
+  approved_at: string
+  session_no: string | null
+  session_type: ReportHeader['session_type']
+  topics: string[]
+  addenda: number
+}
+
+export function useApprovedReports() {
+  return useQuery({
+    queryKey: ['reports'],
+    queryFn: () => api<ApprovedReport[]>('/reports'),
+  })
+}
+
 /** What the browser may send: text and "resolved" only; sources stay on the server. */
 export function contentBody(content: ReportContent) {
   return {
@@ -133,6 +153,7 @@ function useReportMutation<T>(sessionId: string, fn: (arg: T) => Promise<Report>
     onSuccess: (report) => {
       queryClient.setQueryData(['report', sessionId], report)
       void queryClient.invalidateQueries({ queryKey: ['sessions'] })
+      void queryClient.invalidateQueries({ queryKey: ['reports'] })
     },
   })
 }

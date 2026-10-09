@@ -35,7 +35,7 @@ export function SyncBadge() {
   if (state.pendingChunks > 0 || state.pendingSessions > 0) {
     return online ? (
       <span className="sync-badge info">
-        <CloudUpload className="icon" aria-hidden="true" />
+        <CloudUpload className="icon rising" aria-hidden="true" />
         {t('sync.uploading')}
       </span>
     ) : (

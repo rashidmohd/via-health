@@ -544,3 +544,36 @@ def test_third_party_placeholder_in_output_is_restored_and_blocks() -> None:
     assert named["text"] == "Streit mit Tom Weber" and named["third_party_name"] is True
     assert is_blocking(named)
     assert plain["text"] == "Klient:in berichtet" and not is_blocking(plain)
+
+
+def test_reports_page_lists_only_approved_notes(
+    client: TestClient,
+    mail: FakeEmailSender,
+    therapist: dict[str, str],
+    owner: Engine,
+    worker: Engine,
+) -> None:
+    approved_id = setup_session(client, owner)
+    draft_id = setup_session(client, owner)
+    for session_id in (approved_id, draft_id):
+        draft(worker, session_id)
+    report = client.get(f"/sessions/{approved_id}/report").json()
+    body = put_content(report)
+    body["ai"] = {code: {"statements": []} for code in body["ai"]}
+    body["ai"]["topics"] = {"statements": [{"id": "0123456789ab", "text": "Schlaf"}]}
+    body["header"]["session_type"] = "probatory"
+    client.put(f"/sessions/{approved_id}/report", json=body)
+    assert client.post(f"/sessions/{approved_id}/report/approve").status_code == 200
+    client.post(f"/sessions/{approved_id}/report/addenda", json={"text": "Nachtrag"})
+
+    listed = client.get("/reports").json()
+    assert [r["session_id"] for r in listed] == [approved_id]
+    row = listed[0]
+    assert row["client_name"] == "Anna Schmidt"
+    assert (row["session_type"], row["topics"], row["addenda"]) == ("probatory", ["Schlaf"], 1)
+    assert row["session_no"] is not None and row["approved_at"]
+    assert client.get(f"/reports?client_id={uuid.uuid4()}").json() == []
+
+    client.cookies.clear()
+    login(client, mail, "other@example.com", display_name="O")
+    assert client.get("/reports").json() == []

@@ -1,4 +1,4 @@
-import { AudioLines, Bookmark, ChevronLeft, CircleCheck, Mic, ShieldCheck, Square } from 'lucide-react'
+import { AudioLines, Bookmark, ChevronLeft, CircleCheck, CloudUpload, Mic, ShieldCheck, Square } from 'lucide-react'
 import { useCallback, useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Link, useParams } from 'react-router-dom'
@@ -203,9 +203,15 @@ export function RecordPage() {
 
       {recordingHere ? null : stoppedSession ? (
         <div className="record-stage">
-          <span className="stage-icon">
-            <CircleCheck className="icon" aria-hidden="true" />
-          </span>
+          {stoppedSession.status === 'stopped' ? (
+            <span className="stage-icon uploading">
+              <CloudUpload className="icon" aria-hidden="true" />
+            </span>
+          ) : (
+            <span className="stage-icon">
+              <CircleCheck className="icon" aria-hidden="true" />
+            </span>
+          )}
           <p className="done">{t('record.saved')}</p>
           <p className="muted">
             {stoppedSession.status === 'synced'
@@ -214,6 +220,16 @@ export function RecordPage() {
                 ? t(`errors.${stoppedSession.error ?? 'unknown'}`)
                 : t('record.uploading', { count: pendingChunks ?? 0 })}
           </p>
+          {stoppedSession.status === 'stopped' && (
+            // The text above carries the count; the bar only shows it.
+            <span className="upload-progress" aria-hidden="true">
+              <span
+                style={{
+                  transform: `scaleX(${stoppedSession.nextSeq > 0 ? 1 - (pendingChunks ?? 0) / stoppedSession.nextSeq : 0})`,
+                }}
+              />
+            </span>
+          )}
           <div className="actions record-actions">
             <Link className="button primary" to={`/sessions/${stoppedSession.id}`}>
               {t('record.openSession')}
