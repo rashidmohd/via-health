@@ -17,6 +17,10 @@ of a session).
 - **Live transcript in the card:** the panel is part of the red recording card and starts with
   the recording (no longer collapsed). It follows the newest words unless the therapist scrolled
   up. The off switch stays in the card and in Settings.
+  Split in two (one engine for both): a **caption under the voice bar** with the sentence in
+  progress and the one before (fixed two-line height, not announced to screen readers), and the
+  **transcript at the bottom** with server text and speakers plus finished device lines the
+  server has not covered yet. The sentence in progress is only in the caption.
 - **Preload:** after login the app downloads the engine (`.wasm`) and the German and English
   models (`.data`) into **Cache Storage** (`sessio-live-stt-<version>`; old versions deleted),
   the UI language first, with a progress banner at the top that can be hidden. The worker hands
