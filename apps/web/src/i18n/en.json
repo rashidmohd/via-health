@@ -189,7 +189,12 @@
     "review": "Review",
     "sessionsTitle": "Today's sessions",
     "noSessionsToday": "No sessions recorded today yet.",
-    "allSessions": "All sessions"
+    "allSessions": "All sessions",
+    "firstClient": {
+      "title": "Add your first client",
+      "body": "Add a client and record their consent. Then you can record your first session.",
+      "action": "Add client"
+    }
   },
   "sync": {
     "allSynced": "All audio uploaded",
@@ -707,6 +712,11 @@
       "fingerprintHint": "Fingerprints identify your keys. Compare them if you ever use a key outside Sessio.",
       "downloadPublic": "Download public key",
       "forgotten": "If you forget your passphrase, only the recovery key can open your signed records. Restoring access with it comes in a later version."
+    },
+    "missing": {
+      "title": "Your keys are not set up yet",
+      "body": "Without keys you cannot sign session notes. Set them up once, so that only you can read your signed records.",
+      "action": "Set up keys"
     }
   }
 }

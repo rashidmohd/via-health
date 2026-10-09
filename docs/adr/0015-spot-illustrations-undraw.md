@@ -19,6 +19,10 @@ without attribution.
   palette to the olive tokens. Render as Vite assets with `<img alt="" aria-hidden>`.
 - The moment → file map and the do-not-use list live in the `illustrations` skill.
 
+Amendment (2026-10-09): the one exception on Today is the first-run setup card: keys
+(`invite-only`), then first client (`nice-to-meet-you`). One step at a time, below the avatar
+hero, gone once setup is done.
+
 ## Consequences
 - No new dependency; a few kB per used illustration, cached as static assets.
 - Colours are fixed at copy time; dark mode later needs per-theme files or inline SVG with

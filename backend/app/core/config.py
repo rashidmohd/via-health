@@ -1,6 +1,7 @@
 import base64
 import binascii
 import json
+import re
 from functools import lru_cache
 from typing import Any, Literal
 
@@ -50,6 +51,10 @@ class Settings(BaseSettings):
     email_sender: Literal["console", "resend"] = "console"
     resend_api_key: str = ""
     email_from: str = "Sessio <login@example.com>"
+    # ADR 0019: one test account whose sign-in code never changes; no email is sent to it.
+    # Both empty = off. Refused in prod.
+    test_login_email: str = ""
+    test_login_code: str = ""
 
     # ADR 0004: interim server key for client identity and signatures (64 hex chars).
     client_data_key: str = DEV_CLIENT_DATA_KEY
@@ -92,6 +97,20 @@ class Settings(BaseSettings):
         if value and "/locations/europe-" not in value:
             raise ValueError("KMS_KEY_NAME must be in an EU location")
         return value
+
+    @model_validator(mode="after")
+    def test_login_is_complete_and_not_prod(self) -> "Settings":
+        self.test_login_email = self.test_login_email.strip().lower()
+        self.test_login_code = self.test_login_code.strip()
+        if not (self.test_login_email or self.test_login_code):
+            return self
+        if not (self.test_login_email and self.test_login_code):
+            raise ValueError("TEST_LOGIN_EMAIL and TEST_LOGIN_CODE must be set together")
+        if not re.fullmatch(r"\d{6}", self.test_login_code):
+            raise ValueError("TEST_LOGIN_CODE must be 6 digits")
+        if self.app_env == "prod":
+            raise ValueError("TEST_LOGIN_EMAIL is not allowed in prod (ADR 0019)")
+        return self
 
     @model_validator(mode="after")
     def prod_requires_real_secrets(self) -> "Settings":

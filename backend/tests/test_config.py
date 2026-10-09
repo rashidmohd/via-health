@@ -159,3 +159,22 @@ def test_credentials_json_accepts_real_line_breaks_and_base64() -> None:
 
 def test_empty_llm_model_uses_default() -> None:
     assert Settings(llm_model="  ").llm_model == DEFAULT_LLM_MODEL
+
+
+@pytest.mark.parametrize(
+    "fields",
+    [
+        {"test_login_email": "test@sessio.io"},
+        {"test_login_code": "123456"},
+        {"test_login_email": "test@sessio.io", "test_login_code": "12345"},
+        {"test_login_email": "test@sessio.io", "test_login_code": "abcdef"},
+    ],
+)
+def test_test_login_needs_email_and_six_digit_code(fields: dict[str, str]) -> None:
+    with pytest.raises(ValidationError):
+        Settings(**fields)
+
+
+def test_test_login_refused_in_prod() -> None:
+    with pytest.raises(ValidationError, match="ADR 0019"):
+        Settings(app_env="prod", test_login_email="test@sessio.io", test_login_code="123456")

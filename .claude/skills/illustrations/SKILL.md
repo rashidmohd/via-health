@@ -23,7 +23,9 @@ redistribute the set as an illustration pack. Only ship the files we use.
 3. **Where they never go:**
    - The **recording screen** — nothing that moves attention or CPU away from recording.
    - The **Today screen** — the avatar is its focal element; illustrations would compete. Empty
-     cards on Today (`card-empty`) keep the lucide icon.
+     cards on Today (`card-empty`) keep the lucide icon. One exception: the first-run setup card
+     (`features/today/SetupCard.tsx`: `invite-only` for keys, `nice-to-meet-you` for the first
+     client) — one step at a time, gone once setup is done.
    - Inside tables, list rows, cards smaller than ~320 px, dialogs, toasts, the sidebar.
 4. **State, not content.** An illustration is chosen by app state only (empty, offline,
    signed…) — never by what was said in a session or about a client, same as the avatar
@@ -145,6 +147,8 @@ First choice in **bold**; alternatives after it. Check a candidate visually befo
 |---|---|
 | Keys page / keys set up | **security-on**, fingerprint, certification |
 | Recovery key check | **verify-data**, verified |
+| Keys not set up (card on Today) | **invite-only** |
+| No clients yet (setup card on Today) | **nice-to-meet-you** |
 | Keys locked | **invite-only**, security-on |
 | Settings overview | **settings**, adjust-settings, preferences-popup |
 | Profile picture picker | **select-character**, character-drawing, polaroid, images |

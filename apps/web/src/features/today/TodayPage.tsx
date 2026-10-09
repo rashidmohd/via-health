@@ -8,6 +8,7 @@ import { AppAvatar } from '../../avatar/AppAvatar'
 import { useLocalSyncState } from '../../recorder/useLocal'
 import { formatLongDate, isSameDay } from '../format'
 import { NotesToReview } from './NotesToReview'
+import { SetupCard } from './SetupCard'
 import { TodaySessions } from './TodaySessions'
 
 export function TodayPage() {
@@ -38,6 +39,8 @@ export function TodayPage() {
           {t('sessions.start')}
         </Link>
       </div>
+
+      <SetupCard />
 
       <div className="stats">
         <Stat icon={CalendarDays} label={t('today.stats.sessionsToday')} value={today?.length} to="/sessions" />

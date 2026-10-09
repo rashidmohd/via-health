@@ -189,7 +189,12 @@
     "review": "Prüfen",
     "sessionsTitle": "Heutige Sitzungen",
     "noSessionsToday": "Heute wurden noch keine Sitzungen aufgenommen.",
-    "allSessions": "Alle Sitzungen"
+    "allSessions": "Alle Sitzungen",
+    "firstClient": {
+      "title": "Erste Klient:in anlegen",
+      "body": "Legen Sie eine Klient:in an und erfassen Sie die Einwilligung. Danach können Sie die erste Sitzung aufnehmen.",
+      "action": "Klient:in hinzufügen"
+    }
   },
   "sync": {
     "allSynced": "Alle Audiodaten hochgeladen",
@@ -707,6 +712,11 @@
       "fingerprintHint": "Fingerabdrücke kennzeichnen Ihre Schlüssel. Vergleichen Sie sie, wenn Sie einen Schlüssel außerhalb von Sessio verwenden.",
       "downloadPublic": "Öffentlichen Schlüssel herunterladen",
       "forgotten": "Wenn Sie Ihre Passphrase vergessen, kann nur der Wiederherstellungsschlüssel Ihre signierten Einträge öffnen. Die Wiederherstellung damit kommt in einer späteren Version."
+    },
+    "missing": {
+      "title": "Ihre Schlüssel sind noch nicht eingerichtet",
+      "body": "Ohne Schlüssel können Sie keine Verlaufsnotizen signieren. Richten Sie sie einmal ein, damit nur Sie Ihre signierten Unterlagen lesen können.",
+      "action": "Schlüssel einrichten"
     }
   }
 }

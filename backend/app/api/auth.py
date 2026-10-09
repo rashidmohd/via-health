@@ -107,6 +107,14 @@ def _photo_aad(user_id: uuid.UUID) -> str:
     return f"user:{user_id}:avatar-photo"
 
 
+def _fixed_code(email: str) -> str | None:
+    """The never-changing code of the test account (ADR 0019), if `email` is that account."""
+    settings = get_settings()
+    if settings.test_login_email and email == settings.test_login_email:
+        return settings.test_login_code
+    return None
+
+
 def _client_ip(request: Request) -> str:
     return request.client.host if request.client else "unknown"
 
@@ -119,7 +127,8 @@ def start(
     sender: Annotated[EmailSender, Depends(get_email_sender)],
 ) -> dict[str, str]:
     """Send a code. Same answer whether or not the email has an account."""
-    email_hash = keyed_hash("email", normalize_email(body.email))
+    email = normalize_email(body.email)
+    email_hash = keyed_hash("email", email)
     ip_hash = keyed_hash("ip", _client_ip(request))
     since = datetime.now(UTC) - timedelta(hours=1)
 
@@ -132,7 +141,8 @@ def start(
     ):
         raise ApiError("too_many_requests", 429)
 
-    code = new_code()
+    fixed = _fixed_code(email)
+    code = fixed or new_code()
     db.add(
         LoginCode(
             email_hash=email_hash,
@@ -142,10 +152,12 @@ def start(
         )
     )
     db.flush()
+    if fixed:
+        return {"status": "sent"}
     content = login_code_email(code, body.language)
     try:
         sender.send(
-            to=normalize_email(body.email),
+            to=email,
             subject=content.subject,
             text=content.text,
             html=content.html,

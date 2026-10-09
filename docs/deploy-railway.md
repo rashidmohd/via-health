@@ -32,6 +32,8 @@ Code is deployed from GitHub (`rashidmohd/via-health`, branch `main`).
    RESEND_API_KEY=<from Resend>
    EMAIL_FROM=Sessio <hello@via.bandi.ae>
    CLIENT_DATA_KEY=<another `openssl rand -hex 32`>   # encrypts client names (ADR 0004)
+   TEST_LOGIN_EMAIL=test@sessio.io            # optional test account, fixed code, no email (ADR 0019)
+   TEST_LOGIN_CODE=<6 digits, keep secret>   # refused when APP_ENV=prod
    ```
    Changing `AUTH_SECRET` logs everyone out and invalidates pending codes.
    **Never change or lose `CLIENT_DATA_KEY`:** client details become unreadable. Keep a copy in a

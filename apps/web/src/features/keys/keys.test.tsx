@@ -177,3 +177,35 @@ describe('keys set up', () => {
 it('PgpError keeps a code only', () => {
   expect(new PgpError('passphrase_wrong').message).toBe('passphrase_wrong')
 })
+
+describe('setup card on Today', () => {
+  it('asks a user without keys to set them up', async () => {
+    server()
+    renderApp('/')
+    expect(await screen.findByText('Your keys are not set up yet')).toBeInTheDocument()
+    expect(screen.getByRole('link', { name: 'Set up keys' })).toHaveAttribute('href', '/keys')
+  })
+
+  it('asks for the first client once keys exist', async () => {
+    stored = KEYS
+    server() // /clients answers []
+    renderApp('/')
+    expect(await screen.findByText('Add your first client')).toBeInTheDocument()
+    expect(screen.getByRole('link', { name: 'Add client' })).toHaveAttribute('href', '/clients/new')
+    expect(screen.queryByText('Your keys are not set up yet')).not.toBeInTheDocument()
+  })
+
+  it('is gone when keys and a client exist', async () => {
+    stored = KEYS
+    calls = mockApi((url) => {
+      if (url.endsWith('/auth/me')) return { status: 200, body: { ...ME, has_keys: true } }
+      if (url.endsWith('/clients')) return { status: 200, body: [{ id: 'c1', name: 'Mia' }] }
+      return { status: 200, body: [] }
+    })
+    renderApp('/')
+    expect(await screen.findByRole('heading', { level: 1 })).toBeInTheDocument()
+    await waitFor(() => expect(calls.some((c) => c.url.endsWith('/clients'))).toBe(true))
+    expect(screen.queryByText('Add your first client')).not.toBeInTheDocument()
+    expect(screen.queryByText('Your keys are not set up yet')).not.toBeInTheDocument()
+  })
+})

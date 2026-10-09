@@ -211,3 +211,44 @@ def test_post_without_origin_rejected(client: TestClient) -> None:
     del client.headers["Origin"]
     response = client.post("/auth/email/start", json={"email": "a@example.com"})
     assert response.status_code == 403
+
+
+# --- test account with a fixed code (ADR 0019) -----------------------------------
+
+
+@pytest.fixture
+def test_account(monkeypatch: pytest.MonkeyPatch) -> None:
+    from app.api import auth
+    from app.core.config import Settings
+
+    settings = Settings(test_login_email=" Test@Sessio.io ", test_login_code="246810")
+    monkeypatch.setattr(auth, "get_settings", lambda: settings)
+
+
+@pytest.mark.usefixtures("test_account")
+def test_test_account_logs_in_with_fixed_code_and_gets_no_email(
+    client: TestClient, mail: FakeEmailSender
+) -> None:
+    for _ in range(2):
+        assert start(client, "test@sessio.io") == 202
+        response = client.post(
+            "/auth/email/verify", json={"email": "TEST@sessio.io", "code": "246810"}
+        )
+        assert response.status_code == 200, response.text
+        client.cookies.clear()
+    assert mail.sent == []
+
+
+@pytest.mark.usefixtures("test_account")
+def test_test_account_wrong_code_still_locks(client: TestClient) -> None:
+    start(client, "test@sessio.io")
+    for _ in range(5):
+        client.post("/auth/email/verify", json={"email": "test@sessio.io", "code": "000000"})
+    response = client.post("/auth/email/verify", json={"email": "test@sessio.io", "code": "246810"})
+    assert response.json() == {"code": "code_invalid"}
+
+
+@pytest.mark.usefixtures("test_account")
+def test_other_accounts_still_get_random_codes(client: TestClient, mail: FakeEmailSender) -> None:
+    login(client, mail, "a@example.com")
+    assert [to for to, _, _ in mail.sent] == ["a@example.com"]
