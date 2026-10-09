@@ -36,6 +36,10 @@ class FakeContext {
   audioWorklet = { addModule: async () => {} }
   createMediaStreamSource = () => new FakeNode()
   createGain = () => new FakeNode()
+  state = 'running'
+  resume = async () => {}
+  addEventListener() {}
+  removeEventListener() {}
   close = async () => {}
 }
 

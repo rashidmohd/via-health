@@ -1,4 +1,5 @@
 import { useSyncExternalStore } from 'react'
+import { keepRunning } from './audioContext'
 import { VoiceDetector } from './vad'
 
 /**
@@ -14,11 +15,13 @@ export function micMonitorSupported(): boolean {
 export class MicMonitor {
   private readonly context: AudioContext
   private readonly nodes: AudioNode[]
+  private readonly release: () => void
   private stopped = false
 
-  private constructor(context: AudioContext, nodes: AudioNode[]) {
+  private constructor(context: AudioContext, nodes: AudioNode[], release: () => void) {
     this.context = context
     this.nodes = nodes
+    this.release = release
   }
 
   static async start(
@@ -30,6 +33,7 @@ export class MicMonitor {
     }: { calibrate?: boolean; onVoice: (active: boolean) => void; onLevel?: (rms: number) => void },
   ): Promise<MicMonitor> {
     const context = new AudioContext()
+    const release = keepRunning(context)
     try {
       await context.audioWorklet.addModule('/mic-level.js')
       const source = context.createMediaStreamSource(stream)
@@ -43,8 +47,9 @@ export class MicMonitor {
         if (change !== null) onVoice(change)
         onLevel?.(event.data)
       }
-      return new MicMonitor(context, [source, level, silent])
+      return new MicMonitor(context, [source, level, silent], release)
     } catch (error) {
+      release()
       void context.close().catch(() => {})
       throw error
     }
@@ -53,6 +58,7 @@ export class MicMonitor {
   stop(): void {
     if (this.stopped) return
     this.stopped = true
+    this.release()
     this.nodes.forEach((node) => node.disconnect())
     void this.context.close().catch(() => {})
   }

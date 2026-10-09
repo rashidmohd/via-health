@@ -1,3 +1,4 @@
+import { keepRunning } from '../recorder/audioContext'
 import { LIVE_STT_VERSION, type LiveSttLanguage } from './version'
 
 /**
@@ -95,12 +96,14 @@ export class LivePreview {
   private readonly worker: Worker
   private readonly context: AudioContext
   private readonly nodes: AudioNode[]
+  private readonly release: () => void
   private stopped = false
 
-  private constructor(worker: Worker, context: AudioContext, nodes: AudioNode[]) {
+  private constructor(worker: Worker, context: AudioContext, nodes: AudioNode[], release: () => void) {
     this.worker = worker
     this.context = context
     this.nodes = nodes
+    this.release = release
   }
 
   /** `offsetMs`: recording time when the preview starts, so texts line up with the recording. */
@@ -116,6 +119,7 @@ export class LivePreview {
     engine.buffered.splice(0).forEach(onEvent)
 
     const context = new AudioContext({ latencyHint: 'interactive' })
+    const release = keepRunning(context)
     try {
       await context.audioWorklet.addModule(`/live-stt-capture.js?v=${LIVE_STT_VERSION}`)
       const source = context.createMediaStreamSource(stream)
@@ -127,8 +131,9 @@ export class LivePreview {
       const channel = new MessageChannel()
       capture.port.postMessage({ port: channel.port1 }, [channel.port1])
       worker.postMessage({ type: 'start', port: channel.port2, offsetMs }, [channel.port2])
-      return new LivePreview(worker, context, [source, capture, silent])
+      return new LivePreview(worker, context, [source, capture, silent], release)
     } catch (error) {
+      release()
       worker.terminate()
       void context.close()
       throw error
@@ -138,6 +143,7 @@ export class LivePreview {
   stop(): void {
     if (this.stopped) return
     this.stopped = true
+    this.release()
     this.nodes.forEach((node) => node.disconnect())
     void this.context.close().catch(() => {})
     this.worker.postMessage({ type: 'stop' })
