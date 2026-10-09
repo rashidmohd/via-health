@@ -35,7 +35,8 @@ On "Approve and sign" (browser, key unlocked; built, ADR 0021):
 2. Browser (`crypto/records.ts`): each part as JSON → `signAndEncrypt` to [therapist, recovery], then decrypt + verify with its own key before upload.
 3. `POST .../report/sign`. In one DB transaction: messages on `report_versions` (version 1: `pgp_message`, `transcript_pgp`; `signer_fingerprint`, `encrypted_to`), `reports.index_pgp`, `status='signed'`; `content_enc`, `draft_enc`, `transcripts.segments_enc` set NULL; transcript windows and the `processing` wrapped key deleted; session `status='signed'`, `audio_state='shred_pending'`. DB triggers keep it that way.
 4. Addenda to a signed note: signed messages (`{text, created_at}`), version ≥ 2.
-5. `shred_session` job (idempotent, not built yet): delete all objects under `sessions/{id}/`, delete temp STT objects, mark `audio_state='shredded'`.
+5. Signing also deletes the session's capture chips; confirmed ones are in the signed note.
+6. `shred_audio` job (`app/workers/shred.py`, idempotent, plan 0015): first delete all `wrapped_keys` (committed), then objects under `sessions/{id}/` and `stt-tmp/{id}*`, then `audio_state='shredded'`. Also runs for withdrawn consent and for unsigned sessions past `retention_deadline`.
 Destroying the processing-wrapped key makes any leftover copies (backups, replicas) unreadable.
 
 Optional later feature (separate consent): keep audio for supervision — only the therapist-wrapped key remains.

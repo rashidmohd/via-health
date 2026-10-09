@@ -66,7 +66,11 @@ async function syncSession(session: LocalSession): Promise<void> {
     await api(`/sessions/${id}/chunks/${chunk.seq}`, {
       method: 'PUT',
       bytes: chunk.data,
-      headers: { 'X-Content-SHA256': chunk.sha256 },
+      headers: {
+        'X-Content-SHA256': chunk.sha256,
+        'X-Segment': String(chunk.segment ?? 0),
+        'X-Segment-Start-Ms': String(chunk.segmentStartMs ?? 0),
+      },
     })
     await db.chunks.delete([id, chunk.seq])
   }

@@ -226,10 +226,14 @@ class AudioChunk(Base):
     sha256: Mapped[str] = mapped_column(Text)
     bytes: Mapped[int] = mapped_column(Integer)
     uploaded_at: Mapped[datetime] = _created_at()
+    # A reconnected microphone starts a new recorder file (ADR 0022); its recording-time start.
+    segment: Mapped[int] = mapped_column(Integer, server_default=text("0"))
+    segment_start_ms: Mapped[int] = mapped_column(Integer, server_default=text("0"))
 
     __table_args__ = (
         PrimaryKeyConstraint("session_id", "seq", name="pk_audio_chunks"),
         CheckConstraint("seq >= 0", name="seq_non_negative"),
+        CheckConstraint("segment >= 0 AND segment_start_ms >= 0", name="segment_non_negative"),
     )
 
 

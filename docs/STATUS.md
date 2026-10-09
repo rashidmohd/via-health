@@ -25,22 +25,20 @@ models and the Gemini API are cleared for the prototype only (see "Before real c
 | Reports page | Signed session notes across clients: session no. and type, topics (decrypted in the browser after unlock), approval date, addenda; search by client; opens the read-only note | plans 0013, 0014 |
 | Therapist keys | Keys screen: OpenPGP v6 key made in the browser, passphrase-protected (Argon2); recovery key downloaded once, check code typed back before anything is stored (or emailed with consent, ADR 0017); keys write-once in the DB; unlock / auto-lock after 15 min idle and on tab close; device copy for offline unlock | plan 0014 step A |
 | Signing | "Approve and sign": note, transcript and an index signed with the therapist key and encrypted to therapist + recovery key in the browser; server stores the messages and in the same transaction drops note text, AI draft, transcript, leftover windows and the processing key (`audio_state = shred_pending`); signed notes and addenda decrypted in the browser after unlock; notes approved earlier can be signed ("Sign now"); recording needs keys and wraps each session key to the therapist key | plan 0014 steps B, C, ADR 0021 |
+| Audio deletion | Shred job every 15 s: signed sessions, withdrawn consent, and unsigned sessions past 30 days (retention sweep); keys deleted first (crypto-shred), then audio objects and leftover Speech-to-Text copies; idempotent; `audio_state` only moves forward (DB trigger). Confirmed capture chips go into the signed record, all chip rows are deleted at signing | plan 0015 |
 | Welcome & tour | New accounts see a welcome page once (after the name step), then an optional in-app tour (never on the recording screen); restart in Settings → App tour. "Seen" is stored per browser | ADR 0020 |
 | Notifications | Tab with unread badge: transcript ready / failed, note draft ready / failed / no AI consent; ids only in the DB | plan 0010 (part 1) |
 | UI design system | Inter + Lucide icons, tokens and shared components, sidebar + top bar shell (drawer on small screens); all built screens redesigned (Today tiles, client and session tables with filters, record screen, note editor with "Next to check", print view) | ADR 0009 |
 
-Tests: backend 298, web 256 (lint, typecheck, build green).
+Tests: backend 306, web 256 (lint, typecheck, build green).
 
 ## Not built yet (in order)
 
 1. **Real model check for session notes** — needs a paid-tier Gemini API key (ADR 0005);
    then a German golden set of role-play sessions (plan 0009, tests).
-2. **Deletion jobs** — `shred_session` for `audio_state = shred_pending` (signing already destroys
-   the processing key), `retention_sweep` for unsigned sessions, capture chip texts of signed
-   sessions (ADR 0021). Until then the bucket's 30-day rule is the safety net.
-3. **Settings page, rest** — practice term list (term chips). Profile picture, avatar reactions, microphone and "Recording on this device" (sounds, live transcript, model preload) are built.
-4. **Rive character** — designer delivers `sessio-avatar.riv` with interchangeable parts and bound colours (contract in the `avatar-and-ui` skill); no code change needed.
-5. **Later:** passkeys, other report templates, client documents and data export.
+2. **Settings page, rest** — practice term list (term chips). Profile picture, avatar reactions, microphone and "Recording on this device" (sounds, live transcript, model preload) are built.
+3. **Rive character** — designer delivers `sessio-avatar.riv` with interchangeable parts and bound colours (contract in the `avatar-and-ui` skill); no code change needed.
+4. **Later:** passkeys, other report templates, client documents and data export.
 
 ## Before real clients (blocking)
 

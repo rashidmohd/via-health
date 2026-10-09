@@ -335,6 +335,11 @@ def upload_chunk(
     user_id: CurrentUserId,
     db: Db,
     store: Store,
+    # Reconnected microphone = new recorder file (ADR 0022). Older clients send neither.
+    segment: Annotated[int, Header(alias="X-Segment", ge=0, le=1_000)] = 0,
+    segment_start_ms: Annotated[
+        int, Header(alias="X-Segment-Start-Ms", ge=0, le=24 * 3_600_000)
+    ] = 0,
 ) -> None:
     content_sha256 = hashlib.sha256(data).hexdigest()
     session = _get_session(db, session_id)
@@ -344,7 +349,13 @@ def upload_chunk(
     inserted = db.execute(
         insert(AudioChunk)
         .values(
-            session_id=session.id, seq=seq, object_key=key, sha256=content_sha256, bytes=len(data)
+            session_id=session.id,
+            seq=seq,
+            object_key=key,
+            sha256=content_sha256,
+            bytes=len(data),
+            segment=segment,
+            segment_start_ms=segment_start_ms,
         )
         .returning(AudioChunk.seq)
     ).first()  # DB trigger: consent check; identical re-upload is a no-op

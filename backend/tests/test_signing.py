@@ -460,3 +460,36 @@ def test_therapist_wrapped_session_key_is_stored_once(
     sign_note(client, session_id)
     with owner.connect() as c:
         assert c.execute(text("SELECT kind FROM wrapped_keys")).scalars().all() == ["therapist"]
+
+
+def test_confirmed_chips_go_into_the_record_and_all_chips_leave_the_server(
+    client: TestClient, therapist: dict[str, str], owner: Engine, worker: Engine
+) -> None:
+    session_id = drafted(client, owner, worker)
+    url = f"/sessions/{session_id}/captures"
+    kept = str(uuid.uuid4())
+    for capture_id, status, text_ in (
+        (kept, "confirmed", "Termin am Montag"),
+        (str(uuid.uuid4()), "dismissed", "x"),
+    ):
+        response = client.post(
+            url,
+            json={
+                "id": capture_id,
+                "kind": "date",
+                "key": f"date:{status}",
+                "at_ms": 1000,
+                "text": text_,
+                "status": status,
+            },
+        )
+        assert response.status_code == 200, response.text
+
+    prepared = prepare(client, session_id).json()
+    assert prepared["note"]["captures"] == [
+        {"id": kept, "kind": "date", "at_ms": 1000, "text": "Termin am Montag"}
+    ]
+    assert sign(client, session_id, sign_body(prepared)).status_code == 200
+    with owner.connect() as c:
+        assert c.execute(text("SELECT count(*) FROM captures")).scalar_one() == 0
+    assert client.get(url).json() == []

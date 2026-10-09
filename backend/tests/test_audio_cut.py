@@ -3,7 +3,7 @@ import subprocess
 
 import pytest
 
-from app.core.audio import AudioCutError, cut_to_wav, wav_duration_ms
+from app.core.audio import AudioCutError, cut_to_wav, join_segments, wav_duration_ms
 
 pytestmark = pytest.mark.skipif(shutil.which("ffmpeg") is None, reason="ffmpeg not installed")
 
@@ -34,3 +34,30 @@ def test_range_after_the_end_is_empty() -> None:
 def test_garbage_raises() -> None:
     with pytest.raises(AudioCutError):
         cut_to_wav(b"not audio", 0, 1000)
+
+
+def rms(wav: bytes) -> float:
+    import array
+    import io
+    import wave
+
+    with wave.open(io.BytesIO(wav)) as w:
+        samples = array.array("h", w.readframes(w.getnframes()))
+    return (sum(s * s for s in samples) / max(1, len(samples))) ** 0.5
+
+
+def test_join_segments_keeps_the_recording_clock() -> None:
+    # Microphone lost after 5 s, reconnected at 8 s (ADR 0022): two files, a 3 s gap.
+    joined = join_segments([(0, opus_webm(5)), (8_000, opus_webm(5))])
+    whole = cut_to_wav(joined, 0, 60_000)
+    assert whole is not None
+    assert wav_duration_ms(whole) == pytest.approx(13_000, abs=200)
+    gap = cut_to_wav(joined, 5_500, 7_500)
+    assert gap is not None and rms(gap) < 50  # silence
+    second = cut_to_wav(joined, 8_500, 12_500)
+    assert second is not None and rms(second) > 1000  # the tone is back
+
+
+def test_join_segments_rejects_garbage() -> None:
+    with pytest.raises(AudioCutError):
+        join_segments([(0, opus_webm(2)), (3_000, b"not audio")])

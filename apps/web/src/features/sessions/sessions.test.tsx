@@ -164,6 +164,48 @@ describe('start session flow', () => {
     expect(['stopped', 'synced']).toContain(session.status)
   })
 
+  it('reconnects a lost microphone without stopping the recording (ADR 0022)', async () => {
+    const track = installFakeMicrophone()
+    api()
+    renderApp('/sessions/record/c1')
+    await startRecording()
+    await screen.findByLabelText('Recording time')
+
+    act(() => track.onended?.())
+    const alert = await screen.findByRole('alert')
+    expect(alert).toHaveTextContent('The microphone was disconnected.')
+    fireEvent.click(within(alert).getByRole('button', { name: 'Reconnect microphone' }))
+
+    expect(await screen.findByText('Microphone reconnected. The recording continues; the gap stays silent.')).toBeInTheDocument()
+    expect(screen.queryByText(/The microphone was disconnected/)).not.toBeInTheDocument()
+    expect(screen.getByLabelText('Recording time')).toBeInTheDocument() // still recording
+    expect(navigator.mediaDevices.getUserMedia).toHaveBeenCalledTimes(2)
+
+    fireEvent.click(screen.getByRole('button', { name: 'Stop recording' }))
+    await confirmInDialog('Stop recording')
+    expect(await screen.findByText('Recording saved.')).toBeInTheDocument()
+  })
+
+  it('says so when no microphone can be found', async () => {
+    const track = installFakeMicrophone()
+    api()
+    renderApp('/sessions/record/c1')
+    await startRecording()
+    await screen.findByLabelText('Recording time')
+
+    act(() => track.onended?.())
+    navigator.mediaDevices.getUserMedia = vi.fn(async () => Promise.reject(new Error('NotFoundError')))
+    fireEvent.click(await screen.findByRole('button', { name: 'Reconnect microphone' }))
+    expect(
+      await screen.findByText('No working microphone found. Plug one in or switch it on, then try again.'),
+    ).toBeInTheDocument()
+    expect(screen.getByRole('alert')).toHaveTextContent('The microphone was disconnected.')
+
+    fireEvent.click(screen.getByRole('button', { name: 'Stop recording' }))
+    await confirmInDialog('Stop recording')
+    expect(await screen.findByText('Recording saved.')).toBeInTheDocument()
+  })
+
   it('asks before signing out while recording', async () => {
     installFakeMicrophone()
     const calls = api()

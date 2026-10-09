@@ -21,7 +21,7 @@ from sqlalchemy.orm import Session as DbSession
 from app.adapters.kms import KmsProvider
 from app.adapters.storage import ObjectStore
 from app.adapters.stt import SttError, SttProvider
-from app.core.audio import AudioCutError, cut_to_wav
+from app.core.audio import AudioCutError, cut_to_wav, join_segments
 from app.core.audio_crypto import ChunkDecryptionError, decrypt_chunk
 from app.core.config import get_settings
 from app.core.data_crypto import DecryptionError, decrypt_json, encrypt_json
@@ -44,6 +44,7 @@ logger = logging.getLogger("sessio.worker.transcribe")
 
 LANGUAGE_CODES = {"de": "de-DE", "en": "en-US"}
 PARALLEL_WINDOWS = 4
+JOINED_MIME_TYPE = "audio/webm;codecs=opus"  # several segments are re-encoded (ADR 0022)
 
 
 class PermanentFailure(Exception):
@@ -159,7 +160,8 @@ def _load_audio(
     store: ObjectStore,
     chunks: list[AudioChunk],
 ) -> bytearray:
-    """Decrypt `chunks` (must be 0..n-1) in memory and join them strictly by seq."""
+    """Decrypt `chunks` (must be 0..n-1) in memory and join them strictly by seq. Several
+    segments (reconnected microphone, ADR 0022) are joined into one WebM/Opus file."""
     wrapped = db.scalar(
         select(WrappedKey.ciphertext).where(
             WrappedKey.session_id == session.id, WrappedKey.kind == "processing"
@@ -172,26 +174,46 @@ def _load_audio(
     with ThreadPoolExecutor(max_workers=8) as pool:  # object reads are network-bound
         ciphertexts = list(pool.map(lambda c: store.get(c.object_key), chunks))
 
-    audio = bytearray()
+    segments: list[tuple[int, int, bytearray]] = []  # (segment, start_ms, audio)
     try:
         for chunk, ciphertext in zip(chunks, ciphertexts, strict=True):
             if hashlib.sha256(ciphertext).hexdigest() != chunk.sha256:
                 raise PermanentFailure("chunk_corrupt")
-            audio += decrypt_chunk(key, str(session.id), chunk.seq, ciphertext)
+            if not segments or chunk.segment != segments[-1][0]:
+                if segments and chunk.segment < segments[-1][0]:
+                    raise PermanentFailure("chunk_corrupt")
+                segments.append((chunk.segment, chunk.segment_start_ms, bytearray()))
+            segments[-1][2].extend(decrypt_chunk(key, str(session.id), chunk.seq, ciphertext))
     except (ChunkDecryptionError, KeyError):
-        _wipe(audio)
+        for _, _, part in segments:
+            _wipe(part)
         raise PermanentFailure("chunk_corrupt") from None
-    return audio
+    if len(segments) <= 1:
+        return segments[0][2] if segments else bytearray()
+    try:
+        return bytearray(join_segments([(start, bytes(part)) for _, start, part in segments]))
+    except AudioCutError:
+        raise PermanentFailure("audio_undecodable") from None
+    finally:
+        for _, _, part in segments:
+            _wipe(part)
+
+
+def _mime_type(session: Session, chunks: list[AudioChunk]) -> str:
+    if any(chunk.segment > 0 for chunk in chunks):
+        return JOINED_MIME_TYPE
+    return session.mime_type or "audio/webm"
 
 
 def _assemble_audio(
     db: DbSession, session: Session, kms: KmsProvider, store: ObjectStore
-) -> bytearray:
+) -> tuple[bytearray, str]:
+    """The whole session's audio and its mime type."""
     _check_processable(db, session)
     chunks = _chunks(db, session.id)
     if session.total_chunks is None or [c.seq for c in chunks] != list(range(session.total_chunks)):
         raise PermanentFailure("incomplete_upload")
-    return _load_audio(db, session, kms, store, chunks)
+    return _load_audio(db, session, kms, store, chunks), _mime_type(session, chunks)
 
 
 def _language(db: DbSession, session: Session) -> str:
@@ -386,9 +408,8 @@ def process_session(
             session = db.get(Session, session_id)
             assert session is not None
             language = _language(db, session)
-            mime_type = session.mime_type or "audio/webm"
             duration_ms = session.duration_ms or (session.total_chunks or 0) * CHUNK_MS
-            audio = _assemble_audio(db, session, kms, store_for(db))
+            audio, mime_type = _assemble_audio(db, session, kms, store_for(db))
             stored = _stored_windows(db, session_id)
         size = len(audio)
         try:
@@ -516,8 +537,7 @@ def refine_speakers(
             session = db.get(Session, session_id)
             assert session is not None
             language = _language(db, session)
-            mime_type = session.mime_type or "audio/webm"
-            audio = _assemble_audio(db, session, kms, store_for(db))
+            audio, mime_type = _assemble_audio(db, session, kms, store_for(db))
         try:
             reference = stt.diarize_words(
                 bytes(audio), mime_type=mime_type, language=language, job_id=f"{session_id}-refine"

@@ -1,7 +1,7 @@
 import { wrapSessionKey } from '../crypto/pgp'
 import { createSessionKey, encryptChunk, sha256Hex, toBase64 } from './crypto'
 import { db } from './db'
-import { audioConstraints } from './micDevice'
+import { openMicrophone } from './micDevice'
 import { startVoiceMonitor, stopVoiceMonitor } from './micMonitor'
 import { kickSync } from './sync'
 import { uuidv7 } from './uuidv7'
@@ -46,8 +46,13 @@ export async function hasEnoughStorage(): Promise<boolean> {
 export interface RecorderEvents {
   /** Something that stopped or endangers the recording. Always shown loudly. */
   onProblem: (problem: RecorderProblem) => void
+  /** A lost microphone is back (ADR 0022); the recording continues in a new segment. */
+  onMicReconnected?: () => void
   onChunkSaved?: (seq: number) => void
 }
+
+/** How long a lost microphone's recorder may take to hand over its last slice. */
+const FLUSH_TIMEOUT_MS = 3_000
 
 export class SessionRecorder {
   readonly sessionId: string
@@ -57,21 +62,21 @@ export class SessionRecorder {
   private wakeLock: WakeLockSentinel | null = null
   private stopped = false
   private readonly key: CryptoKey
-  private readonly media: MediaRecorder
-  private readonly stream: MediaStream
+  private readonly mimeType: string
   private readonly events: RecorderEvents
+  // A reconnected microphone gets a new MediaRecorder = a new segment (ADR 0022).
+  private media!: MediaRecorder
+  private stream!: MediaStream
+  private segment = -1
+  /** Set while the microphone is lost: resolves once the old recorder's last slice is queued. */
+  private lost: Promise<void> | null = null
+  private reconnecting: Promise<boolean> | null = null
+  private readonly onDeviceChange = () => void this.reconnect()
 
-  private constructor(
-    sessionId: string,
-    key: CryptoKey,
-    media: MediaRecorder,
-    stream: MediaStream,
-    events: RecorderEvents,
-  ) {
+  private constructor(sessionId: string, key: CryptoKey, mimeType: string, events: RecorderEvents) {
     this.sessionId = sessionId
     this.key = key
-    this.media = media
-    this.stream = stream
+    this.mimeType = mimeType
     this.events = events
     this.startedAt = Date.now()
   }
@@ -99,7 +104,7 @@ export class SessionRecorder {
 
     let stream: MediaStream
     try {
-      stream = await navigator.mediaDevices.getUserMedia({ audio: audioConstraints() })
+      stream = await openMicrophone()
     } catch {
       throw new RecorderError('mic_denied')
     }
@@ -121,19 +126,76 @@ export class SessionRecorder {
       finished: false,
     })
 
-    const media = new MediaRecorder(stream, { mimeType, audioBitsPerSecond: 32_000 })
-    const recorder = new SessionRecorder(sessionId, key, media, stream, events)
-    media.ondataavailable = (event) => recorder.enqueue(event.data)
-    for (const track of stream.getAudioTracks()) {
-      track.onended = () => {
-        if (!recorder.stopped) events.onProblem('mic_lost')
-      }
-    }
+    const recorder = new SessionRecorder(sessionId, key, mimeType, events)
     await recorder.holdWakeLock()
-    media.start(SLICE_MS)
-    void startVoiceMonitor(stream) // voice activity + mic health; failures never affect recording
+    recorder.begin(stream)
     kickSync()
     return recorder
+  }
+
+  /** Start a segment on `stream`: its own MediaRecorder, starting at the current recording time. */
+  private begin(stream: MediaStream): void {
+    const segment = ++this.segment
+    const segmentStartMs = segment === 0 ? 0 : this.elapsedMs()
+    const media = new MediaRecorder(stream, { mimeType: this.mimeType, audioBitsPerSecond: 32_000 })
+    media.ondataavailable = (event) => this.enqueue(event.data, segment, segmentStartMs)
+    for (const track of stream.getAudioTracks()) {
+      track.onended = () => this.micLost(media)
+    }
+    this.media = media
+    this.stream = stream
+    media.start(SLICE_MS)
+    void startVoiceMonitor(stream) // voice activity + mic health; failures never affect recording
+  }
+
+  /** The microphone of `media` ended: keep its last slice, alert, and watch for a microphone. */
+  private micLost(media: MediaRecorder): void {
+    if (this.stopped || media !== this.media || this.lost) return
+    stopVoiceMonitor()
+    this.lost = new Promise<void>((resolve) => {
+      // Some browsers stop the recorder by themselves when the track ends; wait for its 'stop'.
+      const timer = setTimeout(resolve, FLUSH_TIMEOUT_MS)
+      media.addEventListener('stop', () => (clearTimeout(timer), resolve()), { once: true })
+      if (media.state !== 'inactive') media.stop()
+    })
+    this.events.onProblem('mic_lost')
+    navigator.mediaDevices?.addEventListener?.('devicechange', this.onDeviceChange)
+  }
+
+  get micLostNow(): boolean {
+    return this.lost !== null
+  }
+
+  /** Open a microphone again after it was lost and continue in a new segment. Resolves false
+   *  if none works (the alert stays). Also runs by itself when a microphone appears. */
+  reconnect(): Promise<boolean> {
+    if (this.stopped || !this.lost) return Promise.resolve(!this.stopped)
+    this.reconnecting ??= this.tryReconnect().finally(() => (this.reconnecting = null))
+    return this.reconnecting
+  }
+
+  private async tryReconnect(): Promise<boolean> {
+    let stream: MediaStream
+    try {
+      stream = await openMicrophone()
+    } catch {
+      return false
+    }
+    if (this.stopped || stream.getAudioTracks().every((track) => track.readyState === 'ended')) {
+      stream.getTracks().forEach((track) => track.stop())
+      return false
+    }
+    await this.lost // the old segment's last slice gets its seq first
+    if (this.stopped) {
+      stream.getTracks().forEach((track) => track.stop())
+      return false
+    }
+    this.stream.getTracks().forEach((track) => track.stop())
+    navigator.mediaDevices?.removeEventListener?.('devicechange', this.onDeviceChange)
+    this.lost = null
+    this.begin(stream)
+    this.events.onMicReconnected?.()
+    return true
   }
 
   /** The microphone stream, for read-only taps such as the live preview. */
@@ -145,18 +207,26 @@ export class SessionRecorder {
     return Date.now() - this.startedAt
   }
 
-  private enqueue(blob: Blob): void {
-    this.writes = this.writes.then(() => this.save(blob))
+  private enqueue(blob: Blob, segment: number, segmentStartMs: number): void {
+    this.writes = this.writes.then(() => this.save(blob, segment, segmentStartMs))
   }
 
-  private async save(blob: Blob): Promise<void> {
+  private async save(blob: Blob, segment: number, segmentStartMs: number): Promise<void> {
     if (blob.size === 0) return
     const seq = this.seq++
     try {
       const data = await encryptChunk(this.key, this.sessionId, seq, await blob.arrayBuffer())
       const sha256 = await sha256Hex(data)
       await db.transaction('rw', db.chunks, db.sessions, async () => {
-        await db.chunks.add({ sessionId: this.sessionId, seq, data, sha256, createdAt: new Date().toISOString() })
+        await db.chunks.add({
+          sessionId: this.sessionId,
+          seq,
+          data,
+          sha256,
+          segment,
+          segmentStartMs,
+          createdAt: new Date().toISOString(),
+        })
         await db.sessions.update(this.sessionId, { nextSeq: seq + 1 })
       })
       this.events.onChunkSaved?.(seq)
@@ -189,6 +259,8 @@ export class SessionRecorder {
     if (this.stopped) return
     this.stopped = true
     const durationMs = this.elapsedMs()
+    navigator.mediaDevices?.removeEventListener?.('devicechange', this.onDeviceChange)
+    await this.lost // a lost microphone's last slice
     if (this.media.state !== 'inactive') {
       await new Promise<void>((resolve) => {
         this.media.addEventListener('stop', () => resolve(), { once: true })

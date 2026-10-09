@@ -14,6 +14,7 @@ from app.core.config import get_settings
 from app.core.logging import configure_logging
 from app.db.session import WORKER_ROLE, make_engine
 from app.workers.report import draft_report, draft_report_unconfigured, find_draft_work
+from app.workers.shred import find_shred_work, shred_session
 from app.workers.transcribe import (
     TransientFailure,
     find_ready,
@@ -49,6 +50,8 @@ async def enqueue_ready_sessions(ctx: dict[str, Any]) -> None:
         await redis.enqueue_job(
             "draft_session_report", str(session_id), _job_id=f"report:{session_id}"
         )
+    for session_id in await asyncio.to_thread(find_shred_work, ctx["engine"]):
+        await redis.enqueue_job("shred_audio", str(session_id), _job_id=f"shred:{session_id}")
     for session_id in await asyncio.to_thread(find_window_work, ctx["engine"]):
         if await redis.exists(f"windows-paused:{session_id}"):
             continue
@@ -123,6 +126,14 @@ async def transcribe_session(ctx: dict[str, Any], session_id: str) -> str:
         raise Retry(defer=60 * ctx["job_try"]) from None
 
 
+async def shred_audio(ctx: dict[str, Any], session_id: str) -> str:
+    """Rules 6 and 10: delete keys, then audio (plan 0015). Safe to repeat; a failed run is
+    picked up again by the next scan because the session stays `shred_pending`."""
+    return await asyncio.to_thread(
+        shred_session, uuid.UUID(session_id), engine=ctx["engine"], store_for=make_object_store
+    )
+
+
 async def startup(ctx: dict[str, Any]) -> None:
     configure_logging()
     ctx["engine"] = make_engine(get_settings().database_url, role=WORKER_ROLE)
@@ -140,6 +151,7 @@ class WorkerSettings:
         func(transcribe_windows, keep_result=0, max_tries=1),
         func(refine_session_speakers, keep_result=0),
         func(draft_session_report, keep_result=0),
+        func(shred_audio, keep_result=0),
     ]
     cron_jobs: ClassVar[list[Any]] = [
         cron(heartbeat, second=0),

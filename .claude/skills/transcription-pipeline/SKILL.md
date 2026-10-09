@@ -45,6 +45,10 @@ No `google.cloud.speech` import outside `app/adapters/stt/`.
 ## Reassembly
 
 - Concatenate decrypted chunks strictly by `seq` (chunk 0 holds the WebM header).
+- Several segments (reconnected microphone, ADR 0022): `join_segments` decodes each segment to
+  16 kHz PCM separately, fills the gap before each segment (`segment_start_ms`) with silence and
+  encodes one WebM/Opus file in memory; its mime type is `audio/webm;codecs=opus`. One segment
+  keeps the plain concatenation.
 - Use ffmpeg via stdin/stdout pipes (`-i pipe:0 ... pipe:1`); never write plaintext to disk.
 - Missing chunk → session `status='failed'` with reason `incomplete_upload`; the browser re-uploads from its buffer.
 

@@ -5,6 +5,7 @@ import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { confirmDialog } from '../../design/confirm'
 import { stopActiveRecording, useActiveRecording } from '../../recorder/active'
 import { formatElapsed, useElapsed } from './elapsed'
+import { MicReconnect, MicReconnectedNote } from './MicReconnect'
 
 /** How long the dock explains itself after the user leaves the recording screen. */
 const DOCK_NOTE_MS = 6_000
@@ -66,9 +67,12 @@ function Dock() {
         </div>
       </div>
       {recording.problem ? (
-        <p className="recording-dock-problem" role="alert">
+        <div className="recording-dock-problem" role="alert">
           {t(`record.problem.${recording.problem}`)}
-        </p>
+          {recording.problem === 'mic_lost' && <MicReconnect />}
+        </div>
+      ) : recording.reconnectedAt ? (
+        <MicReconnectedNote className="recording-dock-note" />
       ) : (
         <p className="recording-dock-note" role="status">
           {note ? t('record.dock.continues') : ''}

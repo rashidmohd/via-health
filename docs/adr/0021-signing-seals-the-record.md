@@ -31,8 +31,8 @@ a final record. Sealing old approved notes keeps them instead of discarding test
 
 ## Consequences
 - Session cards show no topics for signed notes (the server cannot read them).
-- Capture chip texts (server key, ADR 0004) are not cleared at signing; they are not part of the
-  signed record. Decide with the deletion jobs.
+- Capture chips: the confirmed ones are part of the signed note; all chip rows are deleted at
+  signing (plan 0015). Audio itself is deleted by the shred job (plan 0015).
 - Signing needs the passphrase; a lost passphrase means only the recovery key opens records.
 - A recovery tool needs only the recovery key: records are self-contained JSON (client name,
   session date, content).

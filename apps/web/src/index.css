@@ -2677,6 +2677,16 @@
   font-weight: 500;
 }
 
+/* Reconnect a lost microphone without stopping the recording (ADR 0022). */
+.mic-reconnect {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+  margin-top: var(--space-2);
+  font-weight: 400;
+}
+
 @media (prefers-reduced-motion: no-preference) {
   .recording-dock {
     animation: rise-in 220ms var(--ease);

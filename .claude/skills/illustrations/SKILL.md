@@ -126,7 +126,7 @@ First choice in **bold**; alternatives after it. Check a candidate visually befo
 | Audio files / upload list empty | **audio-files** |
 | Uploading after a session | **files-uploading**, uploading, upload |
 | Offline — saved on this device | **connection-lost**, local-server |
-| Upload complete | **action-successful**, completed-tasks |
+| Upload complete | **uploading** (in use), action-successful, all-checked |
 | Upload failed / storage full | **upload-warning**, warnings |
 | Transcript processing | **thinking-mode**, file-analysis, process |
 | Transcript ready | **reading-notes**, noted |

@@ -14,10 +14,9 @@ from google.cloud.speech_v2 import SpeechClient
 from google.cloud.speech_v2.types import cloud_speech
 
 from app.adapters.gcp import gcp_credentials
-from app.adapters.stt.base import Segment, SttError, Word
+from app.adapters.stt.base import TEMP_PREFIX, Segment, SttError, Word
 from app.domain.transcript import words_to_segments as domain_words_to_segments
 
-TEMP_PREFIX = "stt-tmp/"
 TIMEOUT_S = 30 * 60
 RETRYABLE = (
     gexc.ServiceUnavailable,

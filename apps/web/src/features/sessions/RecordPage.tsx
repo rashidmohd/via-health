@@ -9,14 +9,14 @@ import { AppAvatar, UserAvatar } from '../../avatar/AppAvatar'
 import { AvatarRing } from '../../avatar/AvatarRing'
 import { ringState } from '../../avatar/ring'
 import { useAvatarMood } from '../../avatar/useAvatarMood'
-import actionSuccessful from '../../design/illustrations/action-successful.svg'
+import uploadingIllustration from '../../design/illustrations/uploading.svg'
 import filesUploading from '../../design/illustrations/files-uploading.svg'
 import uploadWarning from '../../design/illustrations/upload-warning.svg'
 import { Initials } from '../../design/Initials'
 import { prewarmLivePreview } from '../../live-stt/preview'
 import { LIVE_STT_LANGUAGES, type LiveSttLanguage } from '../../live-stt/version'
 import { confirmDialog } from '../../design/confirm'
-import { reportRecorderProblem, setActiveRecorder, stopActiveRecording, useActiveRecording } from '../../recorder/active'
+import { reportMicReconnected, reportRecorderProblem, setActiveRecorder, stopActiveRecording, useActiveRecording } from '../../recorder/active'
 import { db } from '../../recorder/db'
 import { playCue } from '../../recorder/cues'
 import { micTested } from '../../recorder/micDevice'
@@ -27,6 +27,7 @@ import { useDeviceSetting } from '../settings/deviceSettings'
 import { formatElapsed, useElapsed } from './elapsed'
 import { LivePanel } from './LivePanel'
 import { MicHealth, MicTest } from './MicHealth'
+import { MicReconnect, MicReconnectedNote } from './MicReconnect'
 import { useLivePreview } from './useLivePreview'
 
 /** Step 2 of a session: record. The recorder keeps running if the user navigates away. */
@@ -67,7 +68,11 @@ export function RecordPage() {
   // Start errors are local; problems of a running recording live with the recorder.
   const shownProblem = problem ?? (recordingHere ? recording.problem : null)
   const { mood, nod } = useAvatarMood()
-  const live = useLivePreview(recordingHere ? active : null, client?.preferred_language ?? 'de')
+  const live = useLivePreview(
+    recordingHere ? active : null,
+    client?.preferred_language ?? 'de',
+    recording?.micGeneration ?? 0,
+  )
 
   // Load the live transcript engine while the therapist gets ready, so it is running when
   // the recording starts (the preview takes it over).
@@ -88,7 +93,10 @@ export function RecordPage() {
       let started: SessionRecorder | null = null
       const recorder = await SessionRecorder.start(
         { id: clientId, name },
-        { onProblem: (p) => started && reportRecorderProblem(started, p) },
+        {
+          onProblem: (p) => started && reportRecorderProblem(started, p),
+          onMicReconnected: () => started && reportMicReconnected(started),
+        },
         keys.therapist_public_key,
       )
       started = recorder
@@ -132,10 +140,12 @@ export function RecordPage() {
       </header>
 
       {shownProblem && (
-        <p className="banner danger" role="alert">
+        <div className="banner danger" role="alert">
           {t(`record.problem.${shownProblem}`)}
-        </p>
+          {shownProblem === 'mic_lost' && recordingHere && <MicReconnect />}
+        </div>
       )}
+      {recordingHere && <MicReconnectedNote />}
 
       {active && !recordingHere && <p className="banner warning">{t('record.otherActive')}</p>}
 
@@ -193,7 +203,7 @@ export function RecordPage() {
             className="empty-illustration"
             src={
               stoppedSession.status === 'synced'
-                ? actionSuccessful
+                ? uploadingIllustration
                 : stoppedSession.status === 'failed'
                   ? uploadWarning
                   : filesUploading

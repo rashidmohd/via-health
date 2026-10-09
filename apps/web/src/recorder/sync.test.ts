@@ -58,6 +58,27 @@ describe('upload queue', () => {
     expect(stored?.keyUploaded).toBe(true)
   })
 
+  it('sends each chunk with its segment (ADR 0022)', async () => {
+    const session = await addSession()
+    await addChunks(session, 1) // written before segments existed: segment 0
+    const data = await encryptChunk(session.key, session.id, 1, new Uint8Array([1]).buffer)
+    await db.chunks.put({ sessionId: 's1', seq: 1, data, sha256: await sha256Hex(data), segment: 1, segmentStartMs: 42_000, createdAt: '' })
+    await db.sessions.update('s1', { nextSeq: 2 })
+    const sent: Record<string, string | null>[] = []
+    mockApi((url, init) => {
+      if (url.includes('/chunks/')) {
+        const headers = new Headers(init.headers)
+        sent.push({ segment: headers.get('X-Segment'), start: headers.get('X-Segment-Start-Ms') })
+      }
+      return { status: 204 }
+    })
+    await runSyncOnce()
+    expect(sent).toEqual([
+      { segment: '0', start: '0' },
+      { segment: '1', start: '42000' },
+    ])
+  })
+
   it('sends the therapist-wrapped copy of the key with the raw key (plan 0014 step C)', async () => {
     const session = await addSession({ therapistKey: '-----BEGIN PGP MESSAGE-----' })
     const calls = mockApi(() => ({ status: 204 }))

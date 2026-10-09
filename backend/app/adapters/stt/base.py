@@ -2,7 +2,11 @@ from typing import Protocol
 
 from app.domain.transcript import Segment, Word
 
-__all__ = ["Segment", "SttError", "SttProvider", "Word"]
+__all__ = ["TEMP_PREFIX", "Segment", "SttError", "SttProvider", "Word"]
+
+# Bucket prefix for temporary decrypted audio a provider needs (`stt-tmp/<job id>`, job id =
+# session id, optionally with a suffix). The shred job deletes leftovers under it.
+TEMP_PREFIX = "stt-tmp/"
 
 
 class SttError(Exception):

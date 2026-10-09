@@ -27,7 +27,12 @@ export interface LivePreviewState {
  * the caption under the voice bar and the transcript at the bottom of the card (ADR 0014).
  * `recorder` null: nothing runs.
  */
-export function useLivePreview(recorder: SessionRecorder | null, language: Language): LivePreviewState {
+export function useLivePreview(
+  recorder: SessionRecorder | null,
+  language: Language,
+  /** Changes when the microphone was reconnected (ADR 0022): the preview taps the new stream. */
+  micGeneration = 0,
+): LivePreviewState {
   const [enabled, setEnabled] = useDeviceSetting('livePreview')
   const [status, setStatus] = useState<PreviewStatus>('idle')
   const [progress, setProgress] = useState(0)
@@ -90,7 +95,7 @@ export function useLivePreview(recorder: SessionRecorder | null, language: Langu
       preview.current = null
       setPartial(null)
     }
-  }, [recorder, enabled, canRun, language])
+  }, [recorder, enabled, canRun, language, micGeneration])
 
   const shownStatus: PreviewStatus = !enabled
     ? 'off'

@@ -35,6 +35,10 @@ export interface LocalChunk {
   seq: number
   data: Uint8Array<ArrayBuffer>
   sha256: string
+  /** Recorder file within the session (ADR 0022); missing on chunks from before = 0. */
+  segment?: number
+  /** Recording time when that segment started. */
+  segmentStartMs?: number
   createdAt: string
 }
 

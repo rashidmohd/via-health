@@ -1,7 +1,7 @@
 import { Mic, MicOff } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { audioConstraints, listMics, preferredMic, setMicTested, setPreferredMic } from '../../recorder/micDevice'
+import { listMics, openMicrophone, preferredMic, setMicTested, setPreferredMic } from '../../recorder/micDevice'
 import { MicMonitor, micMonitorSupported, onMicLevel, useVoiceState } from '../../recorder/micMonitor'
 import { MIC_TEST_MS, silenceTooLong } from './micRules'
 
@@ -125,7 +125,7 @@ export function MicTest({ onPassed }: { onPassed: () => void }) {
     setStatus('testing')
     let stream: MediaStream
     try {
-      stream = await navigator.mediaDevices.getUserMedia({ audio: audioConstraints() })
+      stream = await openMicrophone()
     } catch {
       return setStatus('denied')
     }

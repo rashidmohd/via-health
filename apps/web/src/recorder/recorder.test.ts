@@ -3,7 +3,7 @@ import { db } from './db'
 import { getVoiceState } from './micMonitor'
 import { RecorderError, SessionRecorder, recoverInterrupted } from './recorder'
 
-import { FakeMediaRecorder, installFakeMicrophone } from './testing'
+import { FakeMediaRecorder, fakeTracks, installFakeMicrophone } from './testing'
 
 vi.mock('./sync', () => ({ kickSync: vi.fn() }))
 // Real OpenPGP wrapping is covered in crypto/pgp.test.ts (node environment).
@@ -70,6 +70,71 @@ describe('SessionRecorder', () => {
     await SessionRecorder.start({ id: 'c1', name: 'Anna' }, { onProblem }, PUBLIC_KEY)
     track.onended?.()
     expect(onProblem).toHaveBeenCalledWith('mic_lost')
+  })
+
+  it('continues in a new segment after the microphone is reconnected (ADR 0022)', async () => {
+    const onProblem = vi.fn()
+    const onMicReconnected = vi.fn()
+    const recorder = await SessionRecorder.start({ id: 'c1', name: 'Anna' }, { onProblem, onMicReconnected }, PUBLIC_KEY)
+    const first = FakeMediaRecorder.last!
+    first.emit('before')
+
+    track.readyState = 'ended'
+    track.onended?.()
+    expect(onProblem).toHaveBeenCalledWith('mic_lost')
+    expect(first.state).toBe('inactive') // its last slice is kept
+    expect(recorder.micLostNow).toBe(true)
+
+    vi.spyOn(recorder, 'elapsedMs').mockReturnValue(42_000)
+    expect(await recorder.reconnect()).toBe(true)
+    expect(onMicReconnected).toHaveBeenCalledTimes(1)
+    expect(recorder.micLostNow).toBe(false)
+    const second = FakeMediaRecorder.last!
+    expect(second).not.toBe(first)
+    expect(second.state).toBe('recording')
+    expect(recorder.mediaStream.getAudioTracks()[0]).toBe(fakeTracks[1])
+
+    second.emit('after')
+    await recorder.stop()
+    const chunks = await db.chunks.where('sessionId').equals(recorder.sessionId).sortBy('seq')
+    expect(chunks.map((c) => [c.seq, c.segment, c.segmentStartMs])).toEqual([
+      [0, 0, 0], // 'before'
+      [1, 0, 0], // first recorder's final slice
+      [2, 1, 42_000], // 'after'
+      [3, 1, 42_000], // second recorder's final slice
+    ])
+    expect(fakeTracks[1].stop).toHaveBeenCalled()
+  })
+
+  it('reconnects by itself when a microphone appears', async () => {
+    const onMicReconnected = vi.fn()
+    const recorder = await SessionRecorder.start(
+      { id: 'c1', name: 'Anna' },
+      { onProblem: vi.fn(), onMicReconnected },
+      PUBLIC_KEY,
+    )
+    track.onended?.()
+    navigator.mediaDevices.dispatchEvent(new Event('devicechange'))
+    await vi.waitFor(() => expect(onMicReconnected).toHaveBeenCalledTimes(1))
+    await recorder.stop()
+  })
+
+  it('keeps the alert when no microphone can be opened', async () => {
+    const onMicReconnected = vi.fn()
+    const recorder = await SessionRecorder.start(
+      { id: 'c1', name: 'Anna' },
+      { onProblem: vi.fn(), onMicReconnected },
+      PUBLIC_KEY,
+    )
+    track.onended?.()
+    navigator.mediaDevices.getUserMedia = vi.fn(async () => Promise.reject(new Error('NotFoundError')))
+    expect(await recorder.reconnect()).toBe(false)
+    expect(recorder.micLostNow).toBe(true)
+    expect(onMicReconnected).not.toHaveBeenCalled()
+
+    // Stopping while the microphone is lost still saves everything.
+    await recorder.stop()
+    expect((await db.sessions.get(recorder.sessionId))?.status).toBe('stopped')
   })
 
   it('reports a denied microphone', async () => {

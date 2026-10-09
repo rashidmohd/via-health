@@ -10,7 +10,8 @@ Connectivity decides *when* audio reaches the server, never *whether* it is capt
 
 ## Pipeline
 
-1. `getUserMedia({ audio: audioConstraints() })` = `{ echoCancellation: false, noiseSuppression: false, autoGainControl: true, channelCount: 1 }` + the chosen `deviceId` (a preference, not `exact`).
+1. `openMicrophone()` = `getUserMedia({ audio: audioConstraints() })` with `{ echoCancellation: false, noiseSuppression: false, autoGainControl: true, channelCount: 1 }` + the chosen `deviceId` (a preference, not `exact`), then checks that samples actually flow and opens once more if not (Safari + Bluetooth headset: the first stream is dead when the headset switches to call mode just after opening).
+   - Audio contexts that tap the stream are created **after** `getUserMedia` (one shared context, `recorder/audioContext.ts`) and resumed by `keepRunning` (Safari starts them suspended and interrupts them). Never create one before the mic opens: Safari feeds it silence when the headset changes rate.
 2. One `MediaStream`, three consumers:
    - `MediaRecorder` → `audio/webm;codecs=opus`, `audioBitsPerSecond: 32000`, `timeslice: 10000` (archive path).
    - Mic monitor (`micMonitor.ts`): `mic-level` AudioWorklet → RMS → `VoiceDetector` → voice state (always on while recording).
@@ -33,9 +34,12 @@ Session IDs are UUIDv7 generated client-side so sessions can start offline.
 
 ## WebM caveat
 
-With `timeslice`, only chunk 0 contains the WebM header; later chunks are not standalone files.
-The server must concatenate strictly by `seq`. Never reorder, never drop chunk 0.
-If independently playable segments are ever needed, restart the recorder every N minutes instead.
+With `timeslice`, only the first chunk of each **segment** contains the container header; later
+chunks are not standalone files. A segment = one MediaRecorder; a reconnected microphone starts
+a new one (ADR 0022). `seq` continues across segments; each chunk stores `segment` and
+`segmentStartMs` and uploads them as `X-Segment` / `X-Segment-Start-Ms`. The server
+concatenates strictly by `seq` within a segment and joins segments by decoding (see
+`transcription-pipeline`). Never reorder, never drop a segment's first chunk.
 
 ## Retry and idempotency
 
@@ -51,7 +55,7 @@ If independently playable segments are ever needed, restart the recorder every N
 | Network returns | Queue resumes automatically |
 | Tab/browser crash | On load, find sessions with `status=recording` → offer "Recover session"; finalise manifest from stored chunks |
 | Laptop sleep | `navigator.wakeLock.request('screen')` while recording; on release show warning |
-| Mic unplugged | `track.onended` + `devicechange` → loud, immediate alert. Silent audio loss is the worst failure |
+| Mic unplugged | `track.onended` → loud, immediate alert; the lost recorder's last slice is kept. "Reconnect microphone" (and `devicechange` automatically) opens a mic again and continues in a new segment (ADR 0022). Silent audio loss is the worst failure |
 | Tab close with unsent data | `beforeunload` prompt; data stays in IndexedDB |
 | Write fails (`QuotaExceededError`) | Stop gracefully, alert, never drop audio silently |
 
@@ -78,8 +82,7 @@ independent of the avatar setting and the live preview.
 - Next to the record controls: level meter (DOM-updated, not React state) + voice on/off text.
 - Recording but no voice for 2 minutes → warning "No speech picked up for 2 minutes. Check the
   microphone." with the mic picker. The picker sets the device for the **next** recording
-  (localStorage `sessio.micDevice`); switching mid-recording is not built (would need a new
-  MediaRecorder).
+  (localStorage `sessio.micDevice`) and for a reconnect (ADR 0022).
 - Before the first recording on a device: 5-second mic test that must detect voice
   (`sessio.micTested`). Skipped if the browser can't measure.
 - Tests: warning after 2 min of silence and not before; test passes on voice / fails after 5 s;

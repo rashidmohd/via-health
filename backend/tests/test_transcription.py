@@ -3,6 +3,7 @@
 import base64
 import hashlib
 import os
+import shutil
 import uuid
 from collections.abc import Iterator
 from datetime import UTC, datetime
@@ -14,6 +15,7 @@ from cryptography.hazmat.primitives.ciphers.aead import AESGCM
 from fastapi.testclient import TestClient
 from sqlalchemy import Engine, text
 from sqlalchemy.exc import ProgrammingError
+from sqlalchemy.orm import Session as DbSession
 
 from app.adapters.kms.local import LocalKmsProvider
 from app.adapters.storage.postgres import PostgresObjectStore
@@ -21,8 +23,10 @@ from app.adapters.stt.base import Segment, SttError
 from app.adapters.stt.base import Word as DomainWord
 from app.adapters.stt.fake import FakeSttProvider
 from app.adapters.stt.google import GoogleChirp3Provider, words_to_segments
+from app.core.audio import cut_to_wav, wav_duration_ms
+from app.db.models import Session
 from app.db.session import WORKER_ROLE, make_engine
-from app.workers.transcribe import TransientFailure, find_ready, process_session
+from app.workers.transcribe import TransientFailure, _assemble_audio, find_ready, process_session
 from tests.api_helpers import PNG, FakeEmailSender, login
 
 PLAIN_CHUNKS = [b"webm-header+audio-0", b"audio-1", b"audio-2"]
@@ -42,8 +46,13 @@ def worker(fresh_db_url: str) -> Iterator[Engine]:
 
 
 def record_session(
-    client: TestClient, *, language: str = "de", chunks: list[bytes] = PLAIN_CHUNKS
+    client: TestClient,
+    *,
+    language: str = "de",
+    chunks: list[bytes] = PLAIN_CHUNKS,
+    segments: list[tuple[int, int]] | None = None,
 ) -> dict[str, Any]:
+    """`segments`: (segment, segment_start_ms) per chunk; None = old clients (no headers)."""
     client_id = client.post(
         "/clients", json={"name": "Anna", "preferred_language": language}
     ).json()["id"]
@@ -65,11 +74,13 @@ def record_session(
     client.post(f"/sessions/{session_id}/key", json={"key": base64.b64encode(key).decode()})
     for seq, plain in enumerate(chunks):
         data = browser_chunk(key, session_id, seq, plain)
-        client.put(
-            f"/sessions/{session_id}/chunks/{seq}",
-            content=data,
-            headers={"X-Content-SHA256": hashlib.sha256(data).hexdigest()},
-        )
+        headers = {"X-Content-SHA256": hashlib.sha256(data).hexdigest()}
+        if segments is not None:
+            headers["X-Segment"] = str(segments[seq][0])
+            headers["X-Segment-Start-Ms"] = str(segments[seq][1])
+        assert (
+            client.put(f"/sessions/{session_id}/chunks/{seq}", content=data, headers=headers)
+        ).status_code == 204
     finished = client.post(
         f"/sessions/{session_id}/finish",
         json={
@@ -354,3 +365,58 @@ def test_chirp_temp_audio_always_deleted(fails: bool) -> None:
     provider._bucket.blob.assert_called_once_with("stt-tmp/job")
     blob.upload_from_string.assert_called_once_with(b"audio", content_type="audio/webm")
     blob.delete.assert_called_once()
+
+
+# --- reconnected microphone (ADR 0022) --------------------------------------------
+
+
+def _opus_webm(seconds: int) -> bytes:
+    import subprocess
+
+    return subprocess.run(
+        ["ffmpeg", "-loglevel", "error", "-f", "lavfi",
+         "-i", f"sine=frequency=440:duration={seconds}",
+         "-ac", "1", "-c:a", "libopus", "-b:a", "32k", "-f", "webm", "pipe:1"],
+        capture_output=True, check=True,
+    ).stdout  # fmt: skip
+
+
+@pytest.mark.skipif(shutil.which("ffmpeg") is None, reason="ffmpeg not installed")
+def test_segments_are_joined_into_one_file_on_the_recording_clock(
+    client: TestClient, therapist: dict[str, str], worker: Engine
+) -> None:
+    first, second = _opus_webm(5), _opus_webm(5)
+    half = len(first) // 2
+    rec = record_session(
+        client,
+        chunks=[first[:half], first[half:], second],  # seq continues across segments
+        segments=[(0, 0), (0, 0), (1, 8_000)],
+    )
+    with DbSession(worker) as db:
+        session = db.get(Session, uuid.UUID(rec["session_id"]))
+        assert session is not None
+        audio, mime_type = _assemble_audio(db, session, LocalKmsProvider(), PostgresObjectStore(db))
+    assert mime_type == "audio/webm;codecs=opus"
+    wav = cut_to_wav(bytes(audio), 0, 60_000)
+    assert wav is not None and wav_duration_ms(wav) == pytest.approx(13_000, abs=200)
+
+
+def test_single_segment_is_still_plain_concatenation(
+    client: TestClient, therapist: dict[str, str], worker: Engine
+) -> None:
+    rec = record_session(client, segments=[(0, 0)] * len(PLAIN_CHUNKS))
+    with DbSession(worker) as db:
+        session = db.get(Session, uuid.UUID(rec["session_id"]))
+        assert session is not None
+        audio, mime_type = _assemble_audio(db, session, LocalKmsProvider(), PostgresObjectStore(db))
+    assert bytes(audio) == b"".join(PLAIN_CHUNKS)
+    assert mime_type == "audio/webm;codecs=opus"  # the session's own type
+
+
+def test_undecodable_segment_fails_the_session(
+    client: TestClient, therapist: dict[str, str], worker: Engine
+) -> None:
+    rec = record_session(client, segments=[(0, 0), (1, 10_000), (1, 10_000)])
+    assert run(worker, rec["session_id"]) == "failed"
+    session = client.get(f"/sessions/{rec['session_id']}").json()
+    assert session["failure_reason"] == "audio_undecodable"

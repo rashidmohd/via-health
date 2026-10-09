@@ -31,21 +31,40 @@ export class FakeMediaRecorder extends EventTarget {
 }
 
 function fakeStream() {
-  const track = { stop: vi.fn(), onended: null as null | (() => void) }
+  const track = {
+    stop: vi.fn(),
+    onended: null as null | (() => void),
+    readyState: 'live' as 'live' | 'ended',
+  }
   return { track, stream: { getAudioTracks: () => [track], getTracks: () => [track] } }
 }
 
-/** Installs a fake microphone, MediaRecorder and plenty of storage. Returns the audio track. */
+export type FakeTrack = ReturnType<typeof fakeStream>['track']
+
+/** Every audio track handed out by the fake `getUserMedia`, in order (reconnects add more). */
+export const fakeTracks: FakeTrack[] = []
+
+/** Installs a fake microphone, MediaRecorder and plenty of storage. Returns the first audio
+ *  track; later `getUserMedia` calls (reconnects) get fresh streams. `navigator.mediaDevices`
+ *  is an EventTarget, so tests can dispatch `devicechange`. */
 export function installFakeMicrophone() {
-  const fake = fakeStream()
+  const first = fakeStream()
+  fakeTracks.length = 0
+  fakeTracks.push(first.track)
+  let calls = 0
   vi.stubGlobal('MediaRecorder', FakeMediaRecorder)
-  Object.defineProperty(navigator, 'mediaDevices', {
-    configurable: true,
-    value: { getUserMedia: vi.fn(async () => fake.stream) },
+  const devices = Object.assign(new EventTarget(), {
+    getUserMedia: vi.fn(async () => {
+      if (calls++ === 0) return first.stream
+      const next = fakeStream()
+      fakeTracks.push(next.track)
+      return next.stream
+    }),
   })
+  Object.defineProperty(navigator, 'mediaDevices', { configurable: true, value: devices })
   Object.defineProperty(navigator, 'storage', {
     configurable: true,
     value: { estimate: async () => ({ quota: 10e9, usage: 0 }), persist: async () => true },
   })
-  return fake.track
+  return first.track
 }

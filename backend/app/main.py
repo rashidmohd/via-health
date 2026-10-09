@@ -21,7 +21,7 @@ def create_app() -> FastAPI:
         allow_origins=[settings.web_origin],
         allow_credentials=True,
         allow_methods=["GET", "POST", "PUT", "PATCH", "DELETE"],
-        allow_headers=["Content-Type", "X-Content-SHA256"],
+        allow_headers=["Content-Type", "X-Content-SHA256", "X-Segment", "X-Segment-Start-Ms"],
     )
     install_error_handlers(app)
     app.include_router(health.router)

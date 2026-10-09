@@ -20,6 +20,7 @@ from sqlalchemy.orm import Session as DbSession
 from app.api.deps import CurrentUserId, Db
 from app.api.errors import ApiError
 from app.api.sessions import (
+    _capture_out,
     _client_name,
     _get_session,
     armored_message,
@@ -30,6 +31,7 @@ from app.api.sessions import (
 from app.core.data_crypto import decrypt_json, encrypt_json
 from app.db.models import (
     AuditLog,
+    Capture,
     Client,
     Report,
     ReportVersion,
@@ -647,6 +649,16 @@ def prepare_signing(session_id: uuid.UUID, user_id: CurrentUserId, db: Db) -> Si
             for r in rows
             if r.kind == "addendum"
         ]
+    # Confirmed chips are part of the record (statements refer to them by id); the server
+    # copies are deleted at signing (plan 0015).
+    note["captures"] = [
+        _capture_out(c).model_dump(mode="json", include={"id", "kind", "at_ms", "text"})
+        for c in db.scalars(
+            select(Capture)
+            .where(Capture.session_id == session_id, Capture.status == "confirmed")
+            .order_by(Capture.at_ms)
+        )
+    ]
     transcript = db.get(Transcript, session_id)
     return SignPrepareOut(
         note=note,
@@ -671,9 +683,9 @@ def prepare_signing(session_id: uuid.UUID, user_id: CurrentUserId, db: Db) -> Si
 @router.post("/sessions/{session_id}/report/sign")
 def sign_report(session_id: uuid.UUID, body: SignIn, user_id: CurrentUserId, db: Db) -> ReportOut:
     """Store the signed note and drop every readable server copy, in one transaction (rules 7,
-    17): note text and AI draft, transcript, leftover transcript windows, and the processing
-    key (so stored audio can no longer be decrypted by the server). Audio deletion itself is
-    the shred job (`audio_state = shred_pending`)."""
+    17): note text and AI draft, transcript, leftover transcript windows, capture chips, and the
+    processing key (so stored audio can no longer be decrypted by the server). Audio deletion
+    itself is the shred job (`audio_state = shred_pending`, plan 0015)."""
     session = _get_session(db, session_id)
     report = _report(db, session_id)
     _check_signer(db, user_id, body)
@@ -740,6 +752,7 @@ def sign_report(session_id: uuid.UUID, body: SignIn, user_id: CurrentUserId, db:
         if transcript.refine_status in ("pending", "running"):
             transcript.refine_status = "skipped"
     db.execute(delete(TranscriptWindow).where(TranscriptWindow.session_id == session_id))
+    db.execute(delete(Capture).where(Capture.session_id == session_id))
     db.execute(
         delete(WrappedKey).where(
             WrappedKey.session_id == session_id, WrappedKey.kind == "processing"

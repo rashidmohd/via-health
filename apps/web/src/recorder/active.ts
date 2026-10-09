@@ -10,6 +10,11 @@ export interface ActiveRecording {
   clientId: string
   clientName: string
   problem: RecorderProblem | null
+  /** Counts microphone reconnects (ADR 0022): taps on the stream, like the live preview,
+   *  restart when it changes. */
+  micGeneration: number
+  /** When the microphone last came back, for a short note. */
+  reconnectedAt: number | null
 }
 
 let active: ActiveRecording | null = null
@@ -29,12 +34,34 @@ export function setActiveRecorder(
   recorder: SessionRecorder | null,
   client?: { id: string; name: string },
 ): void {
-  publish(recorder ? { recorder, clientId: client?.id ?? '', clientName: client?.name ?? '', problem: null } : null)
+  publish(
+    recorder
+      ? {
+          recorder,
+          clientId: client?.id ?? '',
+          clientName: client?.name ?? '',
+          problem: null,
+          micGeneration: 0,
+          reconnectedAt: null,
+        }
+      : null,
+  )
 }
 
 /** Recorder problems (mic lost, storage full …) stay visible wherever the user is. */
 export function reportRecorderProblem(recorder: SessionRecorder, problem: RecorderProblem): void {
   if (active?.recorder === recorder) publish({ ...active, problem })
+}
+
+/** The microphone is back: clear the alert, restart stream taps. */
+export function reportMicReconnected(recorder: SessionRecorder): void {
+  if (active?.recorder !== recorder) return
+  publish({ ...active, problem: null, micGeneration: active.micGeneration + 1, reconnectedAt: Date.now() })
+}
+
+/** "Reconnect microphone" button. False: no working microphone found (the alert stays). */
+export async function reconnectMicrophone(): Promise<boolean> {
+  return (await active?.recorder.reconnect()) ?? false
 }
 
 export function getActiveRecorder(): SessionRecorder | null {

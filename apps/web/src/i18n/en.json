@@ -262,10 +262,14 @@
     "uploading": "Uploading in the background ({{count}} parts left). You can close this screen.",
     "toClient": "Back to client",
     "otherActive": "Another recording is running. Stop it first.",
+    "reconnect": "Reconnect microphone",
+    "reconnecting": "Connecting …",
+    "reconnectFailed": "No working microphone found. Plug one in or switch it on, then try again.",
+    "reconnected": "Microphone reconnected. The recording continues; the gap stays silent.",
     "problem": {
       "unsupported": "This browser cannot record audio. Please use a current version of Chrome, Edge, Firefox or Safari.",
       "mic_denied": "No access to the microphone. Please allow microphone access in the browser settings.",
-      "mic_lost": "The microphone was disconnected. Recording has no sound. Reconnect it, stop and start a new recording.",
+      "mic_lost": "The microphone was disconnected. Nothing is being recorded until it is back. Reconnect it or plug in another microphone; the recording continues.",
       "storage_low": "Not enough free storage on this device (at least 500 MB needed). Free up space, then try again.",
       "storage_full": "The device storage is full. The recording was stopped; everything saved so far is kept.",
       "write_failed": "Audio could not be saved on this device. The recording was stopped; everything saved so far is kept.",
@@ -311,6 +315,7 @@
     "failure": {
       "incomplete_upload": "Parts of the recording are missing, so it could not be transcribed. Open the app on the recording device to finish the upload.",
       "chunk_corrupt": "Part of the recording is damaged and could not be decrypted.",
+      "audio_undecodable": "Part of the recording could not be played back, so it could not be transcribed.",
       "transcription_failed": "The transcription service did not respond. Please try again.",
       "no_speech": "No speech was found in the recording.",
       "key_missing": "The key for this recording is missing, so it cannot be decrypted.",

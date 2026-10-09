@@ -13,7 +13,7 @@ from sqlalchemy import Engine, text
 
 from app.adapters.kms import get_kms
 from app.core.data_crypto import DecryptionError
-from tests.api_helpers import PNG, FakeEmailSender, login
+from tests.api_helpers import ORIGIN, PNG, FakeEmailSender, login
 
 MIME = "audio/webm;codecs=opus"
 
@@ -186,6 +186,37 @@ def test_reupload_same_chunk_is_noop_and_different_is_conflict(
     assert (response.status_code, response.json()) == (409, {"code": "chunk_conflict"})
 
 
+def test_chunk_segment_is_stored(client: TestClient, ready_session: str, owner: Engine) -> None:
+    """Reconnected microphone (ADR 0022); chunks without the headers are segment 0."""
+    assert upload(client, ready_session, 0, b"\x01cipher-0").status_code == 204
+    data = b"\x01cipher-1"
+    response = client.put(
+        f"/sessions/{ready_session}/chunks/1",
+        content=data,
+        headers={
+            "X-Content-SHA256": hashlib.sha256(data).hexdigest(),
+            "X-Segment": "1",
+            "X-Segment-Start-Ms": "95000",
+        },
+    )
+    assert response.status_code == 204
+    with owner.connect() as c:
+        rows = c.execute(
+            text("SELECT seq, segment, segment_start_ms FROM audio_chunks ORDER BY seq")
+        ).all()
+    assert [tuple(r) for r in rows] == [(0, 0, 0), (1, 1, 95_000)]
+
+
+def test_negative_segment_rejected(client: TestClient, ready_session: str) -> None:
+    data = b"\x01cipher-0"
+    response = client.put(
+        f"/sessions/{ready_session}/chunks/0",
+        content=data,
+        headers={"X-Content-SHA256": hashlib.sha256(data).hexdigest(), "X-Segment": "-1"},
+    )
+    assert response.status_code in (400, 422)
+
+
 def test_checksum_mismatch_rejected(client: TestClient, ready_session: str) -> None:
     response = client.put(
         f"/sessions/{ready_session}/chunks/0",
@@ -255,3 +286,20 @@ def test_list_filtered_by_client(client: TestClient, therapist: dict[str, str]) 
     start(client, b)
     listed = client.get("/sessions", params={"client_id": a}).json()
     assert [s["client_id"] for s in listed] == [a]
+
+
+def test_cors_allows_the_chunk_headers(client: TestClient) -> None:
+    """Without this, browsers block every chunk upload (ADR 0022 added two headers)."""
+    response = client.options(
+        "/sessions/00000000-0000-0000-0000-000000000000/chunks/0",
+        headers={
+            "Origin": ORIGIN,
+            "Access-Control-Request-Method": "PUT",
+            "Access-Control-Request-Headers": "x-content-sha256,x-segment,x-segment-start-ms",
+        },
+    )
+    assert response.status_code == 200
+    allowed = response.headers["access-control-allow-headers"].lower()
+    assert {"x-content-sha256", "x-segment", "x-segment-start-ms"} <= set(
+        allowed.replace(" ", "").split(",")
+    )
