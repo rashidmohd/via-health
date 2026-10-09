@@ -1,108 +1,64 @@
-import { useEffect, useRef, useState } from 'react'
+import type { TFunction } from 'i18next'
+import { useEffect, useRef } from 'react'
 import { useTranslation } from 'react-i18next'
-import type { Language } from '../../api/auth'
 import { useLiveText } from '../../api/sessions'
 import { emitAvatarEvent } from '../../avatar/events'
 import { detectCaptures } from '../../live-stt/detectors'
-import { mergeLive, type LocalLine } from '../../live-stt/merge'
-import { LivePreview, livePreviewSupported, type PreviewEvent } from '../../live-stt/preview'
-import { LIVE_STT_LANGUAGES, type LiveSttLanguage } from '../../live-stt/version'
-import type { SessionRecorder } from '../../recorder/recorder'
+import { mergeLive } from '../../live-stt/merge'
 import { formatClock } from '../format'
-import { useDeviceSetting } from '../settings/deviceSettings'
 import { CaptureChips } from './CaptureChips'
+import type { LivePreviewState } from './useLivePreview'
 
-type PreviewStatus = 'idle' | 'loading' | 'live' | 'too_slow' | 'error' | 'unsupported' | 'language' | 'off'
+function statusText(t: TFunction, live: LivePreviewState): string {
+  return live.status === 'loading' && live.progress > 0
+    ? t('live.loading', { percent: Math.round(live.progress * 100) })
+    : t(`live.status.${live.status}`)
+}
+
+/** Keeps the end of a long sentence so the caption stays two lines high. */
+function tail(text: string, max: number): string {
+  if (text.length <= max) return text
+  const cut = text.slice(-max)
+  const space = cut.indexOf(' ')
+  return `…${space > 0 && space < 20 ? cut.slice(space + 1) : cut}`
+}
 
 /**
- * Live transcript inside the recording card (ADR 0014). Runs from the start of the recording.
- * Device text (instant, rough) is replaced by server text (better, speakers) once available.
+ * What is being said right now, under the voice bar (ADR 0014): the sentence in progress and the
+ * one before, nothing older. Rough device text; the transcript below has the better version.
+ * Not announced to screen readers (it changes several times a second); the transcript is.
  */
-export function LivePanel({
-  sessionId,
-  recorder,
-  language,
-}: {
-  sessionId: string
-  recorder: SessionRecorder
-  language: Language
-}) {
+export function LiveCaption({ live }: { live: LivePreviewState }) {
   const { t } = useTranslation()
-  const [enabled, setEnabled] = useDeviceSetting('livePreview')
-  const [status, setStatus] = useState<PreviewStatus>('idle')
-  const [progress, setProgress] = useState(0)
-  const [finals, setFinals] = useState<LocalLine[]>([])
-  const [partial, setPartial] = useState<{ text: string; startMs: number } | null>(null)
-  const preview = useRef<LivePreview | null>(null)
-  const { data: live } = useLiveText(sessionId, true)
+  const texts = [...live.finals.slice(-2).map((line) => line.text), ...(live.partial?.text ? [live.partial.text] : [])]
+  const shown = texts.slice(-2)
+  return (
+    <div className="live-caption" aria-hidden="true">
+      {shown.length > 0 ? (
+        shown.map((text, index) => (
+          <p key={`${live.finals.length}-${index}`} className={index === shown.length - 1 ? 'now' : 'before'}>
+            {tail(text, index === shown.length - 1 ? 140 : 90)}
+          </p>
+        ))
+      ) : (
+        <p className="muted small">{live.status === 'live' ? t('live.listening') : statusText(t, live)}</p>
+      )}
+    </div>
+  )
+}
+
+/**
+ * Transcript at the bottom of the recording card (ADR 0014): server text with speakers, plus
+ * finished device lines the server has not covered yet. The sentence in progress is only in
+ * the caption.
+ */
+export function LivePanel({ sessionId, live }: { sessionId: string; live: LivePreviewState }) {
+  const { t } = useTranslation()
+  const { data: server } = useLiveText(sessionId, true)
   const list = useRef<HTMLOListElement>(null)
 
-  const supportedLanguage = (LIVE_STT_LANGUAGES as readonly string[]).includes(language)
-  const [supportedBrowser] = useState(livePreviewSupported)
-  const canRun = supportedLanguage && supportedBrowser
-
-  useEffect(() => {
-    if (!enabled || !canRun) return
-    let cancelled = false
-    const onEvent = (event: PreviewEvent) => {
-      if (cancelled) return
-      switch (event.type) {
-        case 'loading':
-          setStatus('loading')
-          setProgress(event.total ? event.loaded / event.total : 0)
-          break
-        case 'ready':
-          setStatus('live')
-          break
-        case 'partial':
-          setPartial({ text: event.text, startMs: event.startMs })
-          break
-        case 'final':
-          setFinals((lines) => [...lines, { text: event.text, startMs: event.startMs, endMs: event.endMs }])
-          setPartial(null)
-          break
-        case 'too_slow':
-          setStatus('too_slow')
-          preview.current?.stop()
-          break
-        case 'error':
-          setStatus('error')
-          preview.current?.stop()
-          break
-      }
-    }
-    LivePreview.start(recorder.mediaStream, recorder.elapsedMs(), language as LiveSttLanguage, onEvent)
-      .then((started) => {
-        if (cancelled) started.stop()
-        else preview.current = started
-      })
-      .catch(() => !cancelled && setStatus('error'))
-    return () => {
-      cancelled = true
-      preview.current?.stop()
-      preview.current = null
-      setPartial(null)
-    }
-  }, [enabled, canRun, recorder, language])
-
-  function toggle() {
-    const next = !enabled
-    setEnabled(next)
-    setStatus(next ? 'idle' : 'off')
-  }
-
-  const shownStatus: PreviewStatus = !enabled
-    ? 'off'
-    : !supportedLanguage
-      ? 'language'
-      : !supportedBrowser
-        ? 'unsupported'
-        : status
-
-  const lines = mergeLive(live?.segments ?? [], live?.covered_ms ?? 0, finals, partial)
-  const captures = detectCaptures(
-    lines.filter((l) => l.source !== 'partial').map((l) => ({ text: l.text, start_ms: l.startMs })),
-  )
+  const lines = mergeLive(server?.segments ?? [], server?.covered_ms ?? 0, live.finals, null)
+  const captures = detectCaptures(lines.map((l) => ({ text: l.text, start_ms: l.startMs })))
 
   // A new chip from a finished line: the avatar may glance (only if the therapist enabled it).
   // The event carries nothing from the session.
@@ -127,25 +83,24 @@ export function LivePanel({
     <section className="live-transcript" aria-labelledby="live-title">
       <div className="row spread">
         <h2 id="live-title">{t('live.title')}</h2>
-        {supportedLanguage && (
-          <button type="button" className="link small" onClick={toggle}>
-            {t(enabled ? 'live.turnOff' : 'live.turnOn')}
+        {live.supportedLanguage && (
+          <button type="button" className="link small" onClick={live.toggle}>
+            {t(live.enabled ? 'live.turnOff' : 'live.turnOn')}
           </button>
         )}
       </div>
       <p className="muted small" aria-live="polite">
-        {shownStatus === 'loading' && progress > 0
-          ? t('live.loading', { percent: Math.round(progress * 100) })
-          : t(`live.status.${shownStatus}`)}
+        {statusText(t, live)}
       </p>
       {lines.length === 0 ? (
-        <p className="muted">{t(shownStatus === 'live' ? 'live.listening' : 'live.empty')}</p>
+        <p className="muted">{t('live.empty')}</p>
       ) : (
         <>
           <CaptureChips captures={captures} />
           <ol
             ref={list}
             className="transcript live"
+            aria-live="polite"
             onScroll={(e) => {
               const el = e.currentTarget
               atBottom.current = el.scrollHeight - el.scrollTop - el.clientHeight < 24

@@ -19,8 +19,9 @@ import { useVoiceState } from '../../recorder/micMonitor'
 import { RecorderError, SessionRecorder, type RecorderProblem } from '../../recorder/recorder'
 import { useLocal } from '../../recorder/useLocal'
 import { useDeviceSetting } from '../settings/deviceSettings'
-import { LivePanel } from './LivePanel'
+import { LiveCaption, LivePanel } from './LivePanel'
 import { MicHealth, MicTest } from './MicHealth'
+import { useLivePreview } from './useLivePreview'
 
 function formatElapsed(ms: number): string {
   const total = Math.floor(ms / 1000)
@@ -74,6 +75,7 @@ export function RecordPage() {
   const ready = client ? client.ready_to_record : isError ? (cached?.ready ?? false) : false
   const recordingHere = active !== null && (client?.id ?? clientId) === clientId
   const { mood, nod } = useAvatarMood()
+  const live = useLivePreview(recordingHere ? active : null, client?.preferred_language ?? 'de')
 
   // Load the live transcript engine while the therapist gets ready, so it is running when
   // the recording starts (the preview takes it over).
@@ -163,6 +165,7 @@ export function RecordPage() {
             {formatElapsed(elapsed)}
           </p>
           <MicHealth />
+          <LiveCaption live={live} />
           <div className="actions record-actions">
             <button
               className="secondary"
@@ -194,9 +197,7 @@ export function RecordPage() {
               </li>
             )}
           </ul>
-          {active && (
-            <LivePanel sessionId={active.sessionId} recorder={active} language={client?.preferred_language ?? 'de'} />
-          )}
+          {active && <LivePanel sessionId={active.sessionId} live={live} />}
         </div>
       ) : null}
 
