@@ -42,6 +42,14 @@ export const ERROR_CODES = [
   'photo_too_large',
   'appearance_missing',
   'appearance_failed',
+  'keys_missing',
+  'keys_exist',
+  'keys_immutable',
+  // Browser-side OpenPGP codes (crypto/pgp.ts)
+  'passphrase_wrong',
+  'key_invalid',
+  'decrypt_failed',
+  'signature_invalid',
 ] as const
 
 export type ErrorCode = (typeof ERROR_CODES)[number]

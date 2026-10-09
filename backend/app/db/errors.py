@@ -16,6 +16,7 @@ DB_ERROR_CODES = frozenset(
         "chunk_conflict",
         "consent_texts_immutable",
         "audit_log_immutable",
+        "keys_immutable",
     }
 )
 

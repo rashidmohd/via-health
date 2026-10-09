@@ -3,14 +3,13 @@ import { useTranslation } from 'react-i18next'
 import { Navigate, Route, Routes, useLocation } from 'react-router-dom'
 import { useMe } from './api/auth'
 import { ConfirmHost } from './design/ConfirmDialog'
-import { PlaceholderPage } from './features/PlaceholderPage'
 import { EmailCodeForm } from './features/auth/EmailCodeForm'
 import { ClientPage } from './features/clients/ClientPage'
 import { ClientsPage } from './features/clients/ClientsPage'
 import { ConsentPage } from './features/clients/ConsentPage'
 import { NewClientPage } from './features/clients/NewClientPage'
 import { NameStep } from './features/auth/NameStep'
-import { NAV_ITEMS } from './features/nav'
+import { KeysPage } from './features/keys/KeysPage'
 import { NotificationsPage } from './features/notifications/NotificationsPage'
 import { ReportPage } from './features/reports/ReportPage'
 import { ReportsPage } from './features/reports/ReportsPage'
@@ -86,9 +85,7 @@ export default function App() {
             <Route path="/sessions/:id/report" element={<ReportPage />} />
             <Route path="/reports" element={<ReportsPage />} />
             <Route path="/settings" element={<SettingsPage />} />
-            {NAV_ITEMS.filter((item) => !['today', 'notifications', 'clients', 'sessions', 'reports', 'settings'].includes(item.key)).map((item) => (
-              <Route key={item.key} path={item.path} element={<PlaceholderPage navKey={item.key} />} />
-            ))}
+            <Route path="/keys" element={<KeysPage />} />
             <Route path="/clients" element={<ClientsPage />} />
             <Route path="/clients/new" element={<NewClientPage />} />
             <Route path="/clients/:id" element={<ClientPage />} />

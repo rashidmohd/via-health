@@ -1,4 +1,4 @@
-import { AudioLines, Bookmark, ChevronLeft, CircleCheck, CloudUpload, Mic, ShieldCheck, Square } from 'lucide-react'
+import { AudioLines, Bookmark, ChevronLeft, Mic, ShieldCheck, Square } from 'lucide-react'
 import { useCallback, useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Link, useParams } from 'react-router-dom'
@@ -8,6 +8,9 @@ import { AppAvatar, UserAvatar } from '../../avatar/AppAvatar'
 import { AvatarRing } from '../../avatar/AvatarRing'
 import { ringState } from '../../avatar/ring'
 import { useAvatarMood } from '../../avatar/useAvatarMood'
+import actionSuccessful from '../../design/illustrations/action-successful.svg'
+import filesUploading from '../../design/illustrations/files-uploading.svg'
+import uploadWarning from '../../design/illustrations/upload-warning.svg'
 import { Initials } from '../../design/Initials'
 import { prewarmLivePreview } from '../../live-stt/preview'
 import { LIVE_STT_LANGUAGES, type LiveSttLanguage } from '../../live-stt/version'
@@ -180,15 +183,18 @@ export function RecordPage() {
 
       {recordingHere ? null : stoppedSession ? (
         <div className="record-stage">
-          {stoppedSession.status === 'stopped' ? (
-            <span className="stage-icon uploading">
-              <CloudUpload className="icon" aria-hidden="true" />
-            </span>
-          ) : (
-            <span className="stage-icon">
-              <CircleCheck className="icon" aria-hidden="true" />
-            </span>
-          )}
+          <img
+            className="empty-illustration"
+            src={
+              stoppedSession.status === 'synced'
+                ? actionSuccessful
+                : stoppedSession.status === 'failed'
+                  ? uploadWarning
+                  : filesUploading
+            }
+            alt=""
+            aria-hidden="true"
+          />
           <p className="done">{t('record.saved')}</p>
           <p className="muted">
             {stoppedSession.status === 'synced'

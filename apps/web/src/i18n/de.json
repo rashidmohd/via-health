@@ -9,7 +9,6 @@
     "settings": "Einstellungen"
   },
   "common": {
-    "comingSoon": "Noch nicht umgesetzt.",
     "loading": "Wird geladen…",
     "retry": "Erneut versuchen",
     "optional": "(optional)",
@@ -57,7 +56,14 @@
     "photo_invalid": "Dieses Foto kann nicht verwendet werden. Bitte wählen Sie ein anderes Bild.",
     "photo_too_large": "Das Foto ist zu groß.",
     "appearance_missing": "Erstellen Sie zuerst den gezeichneten Avatar.",
-    "appearance_failed": "Aus dem Foto konnte keine Zeichnung erstellt werden. Versuchen Sie ein anderes Foto oder passen Sie die Zeichnung von Hand an."
+    "appearance_failed": "Aus dem Foto konnte keine Zeichnung erstellt werden. Versuchen Sie ein anderes Foto oder passen Sie die Zeichnung von Hand an.",
+    "keys_missing": "Ihre Schlüssel sind noch nicht eingerichtet.",
+    "keys_exist": "Ihre Schlüssel sind bereits eingerichtet. Sie können hier nicht ersetzt werden.",
+    "keys_immutable": "Gespeicherte Schlüssel können nicht geändert werden.",
+    "passphrase_wrong": "Die Passphrase ist nicht richtig.",
+    "key_invalid": "Dieser Schlüssel konnte nicht gelesen werden.",
+    "decrypt_failed": "Dieser Eintrag konnte mit Ihrem Schlüssel nicht entschlüsselt werden.",
+    "signature_invalid": "Die Signatur dieses Eintrags konnte nicht bestätigt werden. Er wurde möglicherweise verändert."
   },
   "language": {
     "label": "Sprache"
@@ -647,5 +653,47 @@
     "year": "Jahr",
     "previousMonth": "Vorheriger Monat",
     "nextMonth": "Nächster Monat"
+  },
+  "keys": {
+    "setup": {
+      "title": "Schlüssel einrichten",
+      "intro": "Signierte Verlaufsnotizen werden so verschlüsselt, dass nur Sie sie lesen können. Ihr Schlüssel wird auf diesem Gerät erstellt und mit einer Passphrase geschützt. Sessio sieht die Passphrase nie.",
+      "passphrase": "Passphrase",
+      "passphraseRepeat": "Passphrase wiederholen",
+      "passphraseHint": "Mindestens {{n}} Zeichen. Einige Wörter ohne Zusammenhang sind leicht zu merken und schwer zu erraten.",
+      "noReset": "Sessio kann eine vergessene Passphrase nicht zurücksetzen.",
+      "tooShort": "Die Passphrase braucht mindestens {{n}} Zeichen.",
+      "mismatch": "Die beiden Passphrasen stimmen nicht überein.",
+      "create": "Schlüssel erstellen",
+      "creating": "Schlüssel werden erstellt…",
+      "recoveryTitle": "Wiederherstellungsschlüssel sichern",
+      "recoveryIntro": "Wenn Sie Ihre Passphrase vergessen, können Sie Ihre signierten Einträge nur noch mit dem Wiederherstellungsschlüssel öffnen. Er wird nur jetzt angezeigt. Bewahren Sie die Datei sicher und offline auf, zum Beispiel auf einem USB-Stick in einem abschließbaren Schrank.",
+      "download": "Wiederherstellungsschlüssel herunterladen",
+      "downloadAgain": "Erneut herunterladen",
+      "downloaded": "Öffnen Sie die heruntergeladene Datei. Weit oben steht eine Zeile mit dem Prüfcode.",
+      "checkLabel": "Prüfcode aus der Datei",
+      "checkHint": "8 Zeichen, zum Beispiel AB12-CD34.",
+      "checkWrong": "Dieser Prüfcode passt nicht. Öffnen Sie die gespeicherte Datei und geben Sie den dort angezeigten Code ein.",
+      "finish": "Einrichtung abschließen"
+    },
+    "status": {
+      "title": "Ihr Schlüssel",
+      "unlocked": "Entsperrt",
+      "locked": "Gesperrt",
+      "unlockedHint": "Ihr Schlüssel ist auf diesem Gerät entsperrt. Er sperrt sich nach 15 Minuten ohne Aktivität und wenn Sie den Tab schließen.",
+      "lockedHint": "Entsperren Sie Ihren Schlüssel, um Verlaufsnotizen zu signieren und signierte zu öffnen.",
+      "unlock": "Entsperren",
+      "unlocking": "Wird entsperrt…",
+      "lockNow": "Jetzt sperren"
+    },
+    "details": {
+      "title": "Schlüsseldetails",
+      "therapist": "Ihr Schlüssel",
+      "recovery": "Wiederherstellungsschlüssel",
+      "checkCode": "Prüfcode {{code}}",
+      "fingerprintHint": "Fingerabdrücke kennzeichnen Ihre Schlüssel. Vergleichen Sie sie, wenn Sie einen Schlüssel außerhalb von Sessio verwenden.",
+      "downloadPublic": "Öffentlichen Schlüssel herunterladen",
+      "forgotten": "Wenn Sie Ihre Passphrase vergessen, kann nur der Wiederherstellungsschlüssel Ihre signierten Einträge öffnen. Die Wiederherstellung damit kommt in einer späteren Version."
+    }
   }
 }

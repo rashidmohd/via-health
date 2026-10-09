@@ -71,6 +71,8 @@ class MeResponse(BaseModel):
     avatar_character: int
     avatar_appearance: Appearance | None
     has_photo: bool
+    # Plan 0014: therapist + recovery keys are set up (needed to sign and, later, to record).
+    has_keys: bool
 
 
 class UpdateMeRequest(BaseModel):
@@ -97,6 +99,7 @@ def _me(user: User) -> MeResponse:
             Appearance.model_validate(user.avatar_appearance) if user.avatar_appearance else None
         ),
         has_photo=user.avatar_photo_enc is not None,
+        has_keys=user.pgp_public_key is not None,
     )
 
 

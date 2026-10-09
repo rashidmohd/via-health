@@ -16,6 +16,7 @@ export interface Me {
   avatar_character?: number
   avatar_appearance?: Appearance | null
   has_photo?: boolean
+  has_keys?: boolean
 }
 
 export interface MeUpdate {

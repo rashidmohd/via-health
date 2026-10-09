@@ -23,17 +23,19 @@ models and the Gemini API are cleared for the prototype only (see "Before real c
 | Mic health | Voice activity in its own worklet during every recording; level meter + voice indicator; warning after 2 min without speech; 5 s mic test before the first recording; mic choice for the next recording | plan 0011, ADR 0010 |
 | Session note | German Verlaufsdokumentation; Gemini drafts only "what was said and done" with sources, a second pass checks each sentence; therapist writes the clinical fields, resolves flags, approves; addenda after approval; names hidden from the AI; note topics on the session card (not on Today) | plan 0009, ADRs 0006–0008 |
 | Reports page | Approved session notes across clients: session no. and type, topics, approval date, addenda; search by client; opens the read-only note | plan 0013 |
+| Therapist keys | Keys screen: OpenPGP v6 key made in the browser, passphrase-protected (Argon2); recovery key downloaded once, check code typed back before anything is stored; keys write-once in the DB; unlock / auto-lock after 15 min idle and on tab close; device copy for offline unlock | plan 0014 step A |
 | Notifications | Tab with unread badge: transcript ready / failed, note draft ready / failed / no AI consent; ids only in the DB | plan 0010 (part 1) |
 | UI design system | Inter + Lucide icons, tokens and shared components, sidebar + top bar shell (drawer on small screens); all built screens redesigned (Today tiles, client and session tables with filters, record screen, note editor with "Next to check", print view) | ADR 0009 |
 
-Tests: backend 236, web 196 (lint, typecheck, build green).
+Tests: backend 250, web 226 (lint, typecheck, build green).
 
 ## Not built yet (in order)
 
 1. **Real model check for session notes** — needs a paid-tier Gemini API key (ADR 0005);
    then a German golden set of role-play sessions (plan 0009, tests).
-2. **Therapist keys & signing** — OpenPGP keys in the browser, recovery key, signed report and transcript
-   encrypted so the server cannot read it (CLAUDE.md rule 7).
+2. **Signing** (plan 0014 steps B, C) — "Approve and sign": note, transcript and an index signed and
+   encrypted to therapist + recovery key, server copies cleared, processing key deleted (rule 7);
+   then session keys wrapped to the therapist key. Keys screen (step A) is built.
 3. **Deletion jobs** — crypto-shred audio on signing, `retention_sweep` for unsigned sessions,
    clean-up of leftover transcript windows. Until then the bucket's 30-day rule is the safety net.
 4. **Settings page, rest** — practice term list (term chips). Profile picture, avatar reactions, microphone and "Recording on this device" (sounds, live transcript, model preload) are built.

@@ -72,6 +72,8 @@ class User(Base):
     email: Mapped[str] = mapped_column(Text, unique=True)
     display_name: Mapped[str] = mapped_column(Text)
     ui_language: Mapped[str] = mapped_column(Text, server_default="de")
+    # Plan 0014: OpenPGP keys made in the browser. The private key is passphrase-encrypted
+    # (armored); the recovery private key never reaches the server.
     pgp_public_key: Mapped[str | None] = mapped_column(Text)
     pgp_private_key_enc: Mapped[bytes | None]
     recovery_public_key: Mapped[str | None] = mapped_column(Text)
@@ -97,6 +99,13 @@ class User(Base):
         ),
         CheckConstraint(
             "avatar_kind <> 'drawn' OR avatar_appearance IS NOT NULL", name="avatar_drawn"
+        ),
+        # Plan 0014: the keys are stored together (and only once — DB trigger).
+        CheckConstraint(
+            "(pgp_public_key IS NULL) = (pgp_private_key_enc IS NULL)"
+            " AND (pgp_public_key IS NULL) = (recovery_public_key IS NULL)"
+            " AND (pgp_public_key IS NULL) = (key_fingerprints IS NULL)",
+            name="keys_complete",
         ),
     )
 

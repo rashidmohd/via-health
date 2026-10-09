@@ -9,7 +9,6 @@
     "settings": "Settings"
   },
   "common": {
-    "comingSoon": "Not built yet.",
     "loading": "Loading…",
     "retry": "Try again",
     "optional": "(optional)",
@@ -57,7 +56,14 @@
     "photo_invalid": "This photo could not be used. Please choose another image.",
     "photo_too_large": "The photo is too large.",
     "appearance_missing": "Create the drawn avatar first.",
-    "appearance_failed": "The photo could not be turned into a drawing. Try another photo, or adjust the drawing by hand."
+    "appearance_failed": "The photo could not be turned into a drawing. Try another photo, or adjust the drawing by hand.",
+    "keys_missing": "Your keys are not set up yet.",
+    "keys_exist": "Your keys are already set up. They cannot be replaced here.",
+    "keys_immutable": "Stored keys cannot be changed.",
+    "passphrase_wrong": "The passphrase is not correct.",
+    "key_invalid": "This key could not be read.",
+    "decrypt_failed": "This record could not be decrypted with your key.",
+    "signature_invalid": "The signature on this record could not be confirmed. It may have been changed."
   },
   "language": {
     "label": "Language"
@@ -647,5 +653,47 @@
     "year": "Year",
     "previousMonth": "Previous month",
     "nextMonth": "Next month"
+  },
+  "keys": {
+    "setup": {
+      "title": "Set up your keys",
+      "intro": "Signed session notes are encrypted so that only you can read them. Your key is created on this device and protected with a passphrase. Sessio never sees the passphrase.",
+      "passphrase": "Passphrase",
+      "passphraseRepeat": "Repeat passphrase",
+      "passphraseHint": "At least {{n}} characters. A few unrelated words are easy to remember and hard to guess.",
+      "noReset": "Sessio cannot reset a forgotten passphrase.",
+      "tooShort": "The passphrase needs at least {{n}} characters.",
+      "mismatch": "The two passphrases are not the same.",
+      "create": "Create keys",
+      "creating": "Creating keys…",
+      "recoveryTitle": "Save your recovery key",
+      "recoveryIntro": "If you forget your passphrase, the recovery key is the only way to open your signed records. It is shown only now. Keep the file safe and offline, for example on a USB stick in a locked cabinet.",
+      "download": "Download recovery key",
+      "downloadAgain": "Download again",
+      "downloaded": "Open the downloaded file. Near the top is a line with the check code.",
+      "checkLabel": "Check code from the file",
+      "checkHint": "8 characters, for example AB12-CD34.",
+      "checkWrong": "This check code does not match. Open the file you saved and type the code shown there.",
+      "finish": "Finish setup"
+    },
+    "status": {
+      "title": "Your key",
+      "unlocked": "Unlocked",
+      "locked": "Locked",
+      "unlockedHint": "Your key is unlocked on this device. It locks after 15 minutes without activity and when you close the tab.",
+      "lockedHint": "Unlock your key to sign session notes and open signed ones.",
+      "unlock": "Unlock",
+      "unlocking": "Unlocking…",
+      "lockNow": "Lock now"
+    },
+    "details": {
+      "title": "Key details",
+      "therapist": "Your key",
+      "recovery": "Recovery key",
+      "checkCode": "check code {{code}}",
+      "fingerprintHint": "Fingerprints identify your keys. Compare them if you ever use a key outside Sessio.",
+      "downloadPublic": "Download public key",
+      "forgotten": "If you forget your passphrase, only the recovery key can open your signed records. Restoring access with it comes in a later version."
+    }
   }
 }
