@@ -330,7 +330,8 @@
       "language": "Die Live-Vorschau gibt es für diese Sprache noch nicht. Das Server-Transkript läuft weiter.",
       "off": "Die Live-Vorschau ist auf diesem Gerät aus. Das Server-Transkript läuft weiter.",
       "loading": "Sprachmodell wird geladen…"
-    }
+    },
+    "listening": "Hört zu. Die Wörter erscheinen hier, während gesprochen wird."
   },
   "captures": {
     "title": "Notizen aus der Sitzung",
@@ -597,6 +598,20 @@
     },
     "microphone": {
       "title": "Mikrofon"
+    },
+    "device": {
+      "title": "Aufnahme auf diesem Gerät",
+      "hint": "Diese Einstellungen gelten nur für diesen Browser.",
+      "recordSounds": "Kurzen Ton abspielen, wenn eine Aufnahme startet und endet",
+      "livePreview": "Live-Transkript während der Aufnahme anzeigen",
+      "livePreload": "Modell für das Live-Transkript beim Öffnen der App laden (ca. 155 MB, einmalig)",
+      "livePreloadHint": "Ohne diese Option wird das Modell erst beim Start einer Aufnahme geladen, und die ersten Wörter erscheinen später."
     }
+  },
+  "preload": {
+    "loading": "Modell für das Live-Transkript wird geladen ({{percent}} %). Nur einmal auf diesem Gerät nötig.",
+    "failed": "Das Modell für das Live-Transkript konnte nicht geladen werden. Beim nächsten Mal wird es erneut versucht; die Aufnahme funktioniert auch ohne.",
+    "hide": "Ausblenden",
+    "progress": "Fortschritt des Downloads"
   }
 }

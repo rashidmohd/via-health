@@ -152,8 +152,34 @@ self.onmessage = (event) => {
   }
 }
 
-try {
-  importScripts(`${base}${lang}/sherpa-onnx-wasm-main-asr.js`, base + 'sherpa-onnx-asr.js')
-} catch {
-  post({ type: 'error', code: 'engine_missing' })
+/*
+ * Engine and model downloaded in advance by the page (src/live-stt/modelCache.ts, ADR 0014):
+ * hand them to the loader so nothing is fetched again. Missing or unreadable → network.
+ * The cache name must match MODEL_CACHE there.
+ */
+async function loadCachedFiles() {
+  const version = params.get('v')
+  if (!version || typeof caches === 'undefined') return
+  try {
+    const cache = await caches.open('sessio-live-stt-' + version)
+    const [engine, model] = await Promise.all([
+      cache.match(base + 'sherpa-onnx-wasm-main-asr.wasm'),
+      cache.match(`${base}${lang}/sherpa-onnx-wasm-main-asr.data`),
+    ])
+    if (engine) self.Module.wasmBinary = await engine.arrayBuffer()
+    if (model) {
+      const data = await model.arrayBuffer()
+      self.Module.getPreloadedPackage = () => data
+    }
+  } catch {
+    // Fall back to the network.
+  }
 }
+
+loadCachedFiles().then(() => {
+  try {
+    importScripts(`${base}${lang}/sherpa-onnx-wasm-main-asr.js`, base + 'sherpa-onnx-asr.js')
+  } catch {
+    post({ type: 'error', code: 'engine_missing' })
+  }
+})

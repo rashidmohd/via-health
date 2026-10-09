@@ -9,30 +9,13 @@ import { LivePreview, livePreviewSupported, type PreviewEvent } from '../../live
 import { LIVE_STT_LANGUAGES, type LiveSttLanguage } from '../../live-stt/version'
 import type { SessionRecorder } from '../../recorder/recorder'
 import { formatClock } from '../format'
+import { useDeviceSetting } from '../settings/deviceSettings'
 import { CaptureChips } from './CaptureChips'
 
 type PreviewStatus = 'idle' | 'loading' | 'live' | 'too_slow' | 'error' | 'unsupported' | 'language' | 'off'
 
-const SETTING_KEY = 'sessio.livePreview'
-
-function readSetting(): boolean {
-  try {
-    return localStorage.getItem(SETTING_KEY) !== 'off'
-  } catch {
-    return true
-  }
-}
-
-function writeSetting(on: boolean): void {
-  try {
-    localStorage.setItem(SETTING_KEY, on ? 'on' : 'off')
-  } catch {
-    // Storage unavailable: the choice applies to this visit only.
-  }
-}
-
 /**
- * Collapsed by default: reading during a session pulls attention away from the client.
+ * Live transcript inside the recording card (ADR 0014). Runs from the start of the recording.
  * Device text (instant, rough) is replaced by server text (better, speakers) once available.
  */
 export function LivePanel({
@@ -45,21 +28,21 @@ export function LivePanel({
   language: Language
 }) {
   const { t } = useTranslation()
-  const [open, setOpen] = useState(false)
-  const [enabled, setEnabled] = useState(readSetting)
+  const [enabled, setEnabled] = useDeviceSetting('livePreview')
   const [status, setStatus] = useState<PreviewStatus>('idle')
   const [progress, setProgress] = useState(0)
   const [finals, setFinals] = useState<LocalLine[]>([])
   const [partial, setPartial] = useState<{ text: string; startMs: number } | null>(null)
   const preview = useRef<LivePreview | null>(null)
-  const { data: live } = useLiveText(sessionId, open)
+  const { data: live } = useLiveText(sessionId, true)
+  const list = useRef<HTMLOListElement>(null)
 
   const supportedLanguage = (LIVE_STT_LANGUAGES as readonly string[]).includes(language)
   const [supportedBrowser] = useState(livePreviewSupported)
   const canRun = supportedLanguage && supportedBrowser
 
   useEffect(() => {
-    if (!open || !enabled || !canRun) return
+    if (!enabled || !canRun) return
     let cancelled = false
     const onEvent = (event: PreviewEvent) => {
       if (cancelled) return
@@ -100,11 +83,10 @@ export function LivePanel({
       preview.current = null
       setPartial(null)
     }
-  }, [open, enabled, canRun, recorder, language])
+  }, [enabled, canRun, recorder, language])
 
   function toggle() {
     const next = !enabled
-    writeSetting(next)
     setEnabled(next)
     setStatus(next ? 'idle' : 'off')
   }
@@ -133,27 +115,42 @@ export function LivePanel({
     if (fresh.length > 0) emitAvatarEvent('capture.noted')
   }, [captureKeys])
 
+  // Follow the newest words, unless the therapist scrolled up to read.
+  const lastText = lines.length > 0 ? lines[lines.length - 1].text : ''
+  const atBottom = useRef(true)
+  useEffect(() => {
+    const el = list.current
+    if (el && atBottom.current) el.scrollTop = el.scrollHeight
+  }, [lines.length, lastText])
+
   return (
-    <details className="live-panel" onToggle={(e) => setOpen(e.currentTarget.open)}>
-      <summary>{t('live.title')}</summary>
-      <p className="muted small">{t('live.hint')}</p>
+    <section className="live-transcript" aria-labelledby="live-title">
       <div className="row spread">
-        <p className="muted small" aria-live="polite">
-          {shownStatus === 'loading' && progress > 0
-            ? t('live.loading', { percent: Math.round(progress * 100) })
-            : t(`live.status.${shownStatus}`)}
-        </p>
+        <h2 id="live-title">{t('live.title')}</h2>
         {supportedLanguage && (
           <button type="button" className="link small" onClick={toggle}>
             {t(enabled ? 'live.turnOff' : 'live.turnOn')}
           </button>
         )}
       </div>
-      {open && lines.length === 0 && <p className="muted">{t('live.empty')}</p>}
-      {lines.length > 0 && (
+      <p className="muted small" aria-live="polite">
+        {shownStatus === 'loading' && progress > 0
+          ? t('live.loading', { percent: Math.round(progress * 100) })
+          : t(`live.status.${shownStatus}`)}
+      </p>
+      {lines.length === 0 ? (
+        <p className="muted">{t(shownStatus === 'live' ? 'live.listening' : 'live.empty')}</p>
+      ) : (
         <>
           <CaptureChips captures={captures} />
-          <ol className="transcript live">
+          <ol
+            ref={list}
+            className="transcript live"
+            onScroll={(e) => {
+              const el = e.currentTarget
+              atBottom.current = el.scrollHeight - el.scrollTop - el.clientHeight < 24
+            }}
+          >
             {lines.map((line, index) => (
               <li key={`${line.source}-${line.startMs}-${index}`} className={`source-${line.source}`}>
                 <span className="meta">
@@ -170,6 +167,7 @@ export function LivePanel({
           </ol>
         </>
       )}
-    </details>
+      <p className="muted small">{t('live.hint')}</p>
+    </section>
   )
 }

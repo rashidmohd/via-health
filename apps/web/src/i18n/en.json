@@ -330,7 +330,8 @@
       "language": "Live preview is not available for this language yet. The server transcript continues.",
       "off": "Live preview is off on this device. The server transcript continues.",
       "loading": "Loading the speech model…"
-    }
+    },
+    "listening": "Listening. Words appear here as they are spoken."
   },
   "captures": {
     "title": "Notes from the session",
@@ -597,6 +598,20 @@
     },
     "microphone": {
       "title": "Microphone"
+    },
+    "device": {
+      "title": "Recording on this device",
+      "hint": "These settings apply only to this browser.",
+      "recordSounds": "Play a short sound when a recording starts and stops",
+      "livePreview": "Show the live transcript during recordings",
+      "livePreload": "Load the live transcript model when the app opens (about 155 MB, once)",
+      "livePreloadHint": "Without it, the model loads when you start a recording and the first words appear later."
     }
+  },
+  "preload": {
+    "loading": "Loading the live transcript model ({{percent}} %). Only needed once on this device.",
+    "failed": "The live transcript model could not be loaded. It will be tried again next time; recording works without it.",
+    "hide": "Hide",
+    "progress": "Download progress"
   }
 }

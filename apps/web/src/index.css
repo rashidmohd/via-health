@@ -2232,3 +2232,54 @@
   background: var(--surface);
   cursor: pointer;
 }
+
+/* Live transcript model download (ADR 0014) */
+.preload-banner {
+  display: grid;
+  gap: var(--space-2);
+  padding-block: 8px;
+  margin-bottom: var(--space-5);
+}
+
+.preload-banner progress {
+  width: 100%;
+  height: 4px;
+  appearance: none;
+  border: 0;
+  border-radius: 999px;
+  overflow: hidden;
+  background: var(--olive-100);
+}
+
+.preload-banner progress::-webkit-progress-bar {
+  background: var(--olive-100);
+}
+
+.preload-banner progress::-webkit-progress-value {
+  background: var(--olive-500);
+}
+
+.preload-banner progress::-moz-progress-bar {
+  background: var(--olive-500);
+}
+
+/* Live transcript inside the recording card */
+.record-stage .live-transcript {
+  width: 100%;
+  display: grid;
+  gap: var(--space-3);
+  text-align: left;
+  padding-top: var(--space-5);
+  border-top: 1px solid #efc2b8;
+}
+
+.live-transcript h2 {
+  margin: 0;
+  font-size: var(--text-md);
+  color: var(--olive-700);
+}
+
+.live-transcript .transcript.live {
+  max-height: 260px;
+  scroll-behavior: smooth;
+}

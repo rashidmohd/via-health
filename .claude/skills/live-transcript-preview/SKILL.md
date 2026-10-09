@@ -12,7 +12,7 @@ It runs entirely in the browser and works offline. No live text leaves the devic
 
 - sherpa-onnx WASM, streaming transducer: `sherpa-onnx-streaming-zipformer-de-kroko-2025-08-06` (German).
 - Only transducer models support hotwords in sherpa-onnx — do not swap in Whisper/Paraformer/SenseVoice if hotwords are needed.
-- Load model files lazily after login; versioned paths, cached immutably (no service worker yet, ADR 0010). Verify the Kroko license before production (open decision in CLAUDE.md).
+- Model files are preloaded after login into Cache Storage (`src/live-stt/modelCache.ts`, ADR 0014; per-device opt-out in Settings); the worker reads them from there and falls back to the network. Versioned paths, cached immutably (no service worker yet, ADR 0010). Verify the Kroko license before production (open decision in CLAUDE.md).
 - Never use the Web Speech API — Chrome typically sends audio to Google servers.
 
 ## Architecture

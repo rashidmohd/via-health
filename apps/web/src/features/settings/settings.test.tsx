@@ -124,6 +124,26 @@ describe('settings', () => {
     expect(screen.queryByRole('radio', { name: 'Character 1' })).toBeNull()
   })
 
+  it('keeps recording sounds and the live model download per device, on by default', async () => {
+    localStorage.clear()
+    renderApp('/settings')
+    const sounds = await screen.findByRole('checkbox', { name: /short sound when a recording starts/ })
+    const preload = screen.getByRole('checkbox', { name: /Load the live transcript model/ })
+    expect(sounds).toBeChecked()
+    expect(preload).toBeChecked()
+
+    fireEvent.click(sounds)
+    fireEvent.click(preload)
+    expect(localStorage.getItem('sessio.recordSounds')).toBe('off')
+    expect(localStorage.getItem('sessio.livePreload')).toBe('off')
+    expect(sounds).not.toBeChecked()
+
+    fireEvent.click(screen.getByRole('checkbox', { name: /Show the live transcript/ }))
+    expect(localStorage.getItem('sessio.livePreview')).toBe('off')
+    expect(preload).toBeDisabled()
+    expect(calls.some((c) => c.method === 'PATCH')).toBe(false) // nothing goes to the account
+  })
+
   it('saves the reactions choice on the account', async () => {
     renderApp('/settings')
     fireEvent.click(await screen.findByRole('checkbox', { name: /Short glance/ }))

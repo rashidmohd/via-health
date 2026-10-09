@@ -19,6 +19,7 @@ import { SessionsPage } from './features/sessions/SessionsPage'
 import { SettingsPage } from './features/settings/SettingsPage'
 import { StartSessionPage } from './features/sessions/StartSessionPage'
 import { Sidebar } from './features/shell/Sidebar'
+import { ModelPreloadBanner } from './features/shell/ModelPreloadBanner'
 import { Topbar } from './features/shell/Topbar'
 import { TodayPage } from './features/today/TodayPage'
 import { startSync } from './recorder/sync'
@@ -68,6 +69,7 @@ export default function App() {
       <div className="main-panel">
         <Topbar navOpen={navOpen} onMenu={() => setNavOpen(true)} />
         <main>
+          <ModelPreloadBanner />
           <RecoveryBanner />
           <Routes>
             <Route path="/" element={<TodayPage />} />

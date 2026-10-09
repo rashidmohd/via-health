@@ -11,10 +11,11 @@ import { useAvatarSettings } from '../../avatar/settings'
 import { Initials } from '../../design/Initials'
 import { errorMessage } from '../../i18n/errors'
 import { MicPicker } from '../sessions/MicHealth'
+import { useDeviceSetting } from './deviceSettings'
 import { AppearanceEditor } from './AppearanceEditor'
 import { PhotoCropper } from './PhotoCropper'
 
-/** Settings (plans 0011, 0012): profile picture, avatar reactions, microphone. Templates and
+/** Settings (plans 0011, 0012, ADR 0014): profile picture, avatar reactions, microphone, device. Templates and
  *  hotwords come later. */
 export function SettingsPage() {
   const { t } = useTranslation()
@@ -199,6 +200,40 @@ export function SettingsPage() {
         <h2>{t('settings.microphone.title')}</h2>
         <MicPicker />
       </div>
+
+      <DeviceSettings />
     </section>
+  )
+}
+
+/** Per-browser recording settings (ADR 0014). */
+function DeviceSettings() {
+  const { t } = useTranslation()
+  const [sounds, setSounds] = useDeviceSetting('recordSounds')
+  const [livePreview, setLivePreview] = useDeviceSetting('livePreview')
+  const [preload, setPreload] = useDeviceSetting('livePreload')
+  return (
+    <div className="card stack">
+      <h2>{t('settings.device.title')}</h2>
+      <p className="muted small">{t('settings.device.hint')}</p>
+      <label className="checkbox">
+        <input type="checkbox" checked={sounds} onChange={(event) => setSounds(event.target.checked)} />
+        {t('settings.device.recordSounds')}
+      </label>
+      <label className="checkbox">
+        <input type="checkbox" checked={livePreview} onChange={(event) => setLivePreview(event.target.checked)} />
+        {t('settings.device.livePreview')}
+      </label>
+      <label className="checkbox">
+        <input
+          type="checkbox"
+          checked={preload && livePreview}
+          disabled={!livePreview}
+          onChange={(event) => setPreload(event.target.checked)}
+        />
+        {t('settings.device.livePreload')}
+      </label>
+      <p className="muted small">{t('settings.device.livePreloadHint')}</p>
+    </div>
   )
 }

@@ -17,6 +17,7 @@ emotion/mood detection from voice or text, no risk detection. "Actions" = docume
 ## Part 1 — Server text during the session (small)
 - `GET /sessions/{id}/live` → words from the transcript windows so far (stitched, speaker labels).
 - Record screen: panel **"Transcript" (collapsed by default)**, refreshed every 20 s.
+  *Changed by ADR 0014: shown in the recording card from the start.*
   Text arrives ~1–1.5 min behind speech (one window). Needs internet.
 
 ## Part 2 — Live preview in the browser

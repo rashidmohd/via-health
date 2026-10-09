@@ -11,6 +11,7 @@ import { useAvatarMood } from '../../avatar/useAvatarMood'
 import { Initials } from '../../design/Initials'
 import { getActiveRecorder, setActiveRecorder, useActiveRecorder } from '../../recorder/active'
 import { db } from '../../recorder/db'
+import { playCue } from '../../recorder/cues'
 import { micTested } from '../../recorder/micDevice'
 import { useVoiceState } from '../../recorder/micMonitor'
 import { RecorderError, SessionRecorder, type RecorderProblem } from '../../recorder/recorder'
@@ -88,6 +89,7 @@ export function RecordPage() {
         { onProblem: (p) => setProblem(p) },
       )
       setActiveRecorder(recorder)
+      playCue('start')
     } catch (error) {
       setProblem(error instanceof RecorderError ? error.problem : 'unsupported')
     } finally {
@@ -99,6 +101,7 @@ export function RecordPage() {
     const recorder = getActiveRecorder()
     if (!recorder || !window.confirm(t('record.stopConfirm'))) return
     await recorder.stop()
+    playCue('stop') // after stop, so the sound is not in the recording
     setActiveRecorder(null)
     setStoppedSessionId(recorder.sessionId)
   }
@@ -178,12 +181,11 @@ export function RecordPage() {
               </li>
             )}
           </ul>
+          {active && (
+            <LivePanel sessionId={active.sessionId} recorder={active} language={client?.preferred_language ?? 'de'} />
+          )}
         </div>
       ) : null}
-
-      {recordingHere && active && (
-        <LivePanel sessionId={active.sessionId} recorder={active} language={client?.preferred_language ?? 'de'} />
-      )}
 
       {recordingHere ? null : stoppedSession ? (
         <div className="record-stage">

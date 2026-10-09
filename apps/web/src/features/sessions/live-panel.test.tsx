@@ -41,12 +41,6 @@ function renderPanel(language: string = 'de') {
   )
 }
 
-function openPanel() {
-  const details = screen.getByText('Transcript so far').closest('details')!
-  details.open = true
-  fireEvent(details, new Event('toggle'))
-}
-
 describe('live panel', () => {
   let server: { covered_ms: number; segments: unknown[] }
 
@@ -60,16 +54,16 @@ describe('live panel', () => {
   })
   afterEach(() => vi.unstubAllGlobals())
 
-  it('starts the preview only when opened, then shows device text and chips', async () => {
+  it('starts the preview right away, then shows device text and chips', async () => {
     renderPanel()
-    expect(preview.starts).toBe(0)
-    openPanel()
+    expect(screen.getByRole('heading', { name: 'Transcript so far' })).toBeInTheDocument()
     await vi.waitFor(() => expect(preview.starts).toBe(1))
 
     act(() => preview.emit!({ type: 'loading', loaded: 50, total: 100 }))
     expect(screen.getByText(/Loading the speech model \(50 %\)/)).toBeInTheDocument()
     act(() => preview.emit!({ type: 'ready' }))
     expect(screen.getByText('Live preview on this device')).toBeInTheDocument()
+    expect(screen.getByText(/Listening\. Words appear here/)).toBeInTheDocument()
 
     act(() => preview.emit!({ type: 'partial', text: 'Wir sehen uns', startMs: 1000 }))
     expect(screen.getByText('Wir sehen uns')).toBeInTheDocument()
@@ -82,7 +76,6 @@ describe('live panel', () => {
 
   it('keeps recording-safe: too slow stops only the preview', async () => {
     renderPanel()
-    openPanel()
     await vi.waitFor(() => expect(preview.starts).toBe(1))
     act(() => preview.emit!({ type: 'too_slow' }))
     expect(screen.getByText(/this device is too slow/)).toBeInTheDocument()
@@ -91,21 +84,18 @@ describe('live panel', () => {
 
   it('runs the English model for English-speaking clients', async () => {
     renderPanel('en')
-    openPanel()
     await vi.waitFor(() => expect(preview.starts).toBe(1))
     expect(preview.language).toBe('en')
   })
 
   it('says so for a language without a model', async () => {
     renderPanel('fr')
-    openPanel()
     expect(await screen.findByText(/not available for this language yet/)).toBeInTheDocument()
     expect(preview.starts).toBe(0)
   })
 
   it('can be switched off per device and remembers it', async () => {
     renderPanel()
-    openPanel()
     await vi.waitFor(() => expect(preview.starts).toBe(1))
     fireEvent.click(screen.getByRole('button', { name: 'Turn off live preview on this device' }))
     expect(preview.stops).toBe(1)
