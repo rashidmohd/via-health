@@ -1,12 +1,15 @@
 """Branded HTML for system emails (ADR 0017). Table layout with inline styles, because email
 clients ignore most CSS. The logo is a PNG served by the web app at a fixed path (no SVG: Gmail
-and Outlook do not show it). Every email also has a plain-text part."""
+and Outlook do not show it). Inter, the UI font, is loaded from our own origin too (never Google
+Fonts); Apple Mail, Outlook for Mac and Thunderbird use it, Gmail and Outlook for Windows ignore
+web fonts and fall back to the system font. Every email also has a plain-text part."""
 
 from html import escape
 
 from app.core.config import get_settings
 
 LOGO_PATH = "/email/sessio-logo.png"
+FONT_PATH = "/email/inter-latin.woff2"  # Inter variable, latin subset (covers ä ö ü ß)
 LOGO_WIDTH, LOGO_HEIGHT = 160, 35  # the PNG is 320 x 69, for sharp display on retina screens
 
 BG = "#FAFAF6"
@@ -20,8 +23,19 @@ FONT = "Inter, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif"
 MONO = "ui-monospace, 'SF Mono', Menlo, Consolas, monospace"
 
 
+def _asset_url(path: str) -> str:
+    return get_settings().web_origin.rstrip("/") + path
+
+
 def logo_url() -> str:
-    return get_settings().web_origin.rstrip("/") + LOGO_PATH
+    return _asset_url(LOGO_PATH)
+
+
+def _font_face() -> str:
+    return (
+        "@font-face{font-family:'Inter';font-style:normal;font-weight:100 900;"
+        f"font-display:swap;src:url('{escape(_asset_url(FONT_PATH))}') format('woff2');}}"
+    )
 
 
 def _paragraph(text: str, *, muted: bool = False) -> str:
@@ -51,7 +65,8 @@ def branded_html(
     return f"""<!doctype html>
 <html lang="{escape(language)}">
 <head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<meta name="color-scheme" content="light"><title>{escape(heading)}</title></head>
+<meta name="color-scheme" content="light"><title>{escape(heading)}</title>
+<style>{_font_face()}</style></head>
 <body style="margin:0;padding:0;background:{BG};">
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:{BG};">
 <tr><td align="center" style="padding:32px 16px;">

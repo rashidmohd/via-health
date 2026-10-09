@@ -36,6 +36,8 @@ export interface TranscriptSegment {
   start_ms: number
   end_ms: number
   text: string
+  /** Left out of the AI draft by the therapist (ADR 0018); still part of the record. */
+  excluded?: boolean
 }
 
 export type RefineStatus = 'pending' | 'running' | 'done' | 'failed' | 'skipped'
@@ -105,6 +107,16 @@ export function useUndoSpeakerCorrection(id: string) {
   const queryClient = useQueryClient()
   return useMutation({
     mutationFn: () => api<Transcript>(`/sessions/${id}/transcript/speakers/undo`, { method: 'POST' }),
+    onSuccess: (transcript) => queryClient.setQueryData(['transcript', id], transcript),
+  })
+}
+
+/** Leave a turn out of the AI draft, or include it again (ADR 0018). */
+export function useSetTurnExcluded(id: string) {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (turn: { start_ms: number; end_ms: number; excluded: boolean }) =>
+      api<Transcript>(`/sessions/${id}/transcript/exclusions`, { method: 'POST', body: turn }),
     onSuccess: (transcript) => queryClient.setQueryData(['transcript', id], transcript),
   })
 }

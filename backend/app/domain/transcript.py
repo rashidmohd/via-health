@@ -219,6 +219,10 @@ def apply_overrides(
 
     - {"op": "set", "at_ms": t, "speaker": s}: the line at time t is by s.
     - {"op": "swap_from", "at_ms": t, "a": x, "b": y}: from time t on, x and y are swapped."""
+    return _join(_apply_ops(segments, overrides))
+
+
+def _apply_ops(segments: Sequence[Segment], overrides: Sequence[dict[str, Any]]) -> list[Segment]:
     out = list(segments)
     for op in overrides:
         at = int(op.get("at_ms", 0))
@@ -233,7 +237,35 @@ def apply_overrides(
                 else s
                 for s in out
             ]
-    return _join(out)
+    return out
+
+
+def apply_corrections(
+    segments: Sequence[Segment],
+    overrides: Sequence[dict[str, Any]],
+    excluded: Sequence[Sequence[int]],
+) -> list[tuple[Segment, bool]]:
+    """Speaker corrections plus the turns the therapist left out (ADR 0018), as
+    (segment, excluded) pairs. A piece is left out when its middle lies in an excluded
+    [start_ms, end_ms] range; neighbours are joined only when speaker and flag match, so a
+    left-out turn never merges into a kept one."""
+    joined: list[tuple[Segment, bool]] = []
+    for s in _apply_ops(segments, overrides):
+        out = is_excluded(s.start_ms, s.end_ms, excluded)
+        if joined and joined[-1][0].speaker == s.speaker and joined[-1][1] == out:
+            last = joined[-1][0]
+            joined[-1] = (
+                Segment(last.speaker, last.start_ms, s.end_ms, f"{last.text} {s.text}"),
+                out,
+            )
+        else:
+            joined.append((s, out))
+    return joined
+
+
+def is_excluded(start_ms: int, end_ms: int, excluded: Sequence[Sequence[int]]) -> bool:
+    middle = (start_ms + end_ms) // 2
+    return any(a <= middle <= b for a, b in excluded)
 
 
 def _segment_at(segments: Sequence[Segment], at_ms: int) -> int:

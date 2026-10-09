@@ -35,7 +35,7 @@ from app.domain.transcript import (
     STEP_MS,
     Segment,
     Word,
-    apply_overrides,
+    apply_corrections,
     stitch,
     words_to_segments,
 )
@@ -351,6 +351,8 @@ class TranscriptSegment(BaseModel):
     start_ms: int
     end_ms: int
     text: str
+    # Left out of the AI draft by the therapist (ADR 0018); still part of the record.
+    excluded: bool = False
 
 
 class TranscriptOut(BaseModel):
@@ -381,7 +383,10 @@ def _transcript_out(transcript: Transcript) -> TranscriptOut:
         language=transcript.language,
         stt_model=transcript.stt_model,
         therapist_speaker=roles.get("therapist"),
-        segments=[TranscriptSegment(**s.to_json()) for s in apply_overrides(base, overrides)],
+        segments=[
+            TranscriptSegment(**s.to_json(), excluded=out)
+            for s, out in apply_corrections(base, overrides, transcript.excluded_ranges or [])
+        ],
         refine_status=transcript.refine_status,
         corrections=len(overrides),
     )
@@ -462,6 +467,49 @@ def correct_speakers(
 def undo_speaker_correction(session_id: uuid.UUID, user_id: CurrentUserId, db: Db) -> TranscriptOut:
     transcript = _own_transcript(db, session_id)
     transcript.speaker_overrides = list(transcript.speaker_overrides or [])[:-1]
+    db.flush()
+    return _transcript_out(transcript)
+
+
+Ms = Annotated[int, Field(ge=0, le=24 * 3600 * 1000)]
+
+
+class TurnExclusion(BaseModel):
+    start_ms: Ms
+    end_ms: Ms
+    excluded: bool
+
+
+@router.post("/sessions/{session_id}/transcript/exclusions")
+def set_turn_excluded(
+    session_id: uuid.UUID, body: TurnExclusion, user_id: CurrentUserId, db: Db
+) -> TranscriptOut:
+    """Leave a turn out of the AI draft, or include it again (ADR 0018). Only times are
+    stored; the text stays in the record. Locked while a draft is written and after approval."""
+    transcript = _own_transcript(db, session_id)
+    status = db.scalar(select(Report.status).where(Report.session_id == session_id))
+    if status == "approved":
+        raise ApiError("report_approved", 409)
+    if status in ("pending", "drafting"):
+        raise ApiError("report_busy", 409)
+    if body.end_ms < body.start_ms:
+        raise ApiError("invalid_input", 422)
+    ranges = list(transcript.excluded_ranges or [])
+    if body.excluded:
+        if len(ranges) >= MAX_OVERRIDES:
+            raise ApiError("too_many_corrections", 409)
+        ranges.append([body.start_ms, body.end_ms])
+    else:
+        ranges = [[a, b] for a, b in ranges if b < body.start_ms or a > body.end_ms]
+    transcript.excluded_ranges = ranges
+    db.add(
+        AuditLog(
+            actor_user_id=user_id,
+            action="transcript_turn_excluded" if body.excluded else "transcript_turn_included",
+            entity="session",
+            entity_id=str(session_id),
+        )
+    )
     db.flush()
     return _transcript_out(transcript)
 

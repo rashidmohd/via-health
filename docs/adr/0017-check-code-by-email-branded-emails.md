@@ -18,6 +18,9 @@ Separately, system emails were plain text without the Sessio brand.
   layout, inline styles, olive tokens, logo as PNG from the web app at the fixed path
   `/email/sessio-logo.png` (SVG is not shown by Gmail/Outlook; hashed `/assets/` names
   change per build). Logo URL = `WEB_ORIGIN` + path.
+- Same font as the UI: Inter (latin subset, OFL) via `@font-face` from `/email/inter-latin.woff2`
+  on our origin, never Google Fonts. Apple Mail, Outlook for Mac and Thunderbird show it; Gmail
+  and Outlook for Windows fall back to the system font (San Francisco, Segoe UI, Roboto).
 
 ## Consequences
 - The setup check no longer proves the recovery file exists for therapists who use the email.

@@ -26,7 +26,7 @@ from app.domain.report_draft import (
     wording_hits,
 )
 from app.domain.report_template import AI_FIELDS, THERAPIST_FIELDS, draft_schema
-from app.domain.transcript import Segment, Word
+from app.domain.transcript import Segment, Word, apply_corrections
 from app.workers.report import draft_report, draft_report_unconfigured, find_draft_work
 from app.workers.transcribe import TransientFailure, transcript_aad
 from tests.api_helpers import PNG, FakeEmailSender, login
@@ -238,7 +238,7 @@ def put_content(report: dict[str, Any], **changes: Any) -> dict[str, Any]:
     return body
 
 
-def test_transcript_is_drafted_automatically_with_names_hidden(
+def test_draft_waits_for_the_therapist_and_hides_names(
     client: TestClient,
     therapist: dict[str, str],
     owner: Engine,
@@ -247,6 +247,11 @@ def test_transcript_is_drafted_automatically_with_names_hidden(
 ) -> None:
     session_id = setup_session(client, owner, hidden=["Tom Weber"])
     assert client.get(f"/sessions/{session_id}/report").json()["status"] == "none"
+    # Never automatic (ADR 0018): the therapist reviews the transcript first.
+    assert find_draft_work(worker) == []
+    assert (
+        client.post(f"/sessions/{session_id}/report/draft", json={"field": None}).status_code == 200
+    )
     assert find_draft_work(worker) == [uuid.UUID(session_id)]
     llm = FakeLlmProvider()
 
@@ -577,3 +582,82 @@ def test_reports_page_lists_only_approved_notes(
     client.cookies.clear()
     login(client, mail, "other@example.com", display_name="O")
     assert client.get("/reports").json() == []
+
+
+def test_left_out_turns_never_reach_the_model(
+    client: TestClient, therapist: dict[str, str], owner: Engine, worker: Engine
+) -> None:
+    session_id = setup_session(client, owner)
+    url = f"/sessions/{session_id}/transcript/exclusions"
+    response = client.post(url, json={"start_ms": 2000, "end_ms": 4000, "excluded": True})
+    assert response.status_code == 200, response.text
+    segments = response.json()["segments"]
+    assert [s["excluded"] for s in segments] == [False, True]
+    # The record keeps the text (ADR 0006); only the AI input leaves it out.
+    assert segments[1]["text"] == "Tom Weber hat angerufen."
+
+    client.post(f"/sessions/{session_id}/report/draft", json={"field": None})
+    llm = FakeLlmProvider()
+    assert draft(worker, session_id, llm) == "draft"
+    sent = " ".join(call["prompt"] for call in llm.calls)
+    assert "angerufen" not in sent and "Woche" in sent
+
+
+def test_left_out_turn_can_be_included_again(
+    client: TestClient, therapist: dict[str, str], owner: Engine
+) -> None:
+    session_id = setup_session(client, owner)
+    url = f"/sessions/{session_id}/transcript/exclusions"
+    client.post(url, json={"start_ms": 0, "end_ms": 1500, "excluded": True})
+    response = client.post(url, json={"start_ms": 0, "end_ms": 1500, "excluded": False})
+    assert [s["excluded"] for s in response.json()["segments"]] == [False, False]
+    assert (
+        client.post(url, json={"start_ms": 900, "end_ms": 100, "excluded": True}).status_code == 422
+    )
+
+
+def test_turns_are_locked_while_drafting_and_after_approval(
+    client: TestClient, therapist: dict[str, str], owner: Engine, worker: Engine
+) -> None:
+    session_id = setup_session(client, owner)
+    url = f"/sessions/{session_id}/transcript/exclusions"
+    turn = {"start_ms": 0, "end_ms": 1500, "excluded": True}
+    client.post(f"/sessions/{session_id}/report/draft", json={"field": None})
+    assert client.post(url, json=turn).json() == {"code": "report_busy"}
+
+    draft(worker, session_id)
+    assert client.post(url, json=turn).status_code == 200  # a draft may still change
+    report = client.get(f"/sessions/{session_id}/report").json()
+    body = put_content(
+        report, therapist={**report["content"]["therapist"], "progress": "Fortschritt"}
+    )
+    client.put(f"/sessions/{session_id}/report", json=body)
+    assert client.post(f"/sessions/{session_id}/report/approve").status_code == 200
+    assert client.post(url, json={**turn, "excluded": False}).json() == {"code": "report_approved"}
+
+
+def test_other_therapist_cannot_leave_out_turns(
+    client: TestClient, therapist: dict[str, str], owner: Engine, mail: FakeEmailSender
+) -> None:
+    session_id = setup_session(client, owner)
+    client.cookies.clear()
+    login(client, mail, "other@example.com", display_name="Olga Other")
+    response = client.post(
+        f"/sessions/{session_id}/transcript/exclusions",
+        json={"start_ms": 0, "end_ms": 1500, "excluded": True},
+    )
+    assert response.status_code == 404
+
+
+def test_left_out_turn_never_merges_into_a_kept_one() -> None:
+    base = [
+        Segment("1", 0, 1000, "a"),
+        Segment("1", 1000, 2000, "b"),
+        Segment("1", 2000, 3000, "c"),
+    ]
+    out = apply_corrections(base, [], [[1000, 2000]])
+    assert [(s.text, excluded) for s, excluded in out] == [("a", False), ("b", True), ("c", False)]
+    # A speaker correction that makes neighbours match still keeps the left-out turn apart.
+    base = [Segment("1", 0, 1000, "a"), Segment("2", 1000, 2000, "b")]
+    out = apply_corrections(base, [{"op": "set", "at_ms": 1500, "speaker": "1"}], [[1000, 2000]])
+    assert [(s.speaker, excluded) for s, excluded in out] == [("1", False), ("1", True)]

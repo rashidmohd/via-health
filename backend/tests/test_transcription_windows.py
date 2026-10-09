@@ -367,8 +367,20 @@ def test_corrections_set_swap_undo_and_survive_refinement(
     assert swapped["corrections"] == 2
     assert swapped["segments"][-2:] == [
         # "hallo" at 83 s is now speaker 2 and joins the "danke" before it
-        {"speaker": "2", "start_ms": 58_000, "end_ms": 83_400, "text": "danke hallo"},
-        {"speaker": "1", "start_ms": 101_000, "end_ms": 101_400, "text": "danke"},
+        {
+            "speaker": "2",
+            "start_ms": 58_000,
+            "end_ms": 83_400,
+            "text": "danke hallo",
+            "excluded": False,
+        },
+        {
+            "speaker": "1",
+            "start_ms": 101_000,
+            "end_ms": 101_400,
+            "text": "danke",
+            "excluded": False,
+        },
     ]
 
     # Refinement afterwards changes the base labels, but corrections are applied on top.

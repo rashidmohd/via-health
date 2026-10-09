@@ -15,6 +15,10 @@ def test_login_email_has_text_and_branded_html(language: str) -> None:
     assert 'src="http' in content.html and "/email/sessio-logo.png" in content.html
     assert 'alt="Sessio"' in content.html
     assert ".svg" not in content.html  # email clients do not show SVG
+    # Same font as the UI, from our own origin — never Google Fonts.
+    assert "@font-face{font-family:'Inter'" in content.html
+    assert "/email/inter-latin.woff2" in content.html
+    assert "googleapis" not in content.html
 
 
 @pytest.mark.parametrize("language", ["de", "en"])

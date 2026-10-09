@@ -8,6 +8,7 @@ import logging
 import time
 import uuid
 from datetime import UTC, datetime, timedelta
+from typing import Any
 
 from sqlalchemy import Engine, select, text
 from sqlalchemy.dialects.postgresql import insert
@@ -38,7 +39,7 @@ from app.domain.report_template import (
     TEMPLATE_VERSION,
     draft_schema,
 )
-from app.domain.transcript import Segment, Word, apply_overrides, words_to_segments
+from app.domain.transcript import Segment, Word, apply_corrections, is_excluded, words_to_segments
 from app.workers.transcribe import TransientFailure, notify, transcript_aad
 
 logger = logging.getLogger("sessio.worker.report")
@@ -47,7 +48,8 @@ STALE_DRAFTING = timedelta(minutes=15)  # worker restarted mid-job
 
 
 def find_draft_work(engine: Engine) -> list[uuid.UUID]:
-    """Reports waiting for a draft, and finished transcripts that have none yet."""
+    """Reports the therapist asked a draft for. Never automatic: the therapist first reviews
+    the transcript and may leave turns out (ADR 0018)."""
     with DbSession(engine) as db:
         rows = db.execute(
             text(
@@ -55,11 +57,6 @@ def find_draft_work(engine: Engine) -> list[uuid.UUID]:
                 SELECT r.session_id FROM reports r
                 WHERE r.status = 'pending'
                    OR (r.status = 'drafting' AND r.updated_at < now() - :stale)
-                UNION
-                SELECT t.session_id FROM transcripts t JOIN sessions s ON s.id = t.session_id
-                WHERE t.refine_status IN ('done', 'failed', 'skipped')
-                  AND s.llm_names_enc IS NOT NULL
-                  AND NOT EXISTS (SELECT 1 FROM reports r WHERE r.session_id = t.session_id)
                 LIMIT 50
                 """
             ),
@@ -113,10 +110,14 @@ def _segments(transcript: Transcript) -> list[Segment]:
         base = words_to_segments(Word(**w) for w in data["words"])
     else:
         base = [Segment(**s) for s in data["segments"]]
-    return apply_overrides(base, transcript.speaker_overrides or [])
+    # Left-out turns never reach the model (ADR 0018).
+    corrected = apply_corrections(
+        base, transcript.speaker_overrides or [], transcript.excluded_ranges or []
+    )
+    return [segment for segment, excluded in corrected if not excluded]
 
 
-def _notes(db: DbSession, session_id: uuid.UUID) -> list[Note]:
+def _notes(db: DbSession, session_id: uuid.UUID, excluded: list[Any]) -> list[Note]:
     rows = db.scalars(
         select(Capture)
         .where(Capture.session_id == session_id, Capture.status == "confirmed")
@@ -124,6 +125,8 @@ def _notes(db: DbSession, session_id: uuid.UUID) -> list[Note]:
     )
     notes = []
     for row in rows:
+        if is_excluded(row.at_ms, row.at_ms, excluded):
+            continue  # a note from a left-out turn would bring its words back
         payload = decrypt_json(row.payload_enc, f"capture:{row.id}:payload")
         notes.append(Note(str(row.id), row.kind, row.at_ms, str(payload.get("text", ""))))
     return notes
@@ -158,7 +161,7 @@ def draft_report(
         try:
             names = NameList.from_json(decrypt_json(session.llm_names_enc, names_aad(session_id)))
             segments = _segments(transcript)
-            notes = _notes(db, session_id)
+            notes = _notes(db, session_id, transcript.excluded_ranges or [])
         except DecryptionError:
             _set_status(engine, report_id, "failed", "decryption_failed")
             return "failed"

@@ -323,6 +323,9 @@ class Transcript(Base):
     refine_status: Mapped[str] = mapped_column(Text, server_default="skipped")
     # Therapist's speaker corrections, applied on read (times and labels only, no text).
     speaker_overrides: Mapped[list[Any] | None] = mapped_column(JSONB)
+    # Turns the therapist left out of the AI draft, as [start_ms, end_ms] ranges (ADR 0018).
+    # The text itself stays in the record; times only, no text.
+    excluded_ranges: Mapped[list[Any] | None] = mapped_column(JSONB)
 
     __table_args__ = (
         CheckConstraint(

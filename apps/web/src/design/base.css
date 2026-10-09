@@ -604,8 +604,9 @@ a.stat:hover {
   justify-self: start;
 }
 
-/* Danger button: stop, withdraw, delete. Always says what it does. */
-.danger {
+/* Danger button: stop, withdraw, delete. Always says what it does.
+   Only plain buttons — `.link.danger`, `.ghost.danger`, `.banner.danger` and badges keep their own look. */
+button.danger:not(.link, .ghost) {
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -626,11 +627,11 @@ a.stat:hover {
   transition: background-color 150ms var(--ease), transform 150ms var(--ease);
 }
 
-.danger:hover:not(:disabled) {
+button.danger:not(.link, .ghost):hover:not(:disabled) {
   background: #a83524;
 }
 
-.danger:active:not(:disabled) {
+button.danger:not(.link, .ghost):active:not(:disabled) {
   transform: translateY(1px);
 }
 

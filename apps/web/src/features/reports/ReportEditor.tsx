@@ -143,6 +143,7 @@ export function ReportEditor({
       <div className="report-source">
         {transcript ? (
           <SourceTranscript
+            sessionId={session.id}
             transcript={transcript}
             clientName={session.client_name}
             highlight={selectedStatement?.refs ?? []}

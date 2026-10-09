@@ -60,6 +60,7 @@ Implementations: `VertexGeminiProvider` (`europe-west4`, caching disabled, no gr
 
 ## Review and sign flow
 
+0. No automatic draft (ADR 0018): the note screen shows the transcript first; the therapist may "Leave out" lines (`transcripts.excluded_ranges`, times only, text stays in the record), then clicks "Draft with AI". The draft/check calls and confirmed captures skip left-out turns (`apply_corrections` in `domain/transcript.py`). Locked while drafting and after approval.
 1. Draft stored encrypted with the session key (`reports.draft_enc`), status `draft`.
 2. Review screen: transcript left (speaker labels editable: S1 → Therapeut, S2 → Klient), draft right, click a sentence to see its source segments, confirmed captures listed.
 3. Therapist edits freely; regenerate per section allowed.

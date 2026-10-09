@@ -1688,6 +1688,29 @@
   }
 }
 
+/* Client page: sessions left (wide), details, consent and hidden names right */
+.page.client-page {
+  max-width: 1180px;
+}
+
+.client-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(300px, 380px);
+  gap: var(--space-6);
+  align-items: start;
+}
+
+.client-aside {
+  display: grid;
+  gap: var(--space-6);
+}
+
+@media (max-width: 1024px) {
+  .client-layout {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
 /* Session page: transcript, speaker choice, captures */
 .icon-line {
   display: flex;
@@ -2559,4 +2582,48 @@
 .transcript.chat.source li.source-hit .source-line {
   background: var(--olive-100);
   border-color: var(--olive-700);
+}
+
+/* Lines left out of the AI draft (ADR 0018): still shown, dimmed, labelled in text. */
+.transcript.chat li.excluded .line {
+  background: var(--surface);
+  border-style: dashed;
+}
+
+.transcript.chat li.excluded .line .text,
+.transcript.chat li.excluded .line > p {
+  color: var(--text-subtle);
+  text-decoration: line-through;
+  text-decoration-color: var(--border);
+}
+
+.transcript .left-out {
+  font-size: var(--text-xs);
+  color: var(--text-muted);
+}
+
+.transcript.chat.source .source-line.static {
+  cursor: default;
+}
+
+.transcript.chat.source .source-line.static:hover {
+  border-color: var(--border);
+}
+
+.transcript.chat .exclude-button {
+  flex: none;
+  align-self: center;
+  opacity: 0;
+}
+
+.transcript.chat li:hover .exclude-button,
+.transcript.chat li.excluded .exclude-button,
+.transcript.chat .exclude-button:focus-visible {
+  opacity: 1;
+}
+
+@media (hover: none) {
+  .transcript.chat .exclude-button {
+    opacity: 1;
+  }
 }

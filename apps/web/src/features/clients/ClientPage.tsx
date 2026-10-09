@@ -55,7 +55,7 @@ export function ClientPage() {
   }
 
   return (
-    <section className="page narrow">
+    <section className="page client-page">
       <Link to="/clients" className="back">
         <ChevronLeft className="icon" aria-hidden="true" />
         {t('nav.clients')}
@@ -76,120 +76,125 @@ export function ClientPage() {
         )}
       </header>
 
-      <div className="card">
-        <h2>{t('clients.details')}</h2>
-        {editing ? (
-          <ClientForm
-            initial={{ identity: client.identity, preferred_language: client.preferred_language }}
-            submitLabel={t('clients.save')}
-            busy={update.isPending}
-            onSubmit={(values) =>
-              update.mutate(values, { onSuccess: () => setEditing(false) })
-            }
-          >
-            <button type="button" className="secondary" onClick={() => setEditing(false)}>
-              {t('common.cancel')}
-            </button>
-          </ClientForm>
-        ) : (
-          <>
-            <dl className="details">
-              <dt>{t('clients.fields.dateOfBirth')}</dt>
-              <dd>{client.identity.date_of_birth ? formatDate(client.identity.date_of_birth, i18n.language) : '—'}</dd>
-              <dt>{t('clients.fields.email')}</dt>
-              <dd>{client.identity.email || '—'}</dd>
-              <dt>{t('clients.fields.phone')}</dt>
-              <dd>{client.identity.phone || '—'}</dd>
-              <dt>{t('clients.fields.language')}</dt>
-              <dd>{client.preferred_language === 'de' ? 'Deutsch' : 'English'}</dd>
-            </dl>
-            {client.status !== 'restricted' && (
-              <div className="actions">
-                {active && (
-                  <button className="secondary" onClick={() => setEditing(true)}>
-                    <Pencil className="icon" aria-hidden="true" />
-                    {t('common.edit')}
-                  </button>
-                )}
-                <button
-                  className="link"
-                  onClick={() => update.mutate({ status: active ? 'archived' : 'active' })}
-                  disabled={update.isPending}
-                >
-                  {t(active ? 'clients.archive' : 'clients.reactivate')}
+      {/* Sessions are the main work, so they get the wide column; details sit beside them. */}
+      <div className="client-layout">
+        <div className="table-card client-sessions">
+          <div className="table-card-header">
+            <h2>{t('nav.sessions')}</h2>
+          </div>
+          <SessionList clientId={client.id} showClient={false} />
+        </div>
+
+        <aside className="client-aside" aria-label={t('clients.details')}>
+          <div className="card">
+            <h2>{t('clients.details')}</h2>
+            {editing ? (
+              <ClientForm
+                initial={{ identity: client.identity, preferred_language: client.preferred_language }}
+                submitLabel={t('clients.save')}
+                busy={update.isPending}
+                onSubmit={(values) =>
+                  update.mutate(values, { onSuccess: () => setEditing(false) })
+                }
+              >
+                <button type="button" className="secondary" onClick={() => setEditing(false)}>
+                  {t('common.cancel')}
                 </button>
-              </div>
-            )}
-          </>
-        )}
-      </div>
-
-      <div className="card">
-        <h2>{t('consent.title')}</h2>
-        <ul className="consent-status">
-          {CONSENT_KINDS.map((kind) => (
-            <li key={kind}>
-              <span>{t(`consent.kinds.${kind}`)}</span>
-              <span className={`consent-state status-${client.consent[kind]}`}>
-                {client.consent[kind] === 'granted' ? (
-                  <CircleCheck className="icon" aria-hidden="true" />
-                ) : (
-                  <CircleAlert className="icon" aria-hidden="true" />
-                )}
-                {t(`consent.status.${client.consent[kind]}`)}
-              </span>
-            </li>
-          ))}
-        </ul>
-        {active && CONSENT_KINDS.some((kind) => client.consent[kind] !== 'granted') && (
-          <Link className="button primary" to={`/clients/${id}/consent`}>
-            <FileSignature className="icon" aria-hidden="true" />
-            {t('consent.record')}
-          </Link>
-        )}
-
-        {client.consents.length > 0 && (
-          <>
-            <h3>{t('consent.history')}</h3>
-            <ul className="consent-history">
-              {client.consents.map((consent) => (
-                <li key={consent.id}>
-                  <div>
-                    <strong>{t(`consent.kinds.${consent.kind}`)}</strong>
-                    <div className="muted small">
-                      {t('consent.historyLine', {
-                        date: formatDate(consent.granted_at, i18n.language),
-                        version: consent.text_version,
-                        language: consent.language.toUpperCase(),
-                        signer: t(`consent.signer.${consent.signed_by}`),
-                      })}
-                      {consent.withdrawn_at &&
-                        ` · ${t('consent.withdrawnOn', { date: formatDate(consent.withdrawn_at, i18n.language) })}`}
-                    </div>
-                  </div>
-                  {!consent.withdrawn_at && (
+              </ClientForm>
+            ) : (
+              <>
+                <dl className="details">
+                  <dt>{t('clients.fields.dateOfBirth')}</dt>
+                  <dd>{client.identity.date_of_birth ? formatDate(client.identity.date_of_birth, i18n.language) : '—'}</dd>
+                  <dt>{t('clients.fields.email')}</dt>
+                  <dd>{client.identity.email || '—'}</dd>
+                  <dt>{t('clients.fields.phone')}</dt>
+                  <dd>{client.identity.phone || '—'}</dd>
+                  <dt>{t('clients.fields.language')}</dt>
+                  <dd>{client.preferred_language === 'de' ? 'Deutsch' : 'English'}</dd>
+                </dl>
+                {client.status !== 'restricted' && (
+                  <div className="actions">
+                    {active && (
+                      <button className="secondary" onClick={() => setEditing(true)}>
+                        <Pencil className="icon" aria-hidden="true" />
+                        {t('common.edit')}
+                      </button>
+                    )}
                     <button
-                      className="link danger"
-                      onClick={() => void confirmWithdraw(consent)}
-                      disabled={withdraw.isPending}
+                      className="link"
+                      onClick={() => update.mutate({ status: active ? 'archived' : 'active' })}
+                      disabled={update.isPending}
                     >
-                      {t('consent.withdraw')}
+                      {t(active ? 'clients.archive' : 'clients.reactivate')}
                     </button>
-                  )}
+                  </div>
+                )}
+              </>
+            )}
+          </div>
+
+          <div className="card">
+            <h2>{t('consent.title')}</h2>
+            <ul className="consent-status">
+              {CONSENT_KINDS.map((kind) => (
+                <li key={kind}>
+                  <span>{t(`consent.kinds.${kind}`)}</span>
+                  <span className={`consent-state status-${client.consent[kind]}`}>
+                    {client.consent[kind] === 'granted' ? (
+                      <CircleCheck className="icon" aria-hidden="true" />
+                    ) : (
+                      <CircleAlert className="icon" aria-hidden="true" />
+                    )}
+                    {t(`consent.status.${client.consent[kind]}`)}
+                  </span>
                 </li>
               ))}
             </ul>
-          </>
-        )}
-      </div>
+            {active && CONSENT_KINDS.some((kind) => client.consent[kind] !== 'granted') && (
+              <Link className="button primary" to={`/clients/${id}/consent`}>
+                <FileSignature className="icon" aria-hidden="true" />
+                {t('consent.record')}
+              </Link>
+            )}
 
-      <HiddenNamesCard clientId={client.id} />
+            {client.consents.length > 0 && (
+              <>
+                <h3>{t('consent.history')}</h3>
+                <ul className="consent-history">
+                  {client.consents.map((consent) => (
+                    <li key={consent.id}>
+                      <div>
+                        <strong>{t(`consent.kinds.${consent.kind}`)}</strong>
+                        <div className="muted small">
+                          {t('consent.historyLine', {
+                            date: formatDate(consent.granted_at, i18n.language),
+                            version: consent.text_version,
+                            language: consent.language.toUpperCase(),
+                            signer: t(`consent.signer.${consent.signed_by}`),
+                          })}
+                          {consent.withdrawn_at &&
+                            ` · ${t('consent.withdrawnOn', { date: formatDate(consent.withdrawn_at, i18n.language) })}`}
+                        </div>
+                      </div>
+                      {!consent.withdrawn_at && (
+                        <button
+                          className="link danger"
+                          onClick={() => void confirmWithdraw(consent)}
+                          disabled={withdraw.isPending}
+                        >
+                          {t('consent.withdraw')}
+                        </button>
+                      )}
+                    </li>
+                  ))}
+                </ul>
+              </>
+            )}
+          </div>
 
-      <div className="table-card">
-        <div className="table-card-header">
-          <h2>{t('nav.sessions')}</h2>
-        </div>
-        <SessionList clientId={client.id} showClient={false} />
+          <HiddenNamesCard clientId={client.id} />
+        </aside>
       </div>
 
       {mutationError && (

@@ -130,7 +130,10 @@ export function TranscriptView({
             const other = isTherapist ? client : therapist
             const role = roleOfSpeaker(segment.speaker, therapist)
             return (
-              <li key={`${segment.start_ms}-${index}`} className={role ?? 'unknown'}>
+              <li
+                key={`${segment.start_ms}-${index}`}
+                className={`${role ?? 'unknown'}${segment.excluded ? ' excluded' : ''}`}
+              >
                 <SpeakerAvatar role={role} label={segment.speaker ?? '?'} clientName={clientName} />
                 <div className="line">
                   <span className="meta">
@@ -154,6 +157,7 @@ export function TranscriptView({
                       <span className="who">{roleOf(segment.speaker)}</span>
                     )}
                     <span className="time">{formatTime(segment.start_ms)}</span>
+                    {segment.excluded && <span className="left-out">{t('report.leftOut')}</span>}
                     {canCorrect && index > 0 && (
                       <button
                         className="link small swap-from"

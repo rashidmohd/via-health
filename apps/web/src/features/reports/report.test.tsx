@@ -161,6 +161,35 @@ describe('session note', () => {
     expect(screen.queryByRole('button', { name: 'Write manually' })).not.toBeInTheDocument()
   })
 
+  it('lets the therapist leave lines out before the AI draft, and include them again', async () => {
+    let excluded = false
+    const calls = api((url, init) => {
+      if (url.endsWith('/transcript/exclusions') && init.method === 'POST') {
+        excluded = (JSON.parse(String(init.body)) as { excluded: boolean }).excluded
+      }
+      if (url.endsWith('/transcript') || url.endsWith('/transcript/exclusions')) {
+        const [first, second] = TRANSCRIPT.segments
+        return { status: 200, body: { ...TRANSCRIPT, segments: [first, { ...second, excluded }] } }
+      }
+      if (url.endsWith('/report')) return { status: 200, body: report('none', { ai_assisted: false }) }
+      return undefined
+    })
+    renderApp('/sessions/s1/report')
+    // Names and avatars, not roles; the client line can be left out.
+    expect(await screen.findByText('Ich habe es an vier Tagen geführt.')).toBeInTheDocument()
+    expect(screen.getByText('Anna Weber')).toBeInTheDocument()
+    fireEvent.click(screen.getByRole('button', { name: 'Leave out the line at 0:04 from the AI draft' }))
+    expect(await screen.findByText('Left out of the AI draft')).toBeInTheDocument()
+    expect(screen.getByText('1 line left out of the AI draft.')).toBeInTheDocument()
+    expect(calls.find((c) => c.url.endsWith('/transcript/exclusions'))?.body).toEqual({
+      start_ms: 4100, end_ms: 9000, excluded: true,
+    })
+
+    fireEvent.click(screen.getByRole('button', { name: 'Include the line at 0:04 in the AI draft again' }))
+    await waitFor(() => expect(screen.queryByText('Left out of the AI draft')).not.toBeInTheDocument())
+    expect(screen.getByRole('button', { name: 'Draft with AI' })).toBeEnabled()
+  })
+
   it('explains a missing AI consent and allows a manual note', async () => {
     api((url) => (url.endsWith('/report') ? { status: 200, body: report('no_consent') } : undefined))
     renderApp('/sessions/s1/report')
