@@ -12,6 +12,13 @@ export class ApiError extends Error {
   }
 }
 
+/** A request that takes longer is given up and counts as a network error, so it is retried.
+ *  Without a limit, a stalled connection (e.g. after the laptop slept) never settles and the
+ *  upload queue, which waits for it, stops for good. */
+export const REQUEST_TIMEOUT_MS = 30_000
+/** Uploads of audio chunks (up to 1 MB) on a slow connection. */
+export const UPLOAD_TIMEOUT_MS = 120_000
+
 export interface ApiInit {
   method?: string
   /** JSON body. */
@@ -31,6 +38,11 @@ export async function api<T>(path: string, init: ApiInit = {}): Promise<T> {
     headers['Content-Type'] = 'application/json'
     body = JSON.stringify(init.body)
   }
+  const controller = new AbortController()
+  const timer = setTimeout(
+    () => controller.abort(),
+    init.bytes !== undefined ? UPLOAD_TIMEOUT_MS : REQUEST_TIMEOUT_MS,
+  )
   let response: Response
   try {
     response = await fetch(`${API_URL}${path}`, {
@@ -38,12 +50,18 @@ export async function api<T>(path: string, init: ApiInit = {}): Promise<T> {
       credentials: 'include',
       headers,
       body,
+      signal: controller.signal,
     })
   } catch {
+    clearTimeout(timer)
     throw new ApiError('network_error', 0)
   }
-  if (response.status === 204) return undefined as T
-  const data: unknown = await response.json().catch(() => null)
+  if (response.status === 204) {
+    clearTimeout(timer)
+    return undefined as T
+  }
+  const data: unknown = await response.json().catch(() => null) // a stalled body aborts too
+  clearTimeout(timer)
   if (!response.ok) {
     const code =
       data && typeof data === 'object' && 'code' in data && typeof data.code === 'string'
