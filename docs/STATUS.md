@@ -1,6 +1,6 @@
 # Project status
 
-Last updated: 2026-10-09 · Latest commit: `8f82a99` · Staging: https://via.bandi.ae (API: viaapi.bandi.ae)
+Last updated: 2026-10-09 · Latest commit: `4b44873` · Staging: https://via.bandi.ae (API: viaapi.bandi.ae)
 
 **Prototype. Test data only.** Consent texts are placeholders (ADR 0002); the in-browser speech
 models and the Gemini API are cleared for the prototype only (see "Before real clients").
@@ -16,7 +16,8 @@ models and the Gemini API are cleared for the prototype only (see "Before real c
 | Storage & keys | Encrypted audio in GCS `europe-west4`; session keys wrapped with Cloud KMS | plan 0005, ADR 0001 |
 | Transcription | Chirp 3 (location `eu`) in ~1-minute windows **during** the session → transcript seconds after Stop; batch fallback | plans 0005, 0006 |
 | Speaker accuracy | Whole-session speaker check after Stop; therapist can switch a line, swap from a line on, undo | plan 0008 |
-| Live transcript | In-browser preview (sherpa-onnx + Kroko, German and English), replaced by server text with speakers | plan 0007 |
+| Live transcript | In-browser preview (sherpa-onnx + Kroko, German and English) shown in the recording card from the start (caption under the voice bar, transcript at the bottom), replaced by server text with speakers; engine and models preloaded into Cache Storage after login (progress banner, per-device opt-out); engine warmed up when the record page opens | plan 0007, ADR 0014 |
+| Recording cues | Short rising/falling sound on start/stop (Web Audio, no files); per-device switch | ADR 0014 |
 | Capture chips | Task / appointment chips (fixed de/en rules) and bookmarks; keep/remove after the session | plan 0007 |
 | Avatar | Rive character with placeholder image until the designer's file arrives; moods from app events only (no emotion recognition); paused while recording; ring shows voice activity (binary) and processing; Settings: one of three illustrated presets, a drawn avatar suggested from the user's photo (Gemini, photo not stored, user corrects), initials or own photo (cropped and re-encoded in the browser, encrypted on the server, optional tilt), opt-in glance on new chips | plans 0007, 0011, 0012, ADRs 0010–0013 |
 | Mic health | Voice activity in its own worklet during every recording; level meter + voice indicator; warning after 2 min without speech; 5 s mic test before the first recording; mic choice for the next recording | plan 0011, ADR 0010 |
@@ -24,7 +25,7 @@ models and the Gemini API are cleared for the prototype only (see "Before real c
 | Notifications | Tab with unread badge: transcript ready / failed, note draft ready / failed / no AI consent; ids only in the DB | plan 0010 (part 1) |
 | UI design system | Inter + Lucide icons, tokens and shared components, sidebar + top bar shell (drawer on small screens); all built screens redesigned (Today tiles, client and session tables with filters, record screen, note editor with "Next to check", print view) | ADR 0009 |
 
-Tests: backend 235, web 172 (lint, typecheck, build green).
+Tests: backend 235, web 193 (lint, typecheck, build green).
 
 ## Not built yet (in order)
 
@@ -34,7 +35,7 @@ Tests: backend 235, web 172 (lint, typecheck, build green).
    encrypted so the server cannot read it (CLAUDE.md rule 7).
 3. **Deletion jobs** — crypto-shred audio on signing, `retention_sweep` for unsigned sessions,
    clean-up of leftover transcript windows. Until then the bucket's 30-day rule is the safety net.
-4. **Settings page, rest** — practice term list (term chips), live-preview switch. Profile picture, avatar reactions and microphone settings are built.
+4. **Settings page, rest** — practice term list (term chips). Profile picture, avatar reactions, microphone and "Recording on this device" (sounds, live transcript, model preload) are built.
 5. **Rive character** — designer delivers `sessio-avatar.riv` with interchangeable parts and bound colours (contract in the `avatar-and-ui` skill); no code change needed.
 6. **Later:** passkeys, other report templates, client documents and data export.
 
@@ -50,5 +51,6 @@ Tests: backend 235, web 172 (lint, typecheck, build green).
 
 - Session notes run on the fake model until `LLM_PROVIDER`/`LLM_API_KEY` are set on staging.
 - Speaker labels on real two-person recordings: the whole-session check is new — verify on staging.
-- Live preview downloads ~71 MB per language on first use per device.
+- Live preview downloads ~155 MB (engine + de + en) per device after login, once per model version.
+- Live text appears ~1.3–2.7 s after speech: the Kroko models decode 1.28 s chunks. Faster 64-frame variants exist but need conversion, a quality check and the license review (ADR 0014).
 - Speech-to-Text cost is ~2× audio minutes per session (windows + speaker check).
