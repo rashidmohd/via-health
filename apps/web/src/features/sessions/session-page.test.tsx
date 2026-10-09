@@ -63,8 +63,12 @@ describe('session page', () => {
 
     const [speaker0] = screen.getAllByRole('button', { name: "That's me" })
     fireEvent.click(speaker0)
-    expect(await screen.findAllByRole('button', { name: /^Therapist at/ })).toHaveLength(2)
-    expect(screen.getAllByRole('button', { name: /^Client at/ })).toHaveLength(1)
+    // Names instead of roles: the user (ME) on the right, the client on the left.
+    expect(await screen.findAllByRole('button', { name: /^Anna at/ })).toHaveLength(2)
+    expect(screen.getAllByRole('button', { name: /^Anna Weber at/ })).toHaveLength(1)
+    const lines = document.querySelectorAll('.transcript.chat li')
+    expect([...lines].map((li) => li.className)).toEqual(['therapist', 'client', 'therapist'])
+    expect(lines[1].querySelector('.initials')).toHaveTextContent('AW')
     expect(screen.queryByRole('heading', { name: 'Which speaker are you?' })).not.toBeInTheDocument()
     // Speaker 0 said the most, so it is listed first.
     expect(calls.find((c) => c.method === 'PATCH')?.body).toEqual({ therapist_speaker: '0' })
@@ -128,7 +132,7 @@ describe('session page', () => {
     })
     renderApp('/sessions/s1')
     // Client line at 0:04 → switch to therapist
-    fireEvent.click(await screen.findByRole('button', { name: 'Client at 0:04 — switch to Therapist' }))
+    fireEvent.click(await screen.findByRole('button', { name: 'Anna Weber at 0:04 — switch to Anna' }))
     await vi.waitFor(() => expect(posts).toHaveLength(1))
     expect(posts[0].body).toEqual({ correction: { op: 'set', at_ms: 4200, speaker: '0' } })
 

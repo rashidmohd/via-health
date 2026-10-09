@@ -1,6 +1,7 @@
 import { useMe, usePhoto } from '../api/auth'
 import { Initials } from '../design/Initials'
 import { AvatarRing } from './AvatarRing'
+import { DrawnFace } from './DrawnFace'
 import type { Mood } from './mood'
 import { PhotoAvatar } from './PhotoAvatar'
 import { RiveAvatar } from './RiveAvatar'
@@ -27,6 +28,19 @@ export function UserAvatar({
   // Initials also while the photo loads.
   if (kind === 'initials' || kind === 'photo') return <Initials name={me?.display_name ?? ''} size={size} />
   return <RiveAvatar mood={mood} appearance={appearance} nod={nod} recording={recording} size={size} />
+}
+
+/**
+ * Small, still version of the user's avatar for lists such as transcript lines. Never animates
+ * and never loads Rive (one per line would be too heavy); the drawn stand-in has the same look.
+ */
+export function UserBadge({ size }: { size: number }) {
+  const { kind, appearance } = useAvatarSettings()
+  const { data: me } = useMe()
+  const { data: photo } = usePhoto(kind === 'photo')
+  if (kind === 'photo' && photo) return <PhotoAvatar src={photo} size={size} recording />
+  if (kind === 'initials' || kind === 'photo') return <Initials name={me?.display_name ?? ''} size={size} />
+  return <DrawnFace appearance={appearance} mood="still" size={size} recording trackPointer={false} />
 }
 
 /**

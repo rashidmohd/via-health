@@ -113,7 +113,7 @@ export function SessionPage() {
 
       {hasTranscript && <ReportCard sessionId={id} />}
       {hasTranscript && transcript && <CaptureReview sessionId={id} transcript={transcript} />}
-      {hasTranscript && transcript && <TranscriptView sessionId={id} transcript={transcript} />}
+      {hasTranscript && transcript && <TranscriptView sessionId={id} transcript={transcript} clientName={session.client_name} />}
     </section>
   )
 }

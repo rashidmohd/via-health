@@ -2330,3 +2330,71 @@
 .live-caption .muted.small {
   align-self: center;
 }
+
+/* Transcript as a conversation: avatar + name per line, client left, user right */
+.transcript.chat li {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-3);
+  padding: 0;
+  border-left: 0;
+}
+
+.transcript.chat li.therapist {
+  flex-direction: row-reverse;
+}
+
+.transcript.chat .line {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+  max-width: 85%;
+  padding: var(--space-2) var(--space-3);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-card);
+  background: var(--surface);
+}
+
+.transcript.chat li.therapist .line {
+  background: var(--olive-50);
+  border-color: var(--olive-100);
+}
+
+.transcript.chat li.client .line {
+  background: var(--surface-muted);
+}
+
+.transcript.chat li.therapist .meta {
+  flex-direction: row-reverse;
+}
+
+.transcript.chat li.therapist .who-button {
+  margin-left: 0;
+  margin-right: -6px;
+}
+
+.transcript.chat li.therapist .swap-from {
+  margin-left: 0;
+  margin-right: auto;
+}
+
+.transcript.chat > li > :first-child {
+  flex: none;
+  margin-top: 2px;
+}
+
+.transcript.chat.live li.source-device .line,
+.transcript.chat.live li.source-partial .line {
+  border-style: dashed;
+}
+
+.speaker-tag.device {
+  background: var(--surface-muted);
+  border: 1px solid var(--border);
+  color: var(--olive-700);
+}
+
+.speaker-tag.device .icon {
+  width: 16px;
+  height: 16px;
+}

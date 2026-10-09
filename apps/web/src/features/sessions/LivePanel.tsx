@@ -1,4 +1,5 @@
 import type { TFunction } from 'i18next'
+import { Mic } from 'lucide-react'
 import { useEffect, useRef } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useLiveText } from '../../api/sessions'
@@ -99,7 +100,7 @@ export function LivePanel({ sessionId, live }: { sessionId: string; live: LivePr
           <CaptureChips captures={captures} />
           <ol
             ref={list}
-            className="transcript live"
+            className="transcript chat live"
             aria-live="polite"
             onScroll={(e) => {
               const el = e.currentTarget
@@ -108,15 +109,27 @@ export function LivePanel({ sessionId, live }: { sessionId: string; live: LivePr
           >
             {lines.map((line, index) => (
               <li key={`${line.source}-${line.startMs}-${index}`} className={`source-${line.source}`}>
-                <span className="meta">
-                  <span className="who">
-                    {line.speaker !== null
-                      ? t('transcript.speaker', { label: line.speaker })
-                      : t('live.thisDevice')}
+                {/* Static marker of where the line came from; never shows who is speaking now. */}
+                {line.speaker !== null ? (
+                  <span className="speaker-tag" aria-hidden="true">
+                    {line.speaker}
                   </span>
-                  <span className="time">{formatClock(line.startMs)}</span>
-                </span>
-                <p>{line.text}</p>
+                ) : (
+                  <span className="speaker-tag device" aria-hidden="true">
+                    <Mic className="icon" />
+                  </span>
+                )}
+                <div className="line">
+                  <span className="meta">
+                    <span className="who">
+                      {line.speaker !== null
+                        ? t('transcript.speaker', { label: line.speaker })
+                        : t('live.thisDevice')}
+                    </span>
+                    <span className="time">{formatClock(line.startMs)}</span>
+                  </span>
+                  <p>{line.text}</p>
+                </div>
               </li>
             ))}
           </ol>
