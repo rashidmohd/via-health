@@ -1,6 +1,8 @@
 import { useEffect, useRef } from 'react'
 import { useTranslation } from 'react-i18next'
 import type { Transcript } from '../../api/sessions'
+import { SpeakerAvatar } from '../sessions/SpeakerAvatar'
+import { roleOfSpeaker, useSpeakerName } from '../sessions/speakerNames'
 import { overlaps } from './overlaps'
 
 function formatTime(ms: number): string {
@@ -12,10 +14,12 @@ function formatTime(ms: number): string {
  *  highlighted; clicking a line selects the statement that cites it. */
 export function SourceTranscript({
   transcript,
+  clientName,
   highlight,
   onSelect,
 }: {
   transcript: Transcript
+  clientName: string
   highlight: [number, number][]
   onSelect: (start: number, end: number) => void
 }) {
@@ -27,26 +31,22 @@ export function SourceTranscript({
     listRef.current?.querySelector('li.source-hit')?.scrollIntoView?.({ block: 'nearest', behavior: 'smooth' })
   }, [highlight])
 
-  function role(label: string | null): string {
-    if (therapist === null) return t('transcript.speaker', { label: label ?? '?' })
-    return label === therapist ? t('transcript.therapist') : t('transcript.client')
-  }
+  const nameOf = useSpeakerName(therapist, clientName)
 
   return (
     <div className="card">
       <h2>{t('transcript.title')}</h2>
       <p className="muted small">{t('report.sourceHint')}</p>
-      <ol className="transcript source" ref={listRef} lang={transcript.language.slice(0, 2)}>
+      <ol className="transcript chat source" ref={listRef} lang={transcript.language.slice(0, 2)}>
         {transcript.segments.map((segment, index) => {
           const hit = highlight.some(([a, b]) => overlaps(a, b, segment.start_ms, segment.end_ms))
+          const role = roleOfSpeaker(segment.speaker, therapist)
           return (
-            <li
-              key={`${segment.start_ms}-${index}`}
-              className={`${segment.speaker === therapist ? 'therapist' : 'client'}${hit ? ' source-hit' : ''}`}
-            >
-              <button className="source-line" onClick={() => onSelect(segment.start_ms, segment.end_ms)}>
+            <li key={`${segment.start_ms}-${index}`} className={`${role ?? 'unknown'}${hit ? ' source-hit' : ''}`}>
+              <SpeakerAvatar role={role} label={segment.speaker ?? '?'} clientName={clientName} size={28} />
+              <button className="line source-line" onClick={() => onSelect(segment.start_ms, segment.end_ms)}>
                 <span className="meta">
-                  <span className="who">{role(segment.speaker)}</span>
+                  <span className="who">{nameOf(segment.speaker)}</span>
                   <span className="time">{formatTime(segment.start_ms)}</span>
                 </span>
                 <span>{segment.text}</span>

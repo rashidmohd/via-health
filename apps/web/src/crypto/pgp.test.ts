@@ -14,16 +14,28 @@ import {
   type UnlockedKey,
 } from './pgp'
 
+// Argon2 key generation is deliberately slow; give it room when the whole suite runs in parallel.
+vi.setConfig({ testTimeout: 30_000, hookTimeout: 60_000 })
+
 const PASSPHRASE = 'olive tree quiet harbour'
 
 let therapist: KeyPair
 let recovery: KeyPair
 let unlocked: UnlockedKey
 let recipients: { therapist: string; recovery: string }
+let otherKey: UnlockedKey // someone else's key
 
 beforeAll(async () => {
-  ;[therapist, recovery] = await Promise.all([createTherapistKey(PASSPHRASE), createRecoveryKey()])
-  unlocked = await unlockPrivateKey(therapist.privateKey, PASSPHRASE)
+  let other: KeyPair
+  ;[therapist, recovery, other] = await Promise.all([
+    createTherapistKey(PASSPHRASE),
+    createRecoveryKey(),
+    createTherapistKey(PASSPHRASE),
+  ])
+  ;[unlocked, otherKey] = await Promise.all([
+    unlockPrivateKey(therapist.privateKey, PASSPHRASE),
+    unlockPrivateKey(other.privateKey, PASSPHRASE),
+  ])
   recipients = { therapist: therapist.publicKey, recovery: recovery.publicKey }
 })
 
@@ -86,8 +98,6 @@ describe('records', () => {
 
   it('cannot be read with a wrong key', async () => {
     const message = await signAndEncrypt('x', unlocked, recipients)
-    const other = await createTherapistKey(PASSPHRASE)
-    const otherKey = await unlockPrivateKey(other.privateKey, PASSPHRASE)
     expect(await code(decryptAndVerify(message, otherKey, therapist.publicKey))).toBe('decrypt_failed')
   })
 
@@ -104,9 +114,7 @@ describe('records', () => {
   })
 
   it('detects a signature by another key', async () => {
-    const forger = await createTherapistKey(PASSPHRASE)
-    const forgerKey = await unlockPrivateKey(forger.privateKey, PASSPHRASE)
-    const forged = await signAndEncrypt('x', forgerKey, recipients)
+    const forged = await signAndEncrypt('x', otherKey, recipients)
     expect(await code(decryptAndVerify(forged, unlocked, therapist.publicKey))).toBe('signature_invalid')
   })
 

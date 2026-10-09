@@ -1,15 +1,14 @@
 import { AudioLines, CircleCheck, Undo2, Users } from 'lucide-react'
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { useMe } from '../../api/auth'
 import {
   useCorrectSpeakers,
   useSetTherapistSpeaker,
   useUndoSpeakerCorrection,
   type Transcript,
 } from '../../api/sessions'
-import { UserBadge } from '../../avatar/AppAvatar'
-import { Initials } from '../../design/Initials'
+import { SpeakerAvatar } from './SpeakerAvatar'
+import { roleOfSpeaker, useSpeakerName } from './speakerNames'
 
 function formatTime(ms: number): string {
   const total = Math.floor(ms / 1000)
@@ -32,17 +31,6 @@ function speakers(transcript: Transcript): { label: string; sample: string }[] {
     .map(([label]) => ({ label, sample: samples.get(label) ?? '' }))
 }
 
-/** Round avatar next to a transcript line. Decorative: the name is always shown next to it. */
-function SpeakerAvatar({ role, label, clientName }: { role: 'therapist' | 'client' | null; label: string; clientName: string }) {
-  if (role === 'therapist') return <UserBadge size={32} />
-  if (role === 'client') return <Initials name={clientName} size={32} />
-  return (
-    <span className="speaker-tag" aria-hidden="true">
-      {label}
-    </span>
-  )
-}
-
 export function TranscriptView({
   sessionId,
   transcript,
@@ -53,7 +41,6 @@ export function TranscriptView({
   clientName: string
 }) {
   const { t } = useTranslation()
-  const { data: me } = useMe()
   const setTherapist = useSetTherapistSpeaker(sessionId)
   const correct = useCorrectSpeakers(sessionId)
   const undo = useUndoSpeakerCorrection(sessionId)
@@ -66,14 +53,7 @@ export function TranscriptView({
   const busy = correct.isPending || undo.isPending
   const checking = transcript.refine_status === 'pending' || transcript.refine_status === 'running'
 
-  // Names instead of roles; the role words stay as fallback while a name is loading.
-  const userName = me?.display_name || t('transcript.therapist')
-  const clientLabel = clientName || t('transcript.client')
-
-  function roleOf(label: string | null): string {
-    if (therapist === null) return t('transcript.speaker', { label: label ?? '?' })
-    return label === therapist ? userName : clientLabel
-  }
+  const roleOf = useSpeakerName(therapist, clientName)
 
   return (
     <div className="stack">
@@ -148,7 +128,7 @@ export function TranscriptView({
           {transcript.segments.map((segment, index) => {
             const isTherapist = therapist !== null && segment.speaker === therapist
             const other = isTherapist ? client : therapist
-            const role = therapist === null ? null : isTherapist ? 'therapist' : 'client'
+            const role = roleOfSpeaker(segment.speaker, therapist)
             return (
               <li key={`${segment.start_ms}-${index}`} className={role ?? 'unknown'}>
                 <SpeakerAvatar role={role} label={segment.speaker ?? '?'} clientName={clientName} />

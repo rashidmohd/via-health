@@ -144,6 +144,7 @@ export function ReportEditor({
         {transcript ? (
           <SourceTranscript
             transcript={transcript}
+            clientName={session.client_name}
             highlight={selectedStatement?.refs ?? []}
             onSelect={selectSegment}
           />

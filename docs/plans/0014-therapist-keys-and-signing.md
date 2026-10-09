@@ -23,7 +23,8 @@ crypto library: the server stores armored PGP data and never parses it.
 - Onboarding wizard on `/keys`: passphrase twice (min. 12 characters) → keys generated →
   recovery private key downloaded as `sessio-recovery-key.asc` → therapist types the check code
   (last 8 recovery-fingerprint characters, written only in the file's `Comment:` line) → keys
-  stored. Nothing is sent to the server before that check (skill rule).
+  stored. Nothing is sent to the server before that check (skill rule). With consent the code
+  can be emailed instead (`POST /keys/check-code-email`, ADR 0017).
 - Set up: fingerprints, locked/unlocked, Unlock / Lock now, download public key. `UnlockForm` is
   exported for step B, where an unlock dialog opens wherever a key is needed.
 - Device copy of the encrypted private key in IndexedDB (Dexie); server copy is the same

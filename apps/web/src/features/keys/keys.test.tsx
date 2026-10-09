@@ -2,7 +2,7 @@ import { fireEvent, screen, waitFor } from '@testing-library/react'
 import { lock, unlockedKey } from '../../crypto/keyring'
 import { PgpError } from '../../crypto/pgp'
 import i18n from '../../i18n'
-import { ME, mockApi, renderApp } from '../../test-utils'
+import { confirmInDialog, ME, mockApi, renderApp } from '../../test-utils'
 
 // The real openpgp.js is covered in crypto/pgp.test.ts; here only the page flow.
 const RECOVERY_FP = 'b'.repeat(56) + 'ab12cd34'
@@ -41,6 +41,7 @@ function server() {
   calls = mockApi((url, init) => {
     const method = init.method ?? 'GET'
     if (url.endsWith('/auth/me')) return { status: 200, body: { ...ME, has_keys: stored !== null } }
+    if (url.endsWith('/keys/check-code-email')) return { status: 202, body: { status: 'sent' } }
     if (url.endsWith('/keys') && method === 'PUT') {
       stored = JSON.parse(init.body as string) as typeof KEYS
       return { status: 201, body: stored }
@@ -103,6 +104,25 @@ describe('key setup', () => {
     expect(JSON.stringify(put?.body)).not.toContain('SECRET')
     expect(screen.getByText('Unlocked')).toBeInTheDocument()
     expect(unlockedKey()).toBe(UNLOCKED)
+  })
+
+  it('emails the check code only after the therapist agrees (ADR 0017)', async () => {
+    await createKeys()
+    fireEvent.click(await screen.findByRole('button', { name: 'Download recovery key' }))
+    const emailLink = screen.getByRole('button', { name: /Send it to me by email/ })
+
+    fireEvent.click(emailLink)
+    expect(await screen.findByRole('alertdialog')).toHaveTextContent('anna@example.com')
+    fireEvent.click(screen.getByRole('button', { name: 'Cancel' }))
+    await waitFor(() => expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument())
+    expect(calls.some((call) => call.url.endsWith('/check-code-email'))).toBe(false)
+
+    fireEvent.click(emailLink)
+    await confirmInDialog('Send code')
+    expect(await screen.findByRole('status')).toHaveTextContent('Check code sent to anna@example.com')
+    const sent = calls.find((call) => call.url.endsWith('/check-code-email'))
+    expect(sent?.body).toEqual({ check_code: 'AB12-CD34', consent: true })
+    expect(JSON.stringify(calls)).not.toContain('SECRET')
   })
 
   it('is in German too', async () => {

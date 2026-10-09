@@ -135,3 +135,81 @@ def test_db_keeps_keys_write_once_and_complete(
         _set(c, first["id"], "display_name = 'Anna B.'")
         c.commit()
     assert uuid.UUID(first["id"])
+
+
+# --- check code by email (ADR 0017) ---------------------------------------------------
+
+
+def test_check_code_emailed_with_consent(
+    client: TestClient, mail: FakeEmailSender, owner: Engine
+) -> None:
+    login(client, mail, "anna@example.com")
+    client.patch("/auth/me", json={"ui_language": "en"})
+    response = client.post(
+        "/keys/check-code-email", json={"check_code": "AB12-CD34", "consent": True}
+    )
+    assert response.status_code == 202
+    to, subject, body = mail.sent[-1]
+    assert to == "anna@example.com"
+    assert subject == "Your Sessio recovery key check code"
+    assert "AB12-CD34" in body
+    assert "does not replace the recovery key file" in body
+    html = mail.html[-1]
+    assert html is not None and "AB12-CD34" in html and "/email/sessio-logo.png" in html
+    assert "PRIVATE KEY" not in body + html
+    with owner.connect() as c:
+        meta = c.execute(
+            text("SELECT meta FROM audit_log WHERE action = 'check_code_emailed'")
+        ).scalar_one()
+    assert meta == {"consent": True}
+
+
+@pytest.mark.parametrize(
+    "body",
+    [
+        {"check_code": "AB12-CD34", "consent": False},
+        {"check_code": "AB12-CD34"},
+        {"check_code": "ab12-cd34", "consent": True},
+        {"check_code": "<b>AB12</b>", "consent": True},
+    ],
+    ids=["no-consent", "consent-missing", "lower-case", "markup"],
+)
+def test_check_code_email_needs_consent_and_a_code(
+    client: TestClient, mail: FakeEmailSender, body: dict[str, object]
+) -> None:
+    login(client, mail, "anna@example.com")
+    sent = len(mail.sent)
+    assert client.post("/keys/check-code-email", json=body).status_code == 422
+    assert len(mail.sent) == sent
+
+
+def test_check_code_email_only_during_setup_and_limited(
+    client: TestClient, mail: FakeEmailSender
+) -> None:
+    login(client, mail, "anna@example.com")
+    body = {"check_code": "AB12-CD34", "consent": True}
+    for _ in range(3):
+        assert client.post("/keys/check-code-email", json=body).status_code == 202
+    limited = client.post("/keys/check-code-email", json=body)
+    assert limited.status_code == 429
+    assert limited.json() == {"code": "too_many_requests"}
+
+    client.put("/keys", json=KEYS)
+    done = client.post("/keys/check-code-email", json=body)
+    assert done.status_code == 409
+    assert done.json() == {"code": "keys_exist"}
+
+
+def test_check_code_email_in_german_and_send_failure(
+    client: TestClient, mail: FakeEmailSender
+) -> None:
+    login(client, mail, "anna@example.com")
+    client.patch("/auth/me", json={"ui_language": "de"})
+    body = {"check_code": "AB12-CD34", "consent": True}
+    client.post("/keys/check-code-email", json=body)
+    assert mail.sent[-1][1] == "Ihr Sessio-Prüfcode für den Wiederherstellungsschlüssel"
+    assert 'lang="de"' in (mail.html[-1] or "")
+    mail.fail = True
+    failed = client.post("/keys/check-code-email", json=body)
+    assert failed.status_code == 503
+    assert failed.json() == {"code": "email_failed"}

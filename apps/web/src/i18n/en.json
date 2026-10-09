@@ -674,7 +674,11 @@
       "checkLabel": "Check code from the file",
       "checkHint": "8 characters, for example AB12-CD34.",
       "checkWrong": "This check code does not match. Open the file you saved and type the code shown there.",
-      "finish": "Finish setup"
+      "finish": "Finish setup",
+      "emailInstead": "Can't find the code? Send it to me by email",
+      "emailConsent": "Send the check code to {{email}}? The email contains only the code, never the recovery key. It does not replace the file: keep the file safe and offline.",
+      "emailSend": "Send code",
+      "emailSent": "Check code sent to {{email}}. Still keep the recovery key file safe."
     },
     "status": {
       "title": "Your key",

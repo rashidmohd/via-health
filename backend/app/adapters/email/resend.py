@@ -18,12 +18,20 @@ class ResendEmailSender:
         self._api_key = api_key
         self._sender = sender
 
-    def send(self, *, to: str, subject: str, text: str) -> None:
+    def send(self, *, to: str, subject: str, text: str, html: str | None = None) -> None:
+        payload: dict[str, object] = {
+            "from": self._sender,
+            "to": [to],
+            "subject": subject,
+            "text": text,
+        }
+        if html is not None:
+            payload["html"] = html
         try:
             response = httpx2.post(
                 RESEND_URL,
                 headers={"Authorization": f"Bearer {self._api_key}"},
-                json={"from": self._sender, "to": [to], "subject": subject, "text": text},
+                json=payload,
                 timeout=10,
             )
         except httpx2.HTTPError as exc:

@@ -144,7 +144,12 @@ def start(
     db.flush()
     content = login_code_email(code, body.language)
     try:
-        sender.send(to=normalize_email(body.email), subject=content.subject, text=content.text)
+        sender.send(
+            to=normalize_email(body.email),
+            subject=content.subject,
+            text=content.text,
+            html=content.html,
+        )
     except EmailSendError:
         # 503, not 502: Cloudflare replaces origin 502s with its own page, which drops the
         # CORS headers and the error code.

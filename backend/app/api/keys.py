@@ -6,16 +6,22 @@ passphrase or the recovery private key, and it does not parse PGP data. Keys are
 (DB trigger); rotation is a later plan.
 """
 
-from typing import Annotated
+from datetime import UTC, datetime, timedelta
+from typing import Annotated, Literal
 
-from fastapi import APIRouter
+from fastapi import APIRouter, Depends
 from pydantic import AfterValidator, BaseModel, Field, model_validator
+from sqlalchemy import func, select
 
+from app.adapters.email import EmailSender, EmailSendError, get_email_sender
 from app.api.deps import CurrentUserId, Db
 from app.api.errors import ApiError
 from app.db.models import AuditLog, User
+from app.domain.login_email import recovery_check_email
 
 router = APIRouter(prefix="/keys", tags=["keys"])
+
+MAX_CHECK_EMAILS_PER_HOUR = 3
 
 # Armored v6 Ed25519/X25519 keys are ~1 KB; this leaves room for user ids and subkeys.
 MAX_KEY_CHARS = 16_000
@@ -110,3 +116,51 @@ def set_keys(body: KeysIn, user_id: CurrentUserId, db: Db) -> KeysOut:
     )
     db.flush()
     return _out(user)
+
+
+class CheckCodeEmailIn(BaseModel):
+    # Shown in the recovery file as "ABCD-EF12" (last 8 fingerprint characters).
+    check_code: Annotated[str, Field(pattern=r"^[0-9A-F]{4}-[0-9A-F]{4}$")]
+    # The therapist agreed to get the code by email (ADR 0017).
+    consent: Literal[True]
+
+
+@router.post("/check-code-email", status_code=202)
+def email_check_code(
+    body: CheckCodeEmailIn,
+    user_id: CurrentUserId,
+    db: Db,
+    sender: Annotated[EmailSender, Depends(get_email_sender)],
+) -> dict[str, str]:
+    """During key setup: email the recovery key's check code to the therapist's own address.
+    Only the code is sent, never the recovery key. Weakens the "file was saved" check (ADR 0017)."""
+    user = _user(db, user_id)
+    if user.pgp_public_key is not None:
+        raise ApiError("keys_exist", 409)
+    since = datetime.now(UTC) - timedelta(hours=1)
+    recent = db.scalar(
+        select(func.count()).where(
+            AuditLog.actor_user_id == user_id,
+            AuditLog.action == "check_code_emailed",
+            AuditLog.at > since,
+        )
+    )
+    if (recent or 0) >= MAX_CHECK_EMAILS_PER_HOUR:
+        raise ApiError("too_many_requests", 429)
+    language: Literal["de", "en"] = "en" if user.ui_language == "en" else "de"
+    content = recovery_check_email(body.check_code, language)
+    try:
+        sender.send(to=user.email, subject=content.subject, text=content.text, html=content.html)
+    except EmailSendError:
+        raise ApiError("email_failed", 503) from None  # 503: see auth.start
+    db.add(
+        AuditLog(
+            actor_user_id=user_id,
+            action="check_code_emailed",
+            entity="user",
+            entity_id=str(user_id),
+            meta={"consent": True},
+        )
+    )
+    db.flush()
+    return {"status": "sent"}

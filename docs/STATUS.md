@@ -9,7 +9,7 @@ models and the Gemini API are cleared for the prototype only (see "Before real c
 
 | Area | What works | Plan / ADR |
 |---|---|---|
-| Login | Sign up / sign in with a 6-digit email code (Resend EU); de/en UI | plan 0002, ADR 0003 |
+| Login | Sign up / sign in with a 6-digit email code (Resend EU), branded HTML email with logo (ADR 0017); de/en UI | plan 0002, ADR 0003 |
 | Data protection | Postgres row-level security per therapist; consent enforced in the DB; audit log (IDs only) | plan 0001 |
 | Clients & consent | Client list, add/edit/archive; per-kind consent with on-screen signature, withdrawal, version history; details encrypted | plan 0003, ADR 0004 |
 | Recorder | Choose client → record; audio encrypted in the browser, saved on the device first, uploaded with retry; offline, crash recovery, mic-loss alert, bookmarks | plan 0004 |
@@ -23,11 +23,11 @@ models and the Gemini API are cleared for the prototype only (see "Before real c
 | Mic health | Voice activity in its own worklet during every recording; level meter + voice indicator; warning after 2 min without speech; 5 s mic test before the first recording; mic choice for the next recording | plan 0011, ADR 0010 |
 | Session note | German Verlaufsdokumentation; Gemini drafts only "what was said and done" with sources, a second pass checks each sentence; therapist writes the clinical fields, resolves flags, approves; addenda after approval; names hidden from the AI; note topics on the session card (not on Today) | plan 0009, ADRs 0006–0008 |
 | Reports page | Approved session notes across clients: session no. and type, topics, approval date, addenda; search by client; opens the read-only note | plan 0013 |
-| Therapist keys | Keys screen: OpenPGP v6 key made in the browser, passphrase-protected (Argon2); recovery key downloaded once, check code typed back before anything is stored; keys write-once in the DB; unlock / auto-lock after 15 min idle and on tab close; device copy for offline unlock | plan 0014 step A |
+| Therapist keys | Keys screen: OpenPGP v6 key made in the browser, passphrase-protected (Argon2); recovery key downloaded once, check code typed back before anything is stored (or emailed with consent, ADR 0017); keys write-once in the DB; unlock / auto-lock after 15 min idle and on tab close; device copy for offline unlock | plan 0014 step A |
 | Notifications | Tab with unread badge: transcript ready / failed, note draft ready / failed / no AI consent; ids only in the DB | plan 0010 (part 1) |
 | UI design system | Inter + Lucide icons, tokens and shared components, sidebar + top bar shell (drawer on small screens); all built screens redesigned (Today tiles, client and session tables with filters, record screen, note editor with "Next to check", print view) | ADR 0009 |
 
-Tests: backend 250, web 226 (lint, typecheck, build green).
+Tests: backend 262, web 227 (lint, typecheck, build green).
 
 ## Not built yet (in order)
 
@@ -51,6 +51,8 @@ Tests: backend 250, web 226 (lint, typecheck, build green).
 - Separate `prod` Google project and Railway environment.
 
 ## Known issues / to watch
+
+- Recovery check code by email weakens the "file was saved" check (ADR 0017) — revisit before real clients.
 
 - Session notes run on the fake model until `LLM_PROVIDER`/`LLM_API_KEY` are set on staging.
 - Speaker labels on real two-person recordings: the whole-session check is new — verify on staging.

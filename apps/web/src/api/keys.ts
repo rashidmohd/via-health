@@ -48,3 +48,14 @@ export function useSaveKeys(userId: string) {
     },
   })
 }
+
+/** Email the recovery key's check code to the therapist (ADR 0017). Only after they agree. */
+export function useEmailCheckCode() {
+  return useMutation({
+    mutationFn: (checkCode: string) =>
+      api<{ status: string }>('/keys/check-code-email', {
+        method: 'POST',
+        body: { check_code: checkCode, consent: true },
+      }),
+  })
+}

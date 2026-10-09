@@ -50,7 +50,7 @@ Name, date of birth, contact: OpenPGP-encrypted to therapist + recovery keys, de
 ## Rules
 
 - Every record stores `encrypted_to: [key fingerprints]` so keys can be added/rotated by a background re-encryption job.
-- Onboarding cannot finish until the user confirms the recovery key was saved (download + re-type a short checksum).
+- Onboarding cannot finish until the user confirms the recovery key was saved (download + re-type a short checksum). The checksum may be emailed with the user's consent (ADR 0017) — only the code, never the key.
 - Never log keys, IVs together with ciphertext refs, passphrases, or decrypted content.
 - Local IndexedDB encryption does not protect against a compromised device — this limitation is documented in the DPIA, not hidden.
 

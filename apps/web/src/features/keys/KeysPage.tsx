@@ -1,9 +1,9 @@
-import { Download, KeyRound, Lock, ShieldCheck } from 'lucide-react'
+import { Download, KeyRound, Lock, Mail, ShieldCheck } from 'lucide-react'
 import { useId, useState, type FormEvent } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useMe } from '../../api/auth'
 import { ApiError } from '../../api/client'
-import { useKeys, useSaveKeys, type Keys } from '../../api/keys'
+import { useEmailCheckCode, useKeys, useSaveKeys, type Keys } from '../../api/keys'
 import { lock, setUnlocked, useUnlocked } from '../../crypto/keyring'
 import {
   checkCode,
@@ -15,6 +15,7 @@ import {
   type KeyPair,
   type UnlockedKey,
 } from '../../crypto/pgp'
+import { confirmDialog } from '../../design/confirm'
 import securityOn from '../../design/illustrations/security-on.svg'
 import { errorMessage } from '../../i18n/errors'
 
@@ -143,7 +144,9 @@ function PassphraseStep({ onCreated }: { onCreated: (created: Created) => void }
 
 function RecoveryStep({ userId, created }: { userId: string; created: Created }) {
   const { t } = useTranslation()
+  const { data: me } = useMe()
   const save = useSaveKeys(userId)
+  const emailCode = useEmailCheckCode()
   const [downloaded, setDownloaded] = useState(false)
   const [code, setCode] = useState('')
   const [wrong, setWrong] = useState(false)
@@ -164,6 +167,17 @@ function RecoveryStep({ userId, created }: { userId: string; created: Created })
       },
       { onSuccess: () => setUnlocked(created.unlocked) },
     )
+  }
+
+  // ADR 0017: the therapist may get the check code by email instead of reading it from the
+  // file. Asked every time; the email says it does not replace the file.
+  async function sendByEmail() {
+    const agreed = await confirmDialog({
+      message: t('keys.setup.emailConsent', { email: me?.email ?? '' }),
+      confirmLabel: t('keys.setup.emailSend'),
+      tone: 'primary',
+    })
+    if (agreed) emailCode.mutate(checkCode(created.recovery.fingerprint))
   }
 
   return (
@@ -203,6 +217,28 @@ function RecoveryStep({ userId, created }: { userId: string; created: Created })
           <p id={hintId} className="muted small">
             {t('keys.setup.checkHint')}
           </p>
+          {emailCode.isSuccess ? (
+            <p className="muted small" role="status">
+              {t('keys.setup.emailSent', { email: me?.email ?? '' })}
+            </p>
+          ) : (
+            <div>
+              <button
+                type="button"
+                className="link small icon-line"
+                disabled={emailCode.isPending}
+                onClick={() => void sendByEmail()}
+              >
+                <Mail className="icon" aria-hidden="true" />
+                {t('keys.setup.emailInstead')}
+              </button>
+            </div>
+          )}
+          {emailCode.error && (
+            <p className="form-error" role="alert">
+              {errorMessage(t, codeOf(emailCode.error))}
+            </p>
+          )}
           {wrong && (
             <p className="form-error" role="alert">
               {t('keys.setup.checkWrong')}

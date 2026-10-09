@@ -674,7 +674,11 @@
       "checkLabel": "Prüfcode aus der Datei",
       "checkHint": "8 Zeichen, zum Beispiel AB12-CD34.",
       "checkWrong": "Dieser Prüfcode passt nicht. Öffnen Sie die gespeicherte Datei und geben Sie den dort angezeigten Code ein.",
-      "finish": "Einrichtung abschließen"
+      "finish": "Einrichtung abschließen",
+      "emailInstead": "Code nicht gefunden? Per E-Mail zusenden",
+      "emailConsent": "Den Prüfcode an {{email}} senden? Die E-Mail enthält nur den Code, nie den Wiederherstellungsschlüssel. Sie ersetzt die Datei nicht: Bewahren Sie die Datei sicher und offline auf.",
+      "emailSend": "Code senden",
+      "emailSent": "Prüfcode an {{email}} gesendet. Bewahren Sie die Datei mit dem Wiederherstellungsschlüssel trotzdem sicher auf."
     },
     "status": {
       "title": "Ihr Schlüssel",

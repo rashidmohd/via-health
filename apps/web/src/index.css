@@ -2540,3 +2540,23 @@
     grid-template-columns: 1fr;
   }
 }
+
+/* Session note: source transcript as a conversation (same layout as the session transcript) */
+.transcript.chat.source {
+  gap: var(--space-2);
+}
+
+.transcript.chat.source .source-line {
+  width: auto;
+  max-width: 88%;
+  border-left-width: 1px;
+}
+
+.transcript.chat.source .source-line:hover {
+  border-color: var(--olive-300);
+}
+
+.transcript.chat.source li.source-hit .source-line {
+  background: var(--olive-100);
+  border-color: var(--olive-700);
+}

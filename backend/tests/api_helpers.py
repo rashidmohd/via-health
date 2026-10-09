@@ -15,12 +15,14 @@ PNG = "data:image/png;base64,iVBORw0KGgo="
 @dataclass
 class FakeEmailSender:
     sent: list[tuple[str, str, str]] = field(default_factory=list)
+    html: list[str | None] = field(default_factory=list)
     fail: bool = False
 
-    def send(self, *, to: str, subject: str, text: str) -> None:
+    def send(self, *, to: str, subject: str, text: str, html: str | None = None) -> None:
         if self.fail:
             raise EmailSendError("down")
         self.sent.append((to, subject, text))
+        self.html.append(html)
 
     def last_code(self) -> str:
         match = re.search(r"\b(\d{6})\b", self.sent[-1][2])
