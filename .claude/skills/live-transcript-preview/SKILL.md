@@ -27,6 +27,8 @@ AudioWorklet (16 kHz mono Float32) ──postMessage──▶ live-stt.worker.ts
 
 Keep the worker independent of the recorder: if the STT worker crashes or is too slow, recording continues untouched.
 
+Latency: the current Kroko export decodes 1.28 s chunks (`decode_chunk_len` 128) — that is most of the delay. The record page warms the engine before Start (`prewarmLivePreview`); keep worklet blocks small (~21 ms). See ADR 0014.
+
 ## Hotwords
 
 - Per session list = practice clinical vocabulary + client-specific terms + names.

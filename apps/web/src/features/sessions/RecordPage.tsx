@@ -9,6 +9,8 @@ import { AvatarRing } from '../../avatar/AvatarRing'
 import { ringState } from '../../avatar/ring'
 import { useAvatarMood } from '../../avatar/useAvatarMood'
 import { Initials } from '../../design/Initials'
+import { prewarmLivePreview } from '../../live-stt/preview'
+import { LIVE_STT_LANGUAGES, type LiveSttLanguage } from '../../live-stt/version'
 import { getActiveRecorder, setActiveRecorder, useActiveRecorder } from '../../recorder/active'
 import { db } from '../../recorder/db'
 import { playCue } from '../../recorder/cues'
@@ -16,6 +18,7 @@ import { micTested } from '../../recorder/micDevice'
 import { useVoiceState } from '../../recorder/micMonitor'
 import { RecorderError, SessionRecorder, type RecorderProblem } from '../../recorder/recorder'
 import { useLocal } from '../../recorder/useLocal'
+import { useDeviceSetting } from '../settings/deviceSettings'
 import { LivePanel } from './LivePanel'
 import { MicHealth, MicTest } from './MicHealth'
 
@@ -71,6 +74,16 @@ export function RecordPage() {
   const ready = client ? client.ready_to_record : isError ? (cached?.ready ?? false) : false
   const recordingHere = active !== null && (client?.id ?? clientId) === clientId
   const { mood, nod } = useAvatarMood()
+
+  // Load the live transcript engine while the therapist gets ready, so it is running when
+  // the recording starts (the preview takes it over).
+  const [livePreview] = useDeviceSetting('livePreview')
+  const liveLanguage = client?.preferred_language
+  useEffect(() => {
+    if (!livePreview || active || !liveLanguage) return
+    if (!(LIVE_STT_LANGUAGES as readonly string[]).includes(liveLanguage)) return
+    return prewarmLivePreview(liveLanguage as LiveSttLanguage)
+  }, [livePreview, active, liveLanguage])
 
   useEffect(() => {
     if (!active) return

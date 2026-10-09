@@ -23,6 +23,74 @@ export function livePreviewSupported(): boolean {
   )
 }
 
+/** A worker with the engine loading or loaded. Events wait in `buffered` until a preview listens. */
+interface Engine {
+  worker: Worker
+  language: LiveSttLanguage
+  buffered: PreviewEvent[]
+  listener: ((event: PreviewEvent) => void) | null
+  /** Pages currently keeping it warm. */
+  holds: number
+}
+
+/** A released warm engine waits this long for a preview to take it (React runs the page's
+ *  cleanup before the live panel's start when the recording begins). */
+const RELEASE_DELAY_MS = 5000
+
+function createEngine(language: LiveSttLanguage): Engine {
+  // Versioned URLs: a new model version can never be served from an old cache.
+  const worker = new Worker(
+    `/live-stt-worker.js?base=/live-stt/${LIVE_STT_VERSION}/&lang=${language}&v=${LIVE_STT_VERSION}`,
+  )
+  const engine: Engine = { worker, language, buffered: [], listener: null, holds: 0 }
+  const deliver = (event: PreviewEvent) =>
+    engine.listener ? engine.listener(event) : engine.buffered.push(event)
+  worker.onmessage = (event: MessageEvent<PreviewEvent | { type: 'stopped' }>) => {
+    if (event.data.type !== 'stopped') deliver(event.data)
+  }
+  worker.onerror = () => deliver({ type: 'error', code: 'engine_failed' })
+  return engine
+}
+
+let warm: Engine | null = null
+
+/**
+ * Starts loading the engine before the recording starts (record page open), so the first
+ * words appear without the ~2 s engine start-up. The next `LivePreview.start` in the same
+ * language takes it over. The returned function releases it if no preview took it.
+ */
+export function prewarmLivePreview(language: LiveSttLanguage): () => void {
+  if (!livePreviewSupported()) return () => {}
+  if (warm && warm.language !== language) {
+    warm.worker.terminate()
+    warm = null
+  }
+  warm ??= createEngine(language)
+  const mine = warm
+  mine.holds++
+  let released = false
+  return () => {
+    if (released) return
+    released = true
+    setTimeout(() => {
+      mine.holds--
+      if (warm === mine && mine.holds === 0) {
+        mine.worker.terminate()
+        warm = null
+      }
+    }, RELEASE_DELAY_MS)
+  }
+}
+
+function takeEngine(language: LiveSttLanguage): Engine {
+  if (warm && warm.language === language) {
+    const engine = warm
+    warm = null
+    return engine
+  }
+  return createEngine(language)
+}
+
 export class LivePreview {
   private readonly worker: Worker
   private readonly context: AudioContext
@@ -42,16 +110,12 @@ export class LivePreview {
     language: LiveSttLanguage,
     onEvent: (event: PreviewEvent) => void,
   ): Promise<LivePreview> {
-    // Versioned URLs: a new model version can never be served from an old cache.
-    const worker = new Worker(
-      `/live-stt-worker.js?base=/live-stt/${LIVE_STT_VERSION}/&lang=${language}&v=${LIVE_STT_VERSION}`,
-    )
-    worker.onmessage = (event: MessageEvent<PreviewEvent | { type: 'stopped' }>) => {
-      if (event.data.type !== 'stopped') onEvent(event.data)
-    }
-    worker.onerror = () => onEvent({ type: 'error', code: 'engine_failed' })
+    const engine = takeEngine(language)
+    const { worker } = engine
+    engine.listener = onEvent
+    engine.buffered.splice(0).forEach(onEvent)
 
-    const context = new AudioContext()
+    const context = new AudioContext({ latencyHint: 'interactive' })
     try {
       await context.audioWorklet.addModule(`/live-stt-capture.js?v=${LIVE_STT_VERSION}`)
       const source = context.createMediaStreamSource(stream)

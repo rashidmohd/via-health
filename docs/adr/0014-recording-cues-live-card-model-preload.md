@@ -31,3 +31,13 @@ of a session).
 - The live text is more visible during the session. Still a working view: it never leaves the
   device and is never the record (live-transcript-preview skill). No new data leaves the browser.
 - Checked in Chrome: the worker reaches `ready` in ~1.9 s with the model only in Cache Storage.
+
+## Latency (added 2026-10-09)
+- The Kroko models in use are exported with `decode_chunk_len = 128` frames: the engine decodes
+  1.28 s blocks (+ ~0.13 s lookahead), so words appear ~1.3–2.7 s after they are spoken. This is
+  the model, not our code. Kroko publishes 64-frame (0.64 s) community variants, but only in its
+  own packaging, not as sherpa-onnx encoder/decoder/joiner files; switching needs a conversion,
+  a quality check and the same license review (open decision in CLAUDE.md).
+- In our code: the engine is warmed up when the record page opens (`prewarmLivePreview`) and
+  handed to the preview on Start, removing the ~2 s start-up from the first words; the capture
+  worklet sends ~21 ms blocks instead of ~85 ms; the live list scrolls without animation.
