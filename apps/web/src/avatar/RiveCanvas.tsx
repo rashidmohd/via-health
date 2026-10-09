@@ -3,7 +3,7 @@ import riveFallbackWasm from '@rive-app/canvas/rive_fallback.wasm?url'
 import { RuntimeLoader, useRive, useStateMachineInput, type StateMachineInput } from '@rive-app/react-canvas'
 import { useEffect, useRef } from 'react'
 import type { Mood } from './mood'
-import { ARTBOARD, EMOTION, INPUT, PAUSE_AFTER_MS, STATE_MACHINE } from './rive'
+import { ARTBOARD, EMOTION, INPUT, PAUSE_AFTER_MS, STATE_MACHINE, type Character } from './rive'
 
 // The runtime is served from our own origin. By default Rive loads it from unpkg / jsdelivr
 // (non-EU third parties, CLAUDE.md rule 4).
@@ -23,6 +23,7 @@ function prefersReducedMotion(): boolean {
 export default function RiveCanvas({
   file,
   mood,
+  character,
   recording,
   nod,
   size,
@@ -30,6 +31,7 @@ export default function RiveCanvas({
 }: {
   file: ArrayBuffer
   mood: Mood
+  character: Character
   recording: boolean
   nod: boolean
   size: number
@@ -47,10 +49,15 @@ export default function RiveCanvas({
   const emotion = useStateMachineInput(rive, STATE_MACHINE, INPUT.emotion)
   const still = useStateMachineInput(rive, STATE_MACHINE, INPUT.recording)
   const noted = useStateMachineInput(rive, STATE_MACHINE, INPUT.noted)
+  const look = useStateMachineInput(rive, STATE_MACHINE, INPUT.character)
 
   useEffect(() => {
     setInput(emotion, EMOTION[mood])
   }, [emotion, mood])
+
+  useEffect(() => {
+    setInput(look, character)
+  }, [look, character])
 
   const repause = useRef(0)
   useEffect(() => {

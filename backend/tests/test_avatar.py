@@ -161,3 +161,21 @@ def test_other_users_cannot_read_the_photo(
         c.execute(text("SELECT set_config('app.user_id', gen_random_uuid()::text, true)"))
         rows = c.execute(text("SELECT count(*) FROM users WHERE avatar_photo_enc IS NOT NULL"))
         assert rows.scalar_one() == 0
+
+
+def test_character_choice(client: TestClient, mail: FakeEmailSender) -> None:
+    me = login(client, mail, "anna@example.com")
+    assert me["avatar_character"] == 0
+    response = client.patch("/auth/me", json={"avatar_character": 2})
+    assert response.status_code == 200
+    assert client.get("/auth/me").json()["avatar_character"] == 2
+
+
+@pytest.mark.parametrize("value", [-1, 3, "two"])
+def test_character_out_of_range_rejected(
+    client: TestClient, mail: FakeEmailSender, value: object
+) -> None:
+    login(client, mail, "anna@example.com")
+    response = client.patch("/auth/me", json={"avatar_character": value})
+    assert response.status_code == 422
+    assert client.get("/auth/me").json()["avatar_character"] == 0

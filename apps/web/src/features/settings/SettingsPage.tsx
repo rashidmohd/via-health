@@ -5,6 +5,7 @@ import { ApiError } from '../../api/client'
 import { useDeletePhoto, useMe, usePhoto, useUpdateMe, useUploadPhoto, type AvatarKind } from '../../api/auth'
 import { PhotoAvatar } from '../../avatar/PhotoAvatar'
 import { RiveAvatar } from '../../avatar/RiveAvatar'
+import { CHARACTERS } from '../../avatar/rive'
 import { useAvatarSettings } from '../../avatar/settings'
 import { Initials } from '../../design/Initials'
 import { errorMessage } from '../../i18n/errors'
@@ -25,7 +26,7 @@ export function SettingsPage() {
 
   const error = update.error ?? upload.error ?? remove.error
   const options: { kind: AvatarKind; preview: ReactNode; disabled?: boolean }[] = [
-    { kind: 'illustrated', preview: <RiveAvatar mood="attentive" size={48} /> },
+    { kind: 'illustrated', preview: <RiveAvatar mood="attentive" character={settings.character} size={48} /> },
     { kind: 'initials', preview: <Initials name={me?.display_name ?? ''} size={48} /> },
     {
       kind: 'photo',
@@ -72,6 +73,33 @@ export function SettingsPage() {
             </label>
           ))}
         </fieldset>
+
+        {settings.kind === 'illustrated' && (
+          <fieldset className="character-choice">
+            <legend>
+              <h3>{t('settings.avatar.characterTitle')}</h3>
+            </legend>
+            <p className="muted small">{t('settings.avatar.characterHint')}</p>
+            <div className="character-options">
+              {CHARACTERS.map((character) => (
+                <label
+                  key={character}
+                  className={`character-option${settings.character === character ? ' selected' : ''}`}
+                >
+                  <input
+                    type="radio"
+                    name="character"
+                    checked={settings.character === character}
+                    disabled={update.isPending}
+                    onChange={() => update.mutate({ avatar_character: character })}
+                  />
+                  <RiveAvatar mood="attentive" character={character} size={72} />
+                  <span className="small">{t('settings.avatar.characterOption', { n: character + 1 })}</span>
+                </label>
+              ))}
+            </div>
+          </fieldset>
+        )}
 
         {file ? (
           <PhotoCropper

@@ -32,6 +32,6 @@ Upload is the canvas output, never the original file; server rejects EXIF/XMP/IP
 and > 300 KB; another user cannot read the photo (RLS); delete removes it; photo kind needs a
 photo; tilt off while recording and with reduced motion.
 
-## Later (not in this plan)
-"Build my avatar" (Rive part variants, config only, picked manually) and "avatar from my photo"
-(needs EU availability and zero retention check first).
+## Dropped (2026-10-09)
+No per-feature "build my avatar" and no "avatar from my photo" (AI redraw). Instead the
+illustrated avatar offers three ready-made characters (ADR 0012); initials and own photo remain.

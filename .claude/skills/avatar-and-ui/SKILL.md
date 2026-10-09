@@ -62,7 +62,8 @@ Files: `src/avatar/` — `mood.ts` (state machine, tested), `events.ts` (payload
 `RiveCanvas.tsx` (Rive hooks, code-split), `AvatarRing.tsx` + `ring.ts`, `AppAvatar.tsx`
 (`UserAvatar` = chosen kind, `AppAvatar` = avatar + ring for non-recording screens), `settings.ts`.
 
-Assets: `public/avatar/sessio-avatar.riv` (not delivered yet) and `public/avatar/placeholder.png`.
+Assets: `public/avatar/sessio-avatar.riv` (not delivered yet) and one placeholder per character,
+`public/avatar/placeholder-0.png` … `placeholder-2.png`.
 `RiveAvatar` fetches the .riv once; if it is missing or doesn't start with `RIVE`, the placeholder
 image is shown with the same props and no Rive code/WASM is loaded. The Rive WASM is bundled and
 served from our origin (`RuntimeLoader.setWasmUrl` + `setWasmFallbackUrl`) — never the CDN default.
@@ -78,8 +79,9 @@ Artboard `Avatar`, state machine `Avatar`.
 | `emotion` | Number | 0 attentive · 1 welcome · 2 thinking · 3 encouraging · 4 pleased · 5 concern · 6 still |
 | `recording` | Boolean | true → no tracking, calm still pose |
 | `noted` | Trigger | ≤1 s glance/nod for a new capture chip (only if the therapist enabled reactions) |
+| `character` | Number | 0, 1, 2 — which of the three ready-made characters (ADR 0012) |
 
-Phase 2 (avatar builder, not now): Number inputs `hair`, `hairColor`, `skin`, `glasses`, `beard`, `top`.
+Three ready-made characters on one shared rig, picked in Settings — no per-feature builder (ADR 0012).
 
 ### App event → emotion
 
@@ -126,16 +128,16 @@ Ring rules:
 
 ## Profile picture (Settings)
 
+Exactly three options; no per-feature avatar builder and no AI-generated avatar from a photo (ADR 0012).
+
 | Option | Status | Notes |
 |---|---|---|
-| Illustrated avatar (Rive) | built (default) | animated, all emotions |
+| Illustrated avatar (Rive) | built (default) | one of three ready-made characters (`avatar_character`), animated, all emotions |
 | Initials | built | olive-100 circle, olive-800 text (`Initials` with `size`) |
 | My photo | built (plan 0012, ADR 0011) | static photo in the ring (`PhotoAvatar`); optional ±4° tilt toward the pointer, off while recording and with reduced motion; crop on a canvas + 512×512 WebP/JPEG re-encode (strips EXIF), server rejects metadata; encrypted in the users row; removable, goes with the account |
-| Build my avatar | later | Rive part variants; store only a config like `{ "hair":3,"hairColor":2,"skin":4,"glasses":1 }`; every trait picked manually, never detected from a photo |
-| Avatar from my photo | later | check EU availability + zero retention first |
 
-Settings live on the account (`/auth/me`: `avatar_kind`, `avatar_reactions`, `avatar_tilt`,
-`has_photo`; read via `useAvatarSettings`). The photo is shown as a `data:` URL — the CSP allows
+Settings live on the account (`/auth/me`: `avatar_kind`, `avatar_character`, `avatar_reactions`,
+`avatar_tilt`, `has_photo`; read via `useAvatarSettings`). The photo is shown as a `data:` URL — the CSP allows
 no `blob:` images. Clients never get photo uploads; client avatars stay initials.
 
 ## Accessibility

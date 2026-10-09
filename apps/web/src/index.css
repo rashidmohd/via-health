@@ -2040,3 +2040,56 @@
 .avatar-photo {
   transition: transform 120ms ease-out;
 }
+
+/* Settings: choice of three ready-made characters (ADR 0012) */
+.character-choice {
+  display: grid;
+  gap: var(--space-2);
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.character-choice legend {
+  padding: 0;
+}
+
+.character-choice h3 {
+  margin: 0;
+  font-size: var(--text-base);
+}
+
+.character-options {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+}
+
+.character-option {
+  display: grid;
+  justify-items: center;
+  gap: var(--space-2);
+  padding: var(--space-3);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  cursor: pointer;
+}
+
+.character-option.selected {
+  border-color: var(--olive-500);
+  background: var(--olive-50);
+}
+
+.character-option input {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.character-option:focus-within {
+  box-shadow: var(--ring);
+}
+
+.character-option .avatar-image {
+  border-radius: 50%;
+}

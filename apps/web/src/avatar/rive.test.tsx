@@ -59,7 +59,7 @@ describe('RiveAvatar fallback', () => {
     const { container } = render(<RiveAvatar mood="welcome" size={96} />)
     await act(async () => {})
     const img = container.querySelector('img')!
-    expect(img).toHaveAttribute('src', '/avatar/placeholder.png')
+    expect(img).toHaveAttribute('src', '/avatar/placeholder-0.png')
     expect(img).toHaveAttribute('aria-hidden', 'true')
     expect(img).toHaveAttribute('width', '96')
     expect(img).toHaveAttribute('data-mood', 'welcome')
@@ -72,7 +72,14 @@ describe('RiveAvatar fallback', () => {
     expect(await screen.findByTestId('rive')).toHaveAttribute('aria-hidden', 'true')
     expect(rive.params?.buffer?.byteLength).toBe(RIVE_BYTES.byteLength)
     act(() => rive.params!.onLoadError!())
-    expect(container.querySelector('img')).toHaveAttribute('src', '/avatar/placeholder.png')
+    expect(container.querySelector('img')).toHaveAttribute('src', '/avatar/placeholder-0.png')
+  })
+
+  it('shows the placeholder of the chosen character', async () => {
+    serve(new Response(null, { status: 404 }))
+    const { container } = render(<RiveAvatar mood="attentive" character={2} />)
+    await act(async () => {})
+    expect(container.querySelector('img')).toHaveAttribute('src', '/avatar/placeholder-2.png')
   })
 
   it('serves the runtime from our own origin, never a CDN', () => {
@@ -86,13 +93,20 @@ describe('RiveAvatar fallback', () => {
 
 describe('RiveCanvas', () => {
   const file = new ArrayBuffer(8)
-  const props = { file, nod: false, size: 120, onError: () => {} }
+  const props = { file, character: 0 as const, nod: false, size: 120, onError: () => {} }
 
   it('sets the emotion from the app mood', () => {
     const { rerender } = render(<RiveCanvas {...props} mood="thinking" recording={false} />)
     expect(rive.inputs.emotion.value).toBe(EMOTION.thinking)
     rerender(<RiveCanvas {...props} mood="concern" recording={false} />)
     expect(rive.inputs.emotion.value).toBe(5)
+  })
+
+  it('selects the chosen character', () => {
+    const { rerender } = render(<RiveCanvas {...props} character={1} mood="attentive" recording={false} />)
+    expect(rive.inputs.character.value).toBe(1)
+    rerender(<RiveCanvas {...props} character={2} mood="attentive" recording={false} />)
+    expect(rive.inputs.character.value).toBe(2)
   })
 
   it('pauses shortly after recording starts and plays again afterwards', () => {

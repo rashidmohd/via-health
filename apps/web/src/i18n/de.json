@@ -542,7 +542,10 @@
         "zoom": "Zoom",
         "save": "Foto verwenden",
         "cancel": "Abbrechen"
-      }
+      },
+      "characterTitle": "Figur",
+      "characterHint": "Wählen Sie eine von drei illustrierten Figuren.",
+      "characterOption": "Figur {{n}}"
     },
     "reactions": {
       "title": "Avatar während der Aufnahme",

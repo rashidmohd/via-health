@@ -34,6 +34,7 @@ SESSION_TTL = timedelta(hours=12)
 
 Language = Literal["de", "en"]
 AvatarKind = Literal["illustrated", "initials", "photo"]
+AvatarCharacter = Annotated[int, Field(ge=0, le=2)]
 Email = Annotated[
     str, Field(min_length=3, max_length=254, pattern=r"^\s*[^@\s]+@[^@\s]+\.[^@\s]+\s*$")
 ]
@@ -60,6 +61,7 @@ class MeResponse(BaseModel):
     avatar_kind: AvatarKind
     avatar_reactions: bool
     avatar_tilt: bool
+    avatar_character: int
     has_photo: bool
 
 
@@ -69,6 +71,7 @@ class UpdateMeRequest(BaseModel):
     avatar_kind: AvatarKind | None = None
     avatar_reactions: bool | None = None
     avatar_tilt: bool | None = None
+    avatar_character: AvatarCharacter | None = None
 
 
 def _me(user: User) -> MeResponse:
@@ -80,6 +83,7 @@ def _me(user: User) -> MeResponse:
         avatar_kind=user.avatar_kind,
         avatar_reactions=user.avatar_reactions,
         avatar_tilt=user.avatar_tilt,
+        avatar_character=user.avatar_character,
         has_photo=user.avatar_photo_enc is not None,
     )
 
@@ -228,6 +232,8 @@ def update_me(body: UpdateMeRequest, user_id: CurrentUserId, db: Db) -> MeRespon
         user.avatar_reactions = body.avatar_reactions
     if body.avatar_tilt is not None:
         user.avatar_tilt = body.avatar_tilt
+    if body.avatar_character is not None:
+        user.avatar_character = body.avatar_character
     db.flush()
     return _me(user)
 

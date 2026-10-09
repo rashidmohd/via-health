@@ -80,6 +80,8 @@ class User(Base):
     avatar_kind: Mapped[str] = mapped_column(Text, server_default="illustrated")
     avatar_reactions: Mapped[bool] = mapped_column(server_default=false())
     avatar_tilt: Mapped[bool] = mapped_column(server_default=false())
+    # ADR 0012: which of the three ready-made characters (Rive input `character`).
+    avatar_character: Mapped[int] = mapped_column(Integer, server_default="0")
     avatar_photo_enc: Mapped[bytes | None]
     created_at: Mapped[datetime] = _created_at()
 
@@ -87,6 +89,7 @@ class User(Base):
         CheckConstraint(_in("ui_language", LANGUAGES), name="ui_language"),
         CheckConstraint("email = lower(email)", name="email_lowercase"),
         CheckConstraint(_in("avatar_kind", AVATAR_KINDS), name="avatar_kind"),
+        CheckConstraint("avatar_character BETWEEN 0 AND 2", name="avatar_character"),
         CheckConstraint(
             "avatar_kind <> 'photo' OR avatar_photo_enc IS NOT NULL", name="avatar_photo"
         ),

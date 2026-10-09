@@ -6,6 +6,7 @@ type Me = typeof ME & {
   avatar_kind: string
   avatar_reactions: boolean
   avatar_tilt: boolean
+  avatar_character: number
   has_photo: boolean
 }
 
@@ -54,7 +55,14 @@ function stubCanvas() {
 describe('settings', () => {
   beforeEach(async () => {
     await i18n.changeLanguage('en')
-    me = { ...ME, avatar_kind: 'illustrated', avatar_reactions: false, avatar_tilt: false, has_photo: false }
+    me = {
+      ...ME,
+      avatar_kind: 'illustrated',
+      avatar_reactions: false,
+      avatar_tilt: false,
+      avatar_character: 0,
+      has_photo: false,
+    }
     server()
   })
   afterEach(() => {
@@ -79,6 +87,28 @@ describe('settings', () => {
     renderApp('/')
     await waitFor(() => expect(document.querySelector('.today .avatar-ring .initials')).toHaveTextContent('A'))
     expect(document.querySelector('.today .avatar-ring img')).toBeNull()
+  })
+
+  it('offers three ready-made characters and shows the chosen one everywhere', async () => {
+    const { unmount } = renderApp('/settings')
+    expect(await screen.findByRole('radio', { name: 'Character 1' })).toBeChecked()
+    expect(screen.getAllByRole('radio', { name: /^Character \d$/ })).toHaveLength(3)
+    fireEvent.click(screen.getByRole('radio', { name: 'Character 3' }))
+    await waitFor(() => expect(me.avatar_character).toBe(2))
+    expect(calls.find((c) => c.method === 'PATCH')?.body).toEqual({ avatar_character: 2 })
+    unmount()
+
+    renderApp('/')
+    await waitFor(() =>
+      expect(document.querySelector('.today .avatar-ring img')).toHaveAttribute('src', '/avatar/placeholder-2.png'),
+    )
+  })
+
+  it('hides the character choice when another picture is chosen', async () => {
+    me.avatar_kind = 'initials'
+    renderApp('/settings')
+    expect(await screen.findByRole('radio', { name: /Initials/ })).toBeChecked()
+    expect(screen.queryByRole('radio', { name: 'Character 1' })).toBeNull()
   })
 
   it('saves the reactions choice on the account', async () => {

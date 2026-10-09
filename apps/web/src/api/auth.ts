@@ -12,6 +12,7 @@ export interface Me {
   avatar_kind?: AvatarKind
   avatar_reactions?: boolean
   avatar_tilt?: boolean
+  avatar_character?: number
   has_photo?: boolean
 }
 
@@ -21,6 +22,7 @@ export interface MeUpdate {
   avatar_kind?: AvatarKind
   avatar_reactions?: boolean
   avatar_tilt?: boolean
+  avatar_character?: number
 }
 
 export const ME_KEY = ['auth', 'me'] as const

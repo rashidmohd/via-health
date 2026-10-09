@@ -5,10 +5,23 @@ import type { Mood } from './mood'
  * `Avatar`. Names must match the designer's file exactly.
  */
 export const RIVE_SRC = '/avatar/sessio-avatar.riv'
-export const PLACEHOLDER_SRC = '/avatar/placeholder.png'
+/** Three ready-made characters, chosen in Settings (ADR 0012). Rive input `character`. */
+export const CHARACTERS = [0, 1, 2] as const
+export type Character = (typeof CHARACTERS)[number]
+
+export function placeholderSrc(character: Character): string {
+  return `/avatar/placeholder-${character}.png`
+}
 export const ARTBOARD = 'Avatar'
 export const STATE_MACHINE = 'Avatar'
-export const INPUT = { lookX: 'lookX', lookY: 'lookY', emotion: 'emotion', recording: 'recording', noted: 'noted' } as const
+export const INPUT = {
+  lookX: 'lookX',
+  lookY: 'lookY',
+  emotion: 'emotion',
+  recording: 'recording',
+  noted: 'noted',
+  character: 'character',
+} as const
 
 export const EMOTION: Record<Mood, number> = {
   attentive: 0,

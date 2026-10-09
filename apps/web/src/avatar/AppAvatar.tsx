@@ -20,13 +20,13 @@ export function UserAvatar({
   recording?: boolean
   size: number
 }) {
-  const { kind, tilt } = useAvatarSettings()
+  const { kind, tilt, character } = useAvatarSettings()
   const { data: me } = useMe()
   const { data: photo } = usePhoto(kind === 'photo')
   if (kind === 'photo' && photo) return <PhotoAvatar src={photo} size={size} tilt={tilt} recording={recording} />
   // Initials also while the photo loads.
   if (kind !== 'illustrated') return <Initials name={me?.display_name ?? ''} size={size} />
-  return <RiveAvatar mood={mood} nod={nod} recording={recording} size={size} />
+  return <RiveAvatar mood={mood} character={character} nod={nod} recording={recording} size={size} />
 }
 
 /**

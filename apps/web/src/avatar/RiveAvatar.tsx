@@ -1,6 +1,6 @@
 import { Component, lazy, Suspense, useEffect, useState, type ReactNode } from 'react'
 import type { Mood } from './mood'
-import { loadRiveFile, PLACEHOLDER_SRC } from './rive'
+import { loadRiveFile, placeholderSrc, type Character } from './rive'
 
 const RiveCanvas = lazy(() => import('./RiveCanvas'))
 
@@ -24,11 +24,13 @@ class Fallback extends Component<{ fallback: ReactNode; children: ReactNode }, {
  */
 export function RiveAvatar({
   mood,
+  character = 0,
   recording = false,
   nod = false,
   size = 160,
 }: {
   mood: Mood
+  character?: Character
   recording?: boolean
   nod?: boolean
   size?: number
@@ -50,7 +52,7 @@ export function RiveAvatar({
   const placeholder = (
     <img
       className="avatar-image"
-      src={PLACEHOLDER_SRC}
+      src={placeholderSrc(character)}
       width={size}
       height={size}
       alt=""
@@ -67,6 +69,7 @@ export function RiveAvatar({
         <RiveCanvas
           file={file}
           mood={mood}
+          character={character}
           recording={recording}
           nod={nod}
           size={size}

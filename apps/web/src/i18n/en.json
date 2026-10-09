@@ -542,7 +542,10 @@
         "zoom": "Zoom",
         "save": "Use photo",
         "cancel": "Cancel"
-      }
+      },
+      "characterTitle": "Character",
+      "characterHint": "Pick one of three illustrated characters.",
+      "characterOption": "Character {{n}}"
     },
     "reactions": {
       "title": "Avatar during recordings",
