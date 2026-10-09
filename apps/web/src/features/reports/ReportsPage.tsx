@@ -99,7 +99,7 @@ function ReportTable({ reports }: { reports: ApprovedReport[] }) {
                 </span>
               </span>
             </td>
-            <td className="muted">{r.session_type ? t(`report.sessionTypes.${r.session_type}`) : '–'}</td>
+            <td className="muted">{r.session_type ? t(`report.sessionTypes.${r.session_type}`) : t('report.sessionTypeNone')}</td>
             <td>
               <span className="cell-date">
                 <span>{formatDate(r.approved_at, lang)}</span>

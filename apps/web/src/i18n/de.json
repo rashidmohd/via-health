@@ -487,7 +487,8 @@
     "unsaved": "Ungespeicherte Änderungen",
     "nextToCheck": "Zum nächsten Satz",
     "actions": "Aktionen zur Dokumentation",
-    "print": "Drucken"
+    "print": "Drucken",
+    "sessionTypeNone": "Nicht angegeben"
   },
   "reports": {
     "count_one": "{{count}} freigegebene Dokumentation",

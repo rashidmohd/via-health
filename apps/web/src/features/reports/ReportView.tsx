@@ -37,7 +37,7 @@ export function ReportView({ report, session }: { report: Report; session: Serve
           <dt>{t('report.sessionNo')}</dt>
           <dd>{header.session_no ?? report.default_session_no}</dd>
           <dt>{t('report.sessionType')}</dt>
-          <dd>{header.session_type ? t(`report.sessionTypes.${header.session_type}`) : '—'}</dd>
+          <dd>{header.session_type ? t(`report.sessionTypes.${header.session_type}`) : t('report.sessionTypeNone')}</dd>
           <dt>{t('report.setting')}</dt>
           <dd>
             {t(`report.settings.${header.setting}`)} · {t(`report.modes.${header.mode}`)}

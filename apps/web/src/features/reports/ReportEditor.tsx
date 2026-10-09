@@ -191,7 +191,7 @@ export function ReportEditor({
                   })
                 }
               >
-                <option value="">—</option>
+                <option value="">{t('report.sessionTypeNone')}</option>
                 {SESSION_TYPES.map((v) => (
                   <option key={v} value={v}>
                     {t(`report.sessionTypes.${v}`)}

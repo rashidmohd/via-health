@@ -487,7 +487,8 @@
     "unsaved": "Unsaved changes",
     "nextToCheck": "Next to check",
     "actions": "Note actions",
-    "print": "Print"
+    "print": "Print",
+    "sessionTypeNone": "Not specified"
   },
   "reports": {
     "count_one": "{{count}} approved note",
