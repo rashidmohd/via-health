@@ -1,4 +1,4 @@
-import { AudioLines, ChevronLeft } from 'lucide-react'
+import { ChevronLeft } from 'lucide-react'
 import { useEffect, useRef } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Link, useParams } from 'react-router-dom'
@@ -13,6 +13,7 @@ import { formatDate } from '../format'
 import { ReportCard } from '../reports/ReportCard'
 import { CaptureReview } from './CaptureReview'
 import { TranscriptView } from './TranscriptView'
+import { TranscribingAnimation } from './TranscribingAnimation'
 
 export function SessionPage() {
   const { id = '' } = useParams()
@@ -87,15 +88,12 @@ export function SessionPage() {
 
       {(session.status === 'uploaded' || session.status === 'processing') && (
         <div className="card progress" role="status">
-          <span className="stage-icon">
-            <AudioLines className="icon" aria-hidden="true" />
-          </span>
+          <TranscribingAnimation />
           <div className="progress-text">
             <strong>{t('session.transcribing')}</strong>
             <p className="muted small">
               {t(session.transcribed_ms > 0 ? 'session.finishingHint' : 'session.transcribingHint')}
             </p>
-            <span className="progress-bar" aria-hidden="true" />
           </div>
         </div>
       )}
