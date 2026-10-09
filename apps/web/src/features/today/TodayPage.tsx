@@ -34,7 +34,7 @@ export function TodayPage() {
           <p className="eyebrow">{formatLongDate(now, i18n.language)}</p>
           <h1>{t(greeting, { name: me?.display_name ?? '' })}</h1>
         </div>
-        <Link className="button primary large" to="/sessions/new">
+        <Link className="button primary large" to="/sessions/new" data-tour="start">
           <Mic className="icon" aria-hidden="true" />
           {t('sessions.start')}
         </Link>

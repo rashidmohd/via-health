@@ -651,6 +651,11 @@
       "livePreview": "Show the live transcript during recordings",
       "livePreload": "Load the live transcript model when the app opens (about 155 MB, once)",
       "livePreloadHint": "Without it, the model loads when you start a recording and the first words appear later."
+    },
+    "tour": {
+      "title": "App tour",
+      "hint": "A short walk through the main areas of the app.",
+      "start": "Start the tour"
     }
   },
   "preload": {
@@ -717,6 +722,58 @@
       "title": "Your keys are not set up yet",
       "body": "Without keys you cannot sign session notes. Set them up once, so that only you can read your signed records.",
       "action": "Set up keys"
+    }
+  },
+  "welcome": {
+    "title": "Welcome to Sessio, {{name}}",
+    "intro": "Sessio records your sessions and drafts the session note. You review, edit and sign every note yourself.",
+    "points": {
+      "record": "Recordings are encrypted on this device and keep running without internet.",
+      "notes": "After a session you get a transcript and a draft note to review.",
+      "keys": "Signed notes are encrypted with your key, so only you can read them."
+    },
+    "tour": "Show me around",
+    "skip": "Skip for now"
+  },
+  "tour": {
+    "progress": "{{n}} of {{total}}",
+    "next": "Next",
+    "back": "Back",
+    "done": "Done",
+    "skip": "End tour",
+    "steps": {
+      "start": {
+        "title": "Start a session",
+        "body": "Record a session here. The client's consent must be on file first. Recording continues without internet."
+      },
+      "nav-clients": {
+        "title": "Clients",
+        "body": "Add clients and record their consent."
+      },
+      "nav-sessions": {
+        "title": "Sessions",
+        "body": "All recordings with their transcript and upload status."
+      },
+      "nav-reports": {
+        "title": "Reports",
+        "body": "Your approved session notes. Drafts stay on their session until you approve them."
+      },
+      "nav-notifications": {
+        "title": "Notifications",
+        "body": "You see here when a transcript or a draft note is ready."
+      },
+      "nav-keys": {
+        "title": "Keys",
+        "body": "Your encryption keys. Set them up before you sign notes."
+      },
+      "nav-settings": {
+        "title": "Settings",
+        "body": "Avatar, microphone and recording preferences for this device."
+      },
+      "sync": {
+        "title": "Upload status",
+        "body": "Shows whether all audio from this device is uploaded."
+      }
     }
   }
 }

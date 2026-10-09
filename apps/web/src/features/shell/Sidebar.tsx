@@ -38,7 +38,7 @@ export function Sidebar({ me, onClose }: { me: Me; onClose: () => void }) {
         </button>
       </div>
 
-      <Link className="button primary sidebar-cta" to="/sessions/new">
+      <Link className="button primary sidebar-cta" to="/sessions/new" data-tour="start">
         <Mic className="icon" aria-hidden="true" />
         {t('sessions.start')}
       </Link>
@@ -52,7 +52,7 @@ export function Sidebar({ me, onClose }: { me: Me; onClose: () => void }) {
                 const Icon = NAV_ICONS[item.key]
                 return (
                   <li key={item.key}>
-                    <NavLink to={item.path} end={item.path === '/'}>
+                    <NavLink to={item.path} end={item.path === '/'} data-tour={`nav-${item.key}`}>
                       <Icon className="icon" aria-hidden="true" />
                       <span className="nav-label">{t(`nav.${item.key}`)}</span>
                       {item.key === 'notifications' && <UnreadCount />}
@@ -66,7 +66,9 @@ export function Sidebar({ me, onClose }: { me: Me; onClose: () => void }) {
       </nav>
 
       <div className="sidebar-footer">
-        <SyncBadge />
+        <div data-tour="sync">
+          <SyncBadge />
+        </div>
         <div className="user-card">
           <div className="user-ident">
             <Initials name={me.display_name} />

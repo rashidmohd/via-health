@@ -53,6 +53,7 @@ function server() {
 
 beforeEach(async () => {
   stored = null
+  localStorage.setItem(`sessio.welcomeSeen.${ME.id}`, '1') // welcome page covered in onboarding.test
   lock()
   await i18n.changeLanguage('en')
   vi.spyOn(URL, 'createObjectURL').mockReturnValue('blob:recovery')

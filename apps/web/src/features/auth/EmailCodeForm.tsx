@@ -3,7 +3,7 @@ import { useState, type FormEvent } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Link } from 'react-router-dom'
 import { ApiError } from '../../api/client'
-import { ME_KEY, startEmailLogin, verifyEmailCode } from '../../api/auth'
+import { forgetAccount, ME_KEY, startEmailLogin, verifyEmailCode } from '../../api/auth'
 import { errorMessage } from '../../i18n/errors'
 import { currentLanguage, setLanguage } from '../../i18n/language'
 import authentication from '../../design/illustrations/authentication.svg'
@@ -61,6 +61,7 @@ export function EmailCodeForm({ mode }: { mode: Mode }) {
         language: currentLanguage(),
       })
       setLanguage(me.ui_language)
+      forgetAccount(queryClient)
       queryClient.setQueryData(ME_KEY, me)
     } catch (e) {
       setError(errorMessage(t, errorCode(e)))

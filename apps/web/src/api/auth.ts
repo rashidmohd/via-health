@@ -1,5 +1,6 @@
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { hashKey, useMutation, useQuery, useQueryClient, type QueryClient } from '@tanstack/react-query'
 import type { Appearance } from '../avatar/appearance'
+import { lock } from '../crypto/keyring'
 import { api, API_URL, ApiError } from './client'
 
 export type Language = 'de' | 'en'
@@ -137,10 +138,21 @@ export function useDeletePhoto() {
   })
 }
 
+/** Forget everything held for the previous account — cached data and the unlocked key — so the
+ *  next account never sees it. Keeps only the "me" entry, which the caller sets. */
+export function forgetAccount(queryClient: QueryClient) {
+  lock()
+  const meHash = hashKey(ME_KEY)
+  queryClient.removeQueries({ predicate: (query) => query.queryHash !== meHash })
+}
+
 export function useLogout() {
   const queryClient = useQueryClient()
   return useMutation({
     mutationFn: () => api<void>('/auth/logout', { method: 'POST' }),
-    onSettled: () => queryClient.setQueryData(ME_KEY, null),
+    onSettled: () => {
+      queryClient.setQueryData(ME_KEY, null)
+      forgetAccount(queryClient)
+    },
   })
 }

@@ -1,6 +1,7 @@
-import { ImageUp, PenLine, Trash2 } from 'lucide-react'
+import { Compass, ImageUp, PenLine, Trash2 } from 'lucide-react'
 import { useState, type ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
+import { useNavigate } from 'react-router-dom'
 import { ApiError } from '../../api/client'
 import { useDeletePhoto, useMe, usePhoto, useUpdateMe, useUploadPhoto, type AvatarKind } from '../../api/auth'
 import { PhotoAvatar } from '../../avatar/PhotoAvatar'
@@ -11,6 +12,7 @@ import { useAvatarSettings } from '../../avatar/settings'
 import { confirmDialog } from '../../design/confirm'
 import { Initials } from '../../design/Initials'
 import { errorMessage } from '../../i18n/errors'
+import { startTour } from '../onboarding/onboarding'
 import { MicPicker } from '../sessions/MicHealth'
 import { useDeviceSetting } from './deviceSettings'
 import { AppearanceEditor } from './AppearanceEditor'
@@ -208,7 +210,31 @@ export function SettingsPage() {
       </div>
 
       <DeviceSettings />
+      <TourSettings />
     </section>
+  )
+}
+
+/** Restart the app tour (ADR 0020). */
+function TourSettings() {
+  const { t } = useTranslation()
+  const navigate = useNavigate()
+  return (
+    <div className="card stack">
+      <h2>{t('settings.tour.title')}</h2>
+      <p className="muted small">{t('settings.tour.hint')}</p>
+      <button
+        type="button"
+        className="secondary"
+        onClick={() => {
+          navigate('/')
+          startTour()
+        }}
+      >
+        <Compass className="icon" aria-hidden="true" />
+        {t('settings.tour.start')}
+      </button>
+    </div>
   )
 }
 

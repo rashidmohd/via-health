@@ -651,6 +651,11 @@
       "livePreview": "Live-Transkript während der Aufnahme anzeigen",
       "livePreload": "Modell für das Live-Transkript beim Öffnen der App laden (ca. 155 MB, einmalig)",
       "livePreloadHint": "Ohne diese Option wird das Modell erst beim Start einer Aufnahme geladen, und die ersten Wörter erscheinen später."
+    },
+    "tour": {
+      "title": "Rundgang",
+      "hint": "Ein kurzer Gang durch die wichtigsten Bereiche der App.",
+      "start": "Rundgang starten"
     }
   },
   "preload": {
@@ -717,6 +722,58 @@
       "title": "Ihre Schlüssel sind noch nicht eingerichtet",
       "body": "Ohne Schlüssel können Sie keine Verlaufsnotizen signieren. Richten Sie sie einmal ein, damit nur Sie Ihre signierten Unterlagen lesen können.",
       "action": "Schlüssel einrichten"
+    }
+  },
+  "welcome": {
+    "title": "Willkommen bei Sessio, {{name}}",
+    "intro": "Sessio nimmt Ihre Sitzungen auf und entwirft die Verlaufsnotiz. Sie prüfen, bearbeiten und signieren jede Notiz selbst.",
+    "points": {
+      "record": "Aufnahmen werden auf diesem Gerät verschlüsselt und laufen auch ohne Internet weiter.",
+      "notes": "Nach einer Sitzung erhalten Sie ein Transkript und einen Entwurf zur Prüfung.",
+      "keys": "Signierte Notizen werden mit Ihrem Schlüssel verschlüsselt, nur Sie können sie lesen."
+    },
+    "tour": "Rundgang starten",
+    "skip": "Später"
+  },
+  "tour": {
+    "progress": "{{n}} von {{total}}",
+    "next": "Weiter",
+    "back": "Zurück",
+    "done": "Fertig",
+    "skip": "Rundgang beenden",
+    "steps": {
+      "start": {
+        "title": "Sitzung starten",
+        "body": "Hier nehmen Sie eine Sitzung auf. Die Einwilligung der Klient:in muss vorliegen. Die Aufnahme läuft auch ohne Internet weiter."
+      },
+      "nav-clients": {
+        "title": "Klient:innen",
+        "body": "Klient:innen anlegen und ihre Einwilligung erfassen."
+      },
+      "nav-sessions": {
+        "title": "Sitzungen",
+        "body": "Alle Aufnahmen mit Transkript und Upload-Status."
+      },
+      "nav-reports": {
+        "title": "Berichte",
+        "body": "Ihre freigegebenen Verlaufsnotizen. Entwürfe bleiben bei der Sitzung, bis Sie sie freigeben."
+      },
+      "nav-notifications": {
+        "title": "Benachrichtigungen",
+        "body": "Hier sehen Sie, wenn ein Transkript oder ein Entwurf fertig ist."
+      },
+      "nav-keys": {
+        "title": "Schlüssel",
+        "body": "Ihre Schlüssel für die Verschlüsselung. Richten Sie sie ein, bevor Sie Notizen signieren."
+      },
+      "nav-settings": {
+        "title": "Einstellungen",
+        "body": "Avatar, Mikrofon und Aufnahme-Einstellungen für dieses Gerät."
+      },
+      "sync": {
+        "title": "Upload-Status",
+        "body": "Zeigt, ob alle Audiodaten von diesem Gerät hochgeladen sind."
+      }
     }
   }
 }

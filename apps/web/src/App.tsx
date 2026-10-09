@@ -9,6 +9,9 @@ import { ClientsPage } from './features/clients/ClientsPage'
 import { ConsentPage } from './features/clients/ConsentPage'
 import { NewClientPage } from './features/clients/NewClientPage'
 import { NameStep } from './features/auth/NameStep'
+import { useWelcomeSeen } from './features/onboarding/onboarding'
+import { Tour } from './features/onboarding/Tour'
+import { WelcomeStep } from './features/onboarding/WelcomeStep'
 import { KeysPage } from './features/keys/KeysPage'
 import { NotificationsPage } from './features/notifications/NotificationsPage'
 import { ReportPage } from './features/reports/ReportPage'
@@ -31,6 +34,7 @@ export default function App() {
   const { t } = useTranslation()
   const { data: me, isPending, isError, refetch } = useMe()
   const loggedIn = Boolean(me)
+  const welcomeSeen = useWelcomeSeen(me?.id)
   const { pathname } = useLocation()
   // The mobile drawer remembers the route it was opened on, so navigating closes it.
   const [navOpenOn, setNavOpenOn] = useState<string | null>(null)
@@ -65,6 +69,10 @@ export default function App() {
   if (!me.display_name) {
     return <NameStep />
   }
+  // New accounts only (no keys yet): existing users are not interrupted.
+  if (me.has_keys === false && !welcomeSeen) {
+    return <WelcomeStep me={me} />
+  }
 
   return (
     <div className={navOpen ? 'shell nav-open' : 'shell'}>
@@ -95,6 +103,7 @@ export default function App() {
         </main>
         <RecordingDock />
       </div>
+      <Tour />
       <ConfirmHost />
     </div>
   )
