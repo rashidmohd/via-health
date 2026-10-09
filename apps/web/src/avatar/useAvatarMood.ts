@@ -2,7 +2,8 @@ import { useEffect, useState } from 'react'
 import { useActiveRecorder } from '../recorder/active'
 import { useLocalSyncState } from '../recorder/useLocal'
 import { lastAvatarEvent, onAvatarEvent } from './events'
-import { EVENT_MS, moodFor, WELCOME_MS, type AvatarState } from './mood'
+import { useAvatarSettings } from './settings'
+import { EVENT_MS, moodFor, NOD_MS, WELCOME_MS, type AvatarState } from './mood'
 
 function useOnline(): boolean {
   const [online, setOnline] = useState(() => navigator.onLine)
@@ -18,11 +19,16 @@ function useOnline(): boolean {
   return online
 }
 
-/** Mood from app state only. `processing` comes from the screen (e.g. session transcribing). */
-export function useAvatarMood({ processing = false }: { processing?: boolean } = {}): AvatarState {
+/** Mood from app state only. `processing` and `problem` come from the screen (e.g. session
+ *  transcribing, consent missing). */
+export function useAvatarMood({
+  processing = false,
+  problem = false,
+}: { processing?: boolean; problem?: boolean } = {}): AvatarState & { recording: boolean; online: boolean } {
   const recording = useActiveRecorder() !== null
   const online = useOnline()
   const sync = useLocalSyncState()
+  const { nodOnCapture } = useAvatarSettings()
   const [shownAt] = useState(() => Date.now())
   const [now, setNow] = useState(() => Date.now())
 
@@ -30,6 +36,7 @@ export function useAvatarMood({ processing = false }: { processing?: boolean } =
     const rerender = () => setNow(Date.now())
     const unsubscribe = onAvatarEvent(() => {
       rerender()
+      setTimeout(rerender, NOD_MS + 50) // end the glance, so the next chip can glance again
       setTimeout(rerender, EVENT_MS + 50) // fall back to the resting mood afterwards
     })
     const welcome = setTimeout(rerender, WELCOME_MS + 50)
@@ -40,12 +47,14 @@ export function useAvatarMood({ processing = false }: { processing?: boolean } =
   }, [])
 
   const event = lastAvatarEvent()
-  return moodFor({
+  const state = moodFor({
     recording,
     online,
-    problem: (sync?.failedSessions ?? 0) > 0,
+    problem: problem || (sync?.failedSessions ?? 0) > 0,
     processing,
     sinceShownMs: now - shownAt,
     recent: event ? { event: event.event, ageMs: now - event.at } : null,
+    nodOnCapture,
   })
+  return { ...state, recording, online }
 }

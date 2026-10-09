@@ -4,6 +4,7 @@ import { useUpdateMe } from '../../api/auth'
 import { errorMessage } from '../../i18n/errors'
 import { ApiError } from '../../api/client'
 import { Logo } from '../../design/Logo'
+import { emitAvatarEvent } from '../../avatar/events'
 
 /** Shown once if the account was created from the login page (no name yet). */
 export function NameStep() {
@@ -13,7 +14,7 @@ export function NameStep() {
 
   function submit(event: FormEvent) {
     event.preventDefault()
-    updateMe.mutate({ display_name: name.trim() })
+    updateMe.mutate({ display_name: name.trim() }, { onSuccess: () => emitAvatarEvent('onboarding.step') })
   }
 
   const error = updateMe.error

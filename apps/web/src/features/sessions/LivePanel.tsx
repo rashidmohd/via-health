@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import type { Language } from '../../api/auth'
 import { useLiveText } from '../../api/sessions'
+import { emitAvatarEvent } from '../../avatar/events'
 import { detectCaptures } from '../../live-stt/detectors'
 import { mergeLive, type LocalLine } from '../../live-stt/merge'
 import { LivePreview, livePreviewSupported, type PreviewEvent } from '../../live-stt/preview'
@@ -120,6 +121,17 @@ export function LivePanel({
   const captures = detectCaptures(
     lines.filter((l) => l.source !== 'partial').map((l) => ({ text: l.text, start_ms: l.startMs })),
   )
+
+  // A new chip from a finished line: the avatar may glance (only if the therapist enabled it).
+  // The event carries nothing from the session.
+  const captureKeys = captures.map((capture) => capture.key).join('|')
+  const seenCaptures = useRef(new Set<string>())
+  useEffect(() => {
+    const keys = captureKeys ? captureKeys.split('|') : []
+    const fresh = keys.filter((key) => !seenCaptures.current.has(key))
+    fresh.forEach((key) => seenCaptures.current.add(key))
+    if (fresh.length > 0) emitAvatarEvent('capture.noted')
+  }, [captureKeys])
 
   return (
     <details className="live-panel" onToggle={(e) => setOpen(e.currentTarget.open)}>

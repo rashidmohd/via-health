@@ -4,9 +4,8 @@ import { useTranslation } from 'react-i18next'
 import { Link, useParams } from 'react-router-dom'
 import { ApiError } from '../../api/client'
 import { useRetrySession, useSession, useTranscript } from '../../api/sessions'
-import { Avatar } from '../../avatar/Avatar'
+import { AppAvatar } from '../../avatar/AppAvatar'
 import { emitAvatarEvent } from '../../avatar/events'
-import { useAvatarMood } from '../../avatar/useAvatarMood'
 import { Initials } from '../../design/Initials'
 import { ListSkeleton } from '../../design/ListSkeleton'
 import { errorMessage } from '../../i18n/errors'
@@ -23,7 +22,6 @@ export function SessionPage() {
   const { data: transcript } = useTranscript(id, hasTranscript)
   const retry = useRetrySession(id)
   const processing = session?.status === 'uploaded' || session?.status === 'processing'
-  const { mood } = useAvatarMood({ processing })
 
   // A transcript that finishes while the page is open is an app event for the avatar.
   const previousStatus = useRef(session?.status)
@@ -69,7 +67,7 @@ export function SessionPage() {
             </p>
           </div>
         </div>
-        <Avatar mood={mood} size={56} />
+        <AppAvatar size={56} processing={processing} problem={session.status === 'failed'} done={session.report_status === 'approved'} />
       </header>
 
       {session.status === 'recording' && session.transcribed_ms > 0 && (

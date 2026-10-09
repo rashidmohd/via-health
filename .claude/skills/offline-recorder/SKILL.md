@@ -1,6 +1,6 @@
 ---
 name: offline-recorder
-description: Use when building or changing browser audio capture, 10-second chunking, the encrypted IndexedDB buffer, the upload queue, session manifests, crash recovery, or storage-quota handling in apps/web/src/recorder.
+description: Use when building or changing browser audio capture, 10-second chunking, the encrypted IndexedDB buffer, the upload queue, session manifests, crash recovery, storage-quota handling, or mic health (voice activity, silence warning, mic test, mic choice) in apps/web/src/recorder.
 ---
 
 # Offline-first recorder
@@ -10,10 +10,11 @@ Connectivity decides *when* audio reaches the server, never *whether* it is capt
 
 ## Pipeline
 
-1. `getUserMedia({ audio: { echoCancellation: false, noiseSuppression: false, autoGainControl: true, channelCount: 1 } })`.
-2. One `MediaStream`, two consumers:
+1. `getUserMedia({ audio: audioConstraints() })` = `{ echoCancellation: false, noiseSuppression: false, autoGainControl: true, channelCount: 1 }` + the chosen `deviceId` (a preference, not `exact`).
+2. One `MediaStream`, three consumers:
    - `MediaRecorder` → `audio/webm;codecs=opus`, `audioBitsPerSecond: 32000`, `timeslice: 10000` (archive path).
-   - `AudioWorklet` → 16 kHz mono PCM → posted to the live-STT Web Worker (see `live-transcript-preview`).
+   - Mic monitor (`micMonitor.ts`): `mic-level` AudioWorklet → RMS → `VoiceDetector` → voice state (always on while recording).
+   - `AudioWorklet` → mono PCM → posted to the live-STT Web Worker when the preview runs (see `live-transcript-preview`).
 3. On each `dataavailable`: assign `seq` (0,1,2…), compute SHA-256 of the plaintext, encrypt with the session key (AES-256-GCM, fresh 12-byte IV per chunk, AAD = `session_id|seq`), write to Dexie **before** doing anything else.
 4. Upload worker reads unsent chunks in `seq` order, requests a presigned PUT URL (`POST /sessions/{id}/chunks/{seq}/upload-url`), uploads ciphertext, then `POST /sessions/{id}/chunks/{seq}/ack` with checksum + size. Delete the local chunk **only after** the server ack.
 5. Stop → final `dataavailable`, flush, then `POST /sessions/{id}/manifest` `{ total_chunks, duration_ms, checksums[] }`.
@@ -67,6 +68,23 @@ If independently playable segments are ever needed, restart the recorder every N
 
 The record button is enabled only if the cached consent status for the client includes `recording` and `ai_processing` and is not withdrawn. The cache is refreshed whenever online; the server re-checks on every chunk-URL request.
 
+## Mic health (plan 0011)
+
+Silent audio loss is the worst failure, so voice activity is watched during every recording,
+independent of the avatar setting and the live preview.
+
+- `startVoiceMonitor(stream)` after `media.start()`, `stopVoiceMonitor()` in `stop()`. Never throws;
+  if the browser can't measure, status `unavailable` (shown as text, no guessing, recording unaffected).
+- Next to the record controls: level meter (DOM-updated, not React state) + voice on/off text.
+- Recording but no voice for 2 minutes → warning "No speech picked up for 2 minutes. Check the
+  microphone." with the mic picker. The picker sets the device for the **next** recording
+  (localStorage `sessio.micDevice`); switching mid-recording is not built (would need a new
+  MediaRecorder).
+- Before the first recording on a device: 5-second mic test that must detect voice
+  (`sessio.micTested`). Skipped if the browser can't measure.
+- Tests: warning after 2 min of silence and not before; test passes on voice / fails after 5 s;
+  recording runs when voice detection is unavailable.
+
 ## Performance
 
-Pause the avatar animation while recording. Keep encryption and IndexedDB writes off the main thread where possible (a dedicated Worker). Never block the AudioWorklet.
+Pause the Rive avatar while recording (`rive.pause()` 600 ms after start; only the CSS ring animates). Keep encryption and IndexedDB writes off the main thread where possible (a dedicated Worker). Never block the AudioWorklet.

@@ -1,5 +1,5 @@
 /**
- * Avatar mood state machine (avatar-and-ui skill, plan 0007 part 4).
+ * Avatar mood state machine (avatar-and-ui skill, plans 0007 part 4 and 0011).
  *
  * Inputs are app state and a closed list of app events — never transcript text, voice or
  * anything said in a session. No emotion recognition (CLAUDE.md rule 12).
@@ -8,12 +8,18 @@
 export type Mood = 'welcome' | 'attentive' | 'thinking' | 'encouraging' | 'pleased' | 'concern' | 'still'
 
 /** The only events that can move the avatar. They carry no payload. */
-export type AvatarEvent = 'client.created' | 'upload.done' | 'transcript.ready' | 'capture.noted'
+export type AvatarEvent =
+  | 'client.created'
+  | 'onboarding.step'
+  | 'upload.done'
+  | 'transcript.ready'
+  | 'report.signed'
+  | 'capture.noted'
 
 export interface AvatarInputs {
   recording: boolean
   online: boolean
-  /** Upload or processing problem the user should look at. */
+  /** Something the user should look at: upload/processing problem, missing consent. */
   problem: boolean
   /** Transcript or report is being made. */
   processing: boolean
@@ -30,14 +36,16 @@ export interface AvatarState {
   nod: boolean
 }
 
-export const WELCOME_MS = 2500
-export const EVENT_MS = 4000
+export const WELCOME_MS = 3000
+export const EVENT_MS = 3000
 export const NOD_MS = 1000
 
 const EVENT_MOOD: Partial<Record<AvatarEvent, Mood>> = {
   'client.created': 'encouraging',
+  'onboarding.step': 'encouraging',
   'upload.done': 'pleased',
   'transcript.ready': 'pleased',
+  'report.signed': 'pleased',
 }
 
 export function moodFor(input: AvatarInputs): AvatarState {

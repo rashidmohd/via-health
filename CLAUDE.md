@@ -35,7 +35,7 @@ without restructuring.
 
 | Layer | Choice |
 |---|---|
-| Frontend | React + TypeScript (Vite), PWA (Workbox), TanStack Query, Dexie (IndexedDB), openpgp.js, sherpa-onnx WASM |
+| Frontend | React + TypeScript (Vite), PWA (Workbox — not set up yet, ADR 0010), TanStack Query, Dexie (IndexedDB), openpgp.js, sherpa-onnx WASM, Rive (`@rive-app/react-canvas`, WASM self-hosted) |
 | Backend API | FastAPI (Python 3.12), Pydantic v2, SQLAlchemy 2 + Alembic |
 | Workers | Python, Arq (Redis queue), ffmpeg |
 | Database | PostgreSQL (Railway plugin) — NOT MongoDB |
@@ -56,10 +56,10 @@ We do **not** self-host any ML model and do not run GPUs.
 
 ```
 apps/web/                 React PWA
-  src/recorder/           capture, chunking, IndexedDB buffer, upload queue
+  src/recorder/           capture, chunking, IndexedDB buffer, upload queue, voice activity + mic health
   src/live-stt/           sherpa-onnx worker, hotwords, capture detectors
   src/crypto/             WebCrypto session keys, openpgp.js wrappers
-  src/avatar/             image-grid avatar + emotion state machine
+  src/avatar/             Rive character (placeholder until delivered), listening ring, app-state moods
   src/features/           today, clients, sessions, reports, keys, settings
   src/design/             tokens (olive palette), components
 backend/
@@ -117,7 +117,7 @@ These hold for every change. If a request conflicts with one, stop and ask.
 
 ### Product boundaries (regulatory — do not cross)
 11. **Documentation tool only.** No diagnoses, no risk scores, no treatment recommendations, no clinical suggestions during a session. (Keeps us outside MDR / AI Act high-risk.)
-12. **No emotion recognition.** Never infer emotions from voice or text of the client or therapist. The avatar reacts only to app state and a fixed whitelist of text events (see `live-transcript-preview` skill).
+12. **No emotion recognition.** Never infer emotions from voice or text of the client or therapist. The avatar reacts only to app state and a fixed whitelist of text events (see `live-transcript-preview` skill). **Voice activity is shown only by the ring around the avatar, binary** (speaking / not) — never scaled by loudness, never per speaker, never on the face.
 13. **No risk/self-harm detection** features without explicit sign-off — this is a regulated feature.
 14. **The therapist always reviews.** Nothing AI-generated is final or sent to a client without the therapist's approval.
 
@@ -184,9 +184,11 @@ Type: Inter (self-hosted); icons: lucide-react. Full token set and components: `
 - Chirp 3 speech adaptation (phrase sets) in location `eu` — verify. (Availability verified: `eu` yes, `europe-west4` no.)
 - Vertex abuse-monitoring exception — must be requested for zero retention.
 - Final product name ("Sessio" is a placeholder).
+- Rive character not yet delivered — placeholder image in use (`public/avatar/placeholder.png`; drop the file in as `public/avatar/sessio-avatar.riv`, contract in the `avatar-and-ui` skill).
+- Profile photo (plan 0012) — touches the schema; waiting for approval.
 - Legal: DPIA, DPAs, §203 contracts, final consent texts — parked, lawyer review pending.
 
-Decided (see `docs/adr/`): GCS `europe-west4` for storage (0001); placeholder consent texts v0 for the prototype (0002); email-code login via Resend EU, open signup (0003); interim server key for client data (0004); Gemini API in dev only, Vertex in prod (0005); transcript is part of the record, kept 10 years (0006); LLM sees plain text in memory only, names replaced by placeholders (0007); AI documents what was said, never assesses (0008); UI foundation Inter + Lucide + raised-panel shell (0009).
+Decided (see `docs/adr/`): GCS `europe-west4` for storage (0001); placeholder consent texts v0 for the prototype (0002); email-code login via Resend EU, open signup (0003); interim server key for client data (0004); Gemini API in dev only, Vertex in prod (0005); transcript is part of the record, kept 10 years (0006); LLM sees plain text in memory only, names replaced by placeholders (0007); AI documents what was said, never assesses (0008); UI foundation Inter + Lucide + raised-panel shell (0009); Rive avatar, binary listening ring, voice activity in its own worklet, mic health (0010).
 
 ## 9. Skills index
 
@@ -194,13 +196,13 @@ Load the matching skill before working on an area:
 
 | Skill | When |
 |---|---|
-| `offline-recorder` | Mic capture, chunking, IndexedDB, upload queue, offline/crash recovery, storage quota |
-| `live-transcript-preview` | sherpa-onnx WASM, hotwords, capture chips, avatar event triggers |
+| `offline-recorder` | Mic capture, chunking, IndexedDB, upload queue, offline/crash recovery, storage quota, mic health |
+| `live-transcript-preview` | sherpa-onnx WASM, hotwords, capture chips, voice activity, avatar event triggers |
 | `encryption-and-keys` | Session keys, PGP, KMS wrapping, signing, crypto-shredding, recovery key |
 | `data-model-and-consent` | Postgres schema, RLS, consent enforcement, client profile, retention, audit |
 | `transcription-pipeline` | Workers, Chirp 3 adapter, windows, batch diarization, manifest |
 | `report-generation` | Templates, Gemini adapter, review/sign flow, client documents |
-| `avatar-and-ui` | Olive design system, image-grid avatar, emotion states |
+| `avatar-and-ui` | Olive design system, Rive avatar, listening ring, emotion states, profile picture |
 | `railway-deploy` | Railway services, env vars, Google project setup, EU pinning |
 
 ## 10. Working agreement

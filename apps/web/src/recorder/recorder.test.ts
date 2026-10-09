@@ -1,5 +1,6 @@
 import { decryptChunk } from './crypto'
 import { db } from './db'
+import { getVoiceState } from './micMonitor'
 import { RecorderError, SessionRecorder, recoverInterrupted } from './recorder'
 
 import { FakeMediaRecorder, installFakeMicrophone } from './testing'
@@ -39,6 +40,19 @@ describe('SessionRecorder', () => {
     expect(new TextDecoder().decode(chunks[0].data)).not.toContain('slice zero')
     const plain = await decryptChunk(session!.key, recorder.sessionId, 0, chunks[0].data)
     expect(new TextDecoder().decode(plain)).toBe('slice zero')
+  })
+
+  it('uses the chosen microphone, and records even when voice detection cannot run', async () => {
+    localStorage.setItem('sessio.micDevice', 'usb')
+    const recorder = await SessionRecorder.start({ id: 'c1', name: 'Anna' }, { onProblem: vi.fn() })
+    expect(navigator.mediaDevices.getUserMedia).toHaveBeenCalledWith({
+      audio: expect.objectContaining({ deviceId: 'usb', echoCancellation: false, channelCount: 1 }),
+    })
+    expect(getVoiceState().status).toBe('unavailable') // jsdom has no AudioContext
+    expect(FakeMediaRecorder.last!.state).toBe('recording')
+    await recorder.stop()
+    expect(getVoiceState().status).toBe('off')
+    localStorage.clear()
   })
 
   it('alerts loudly when the microphone disconnects', async () => {

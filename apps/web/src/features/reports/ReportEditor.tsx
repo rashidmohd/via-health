@@ -18,6 +18,7 @@ import {
   type Statement,
 } from '../../api/reports'
 import type { ServerSession, Transcript } from '../../api/sessions'
+import { emitAvatarEvent } from '../../avatar/events'
 import { errorMessage } from '../../i18n/errors'
 import { formatDate } from '../format'
 import { overlaps } from './overlaps'
@@ -105,7 +106,7 @@ export function ReportEditor({
   async function approveNow() {
     if (!window.confirm(t('report.approveConfirm'))) return
     if (dirty && !(await saveNow())) return
-    approve.mutate()
+    approve.mutate(undefined, { onSuccess: () => emitAvatarEvent('report.signed') })
   }
 
   function selectSegment(start: number, end: number) {

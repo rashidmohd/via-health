@@ -255,6 +255,23 @@
     "bookmarks_one": "{{count}} bookmark set",
     "bookmarks_other": "{{count}} bookmarks set"
   },
+  "mic": {
+    "voice": "Voice detected",
+    "noVoice": "No voice",
+    "unavailable": "Voice detection is not available in this browser.",
+    "level": "Microphone level",
+    "silenceWarning": "No speech picked up for 2 minutes. Check the microphone.",
+    "nextDevice": "Microphone for the next recording",
+    "switchHint": "To switch now, stop and start a new recording.",
+    "default": "Browser default",
+    "test": {
+      "title": "Test the microphone",
+      "hint": "Before your first recording on this device, press the button and say a few words.",
+      "start": "Test microphone",
+      "listening": "Say a few words now.",
+      "failed": "No speech picked up. Check the microphone and try again."
+    }
+  },
   "session": {
     "title": "Session on {{date}}",
     "waitingForUpload": "Waiting for the rest of the audio from the recording device ({{done}} of {{total}} parts). Open the app on that device so it can finish uploading.",
@@ -498,6 +515,24 @@
       "consent": "Consent",
       "report": "Session note",
       "details": "Details"
+    }
+  },
+  "settings": {
+    "avatar": {
+      "title": "Profile picture",
+      "hint": "Shown only on your own screens. Clients never see it.",
+      "illustrated": "Illustrated avatar",
+      "illustratedHint": "Animated. Reacts to what the app is doing, never to what is said.",
+      "initials": "Initials",
+      "initialsHint": "Your initials in a circle."
+    },
+    "reactions": {
+      "title": "Avatar during recordings",
+      "nod": "Short glance when a new note appears in the live transcript",
+      "hint": "Off by default and only on your screen. The avatar never reacts to what is said or how anyone sounds."
+    },
+    "microphone": {
+      "title": "Microphone"
     }
   }
 }

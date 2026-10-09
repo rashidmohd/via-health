@@ -21,7 +21,7 @@
 	header @hashed Cache-Control "public, max-age=31536000, immutable"
 
 	# Fixed names that change with each deploy: always revalidate (CDN and browser).
-	@unversioned path /live-stt-worker.js /live-stt-capture.js /favicon.svg
+	@unversioned path /live-stt-worker.js /live-stt-capture.js /mic-level.js /favicon.svg /avatar/*
 	header @unversioned Cache-Control "no-cache"
 
 	# Requests for files (anything with an extension) never fall back to the app page:

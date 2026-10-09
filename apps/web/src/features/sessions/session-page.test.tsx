@@ -28,8 +28,9 @@ describe('session page', () => {
 
   it('shows progress while transcribing', async () => {
     mockApi((url) => (url.endsWith('/auth/me') ? { status: 200, body: ME } : { status: 200, body: session('processing') }))
-    renderApp('/sessions/s1')
+    const { container } = renderApp('/sessions/s1')
     expect(await screen.findByRole('status')).toHaveTextContent('Transcribing…')
+    expect(container.querySelector('.avatar-ring')).toHaveClass('is-processing')
   })
 
   it('shows a failure with retry', async () => {

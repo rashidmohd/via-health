@@ -255,6 +255,23 @@
     "bookmarks_one": "{{count}} Lesezeichen gesetzt",
     "bookmarks_other": "{{count}} Lesezeichen gesetzt"
   },
+  "mic": {
+    "voice": "Stimme erkannt",
+    "noVoice": "Keine Stimme",
+    "unavailable": "Die Spracherkennung des Mikrofons ist in diesem Browser nicht verfügbar.",
+    "level": "Mikrofonpegel",
+    "silenceWarning": "Seit 2 Minuten wurde keine Sprache erkannt. Bitte prüfen Sie das Mikrofon.",
+    "nextDevice": "Mikrofon für die nächste Aufnahme",
+    "switchHint": "Um jetzt zu wechseln, beenden Sie die Aufnahme und starten Sie eine neue.",
+    "default": "Browser-Standard",
+    "test": {
+      "title": "Mikrofon testen",
+      "hint": "Vor Ihrer ersten Aufnahme auf diesem Gerät: Drücken Sie die Taste und sagen Sie ein paar Worte.",
+      "start": "Mikrofon testen",
+      "listening": "Sprechen Sie jetzt ein paar Worte.",
+      "failed": "Keine Sprache erkannt. Prüfen Sie das Mikrofon und versuchen Sie es erneut."
+    }
+  },
   "session": {
     "title": "Sitzung am {{date}}",
     "waitingForUpload": "Es fehlen noch Audiodaten vom Aufnahmegerät ({{done}} von {{total}} Teilen). Öffnen Sie die App auf diesem Gerät, damit der Upload abgeschlossen wird.",
@@ -498,6 +515,24 @@
       "consent": "Einwilligung",
       "report": "Sitzungsdokumentation",
       "details": "Details"
+    }
+  },
+  "settings": {
+    "avatar": {
+      "title": "Profilbild",
+      "hint": "Nur auf Ihren eigenen Bildschirmen sichtbar. Klient:innen sehen es nie.",
+      "illustrated": "Illustrierter Avatar",
+      "illustratedHint": "Animiert. Reagiert darauf, was die App gerade tut, nie auf das Gesagte.",
+      "initials": "Initialen",
+      "initialsHint": "Ihre Initialen im Kreis."
+    },
+    "reactions": {
+      "title": "Avatar während der Aufnahme",
+      "nod": "Kurzer Blick, wenn im Live-Transkript eine neue Notiz erscheint",
+      "hint": "Standardmäßig aus und nur auf Ihrem Bildschirm. Der Avatar reagiert nie darauf, was gesagt wird oder wie jemand klingt."
+    },
+    "microphone": {
+      "title": "Mikrofon"
     }
   }
 }

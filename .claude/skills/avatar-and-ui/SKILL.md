@@ -1,6 +1,6 @@
 ---
 name: avatar-and-ui
-description: Use when building UI screens, the olive design system and tokens, layout and navigation, or the image-grid avatar (mouse-follow, emotion states, transitions) in apps/web/src/avatar and apps/web/src/design.
+description: Use when building UI screens, the olive design system and tokens, layout and navigation, the Rive avatar (state machine contract, emotions, placeholder), the listening ring, or profile picture settings in apps/web/src/avatar and apps/web/src/design.
 ---
 
 # UI and avatar
@@ -48,45 +48,94 @@ Building blocks (classes in `base.css`):
 | Sessions | calendar + list, sync status per session |
 | Reports | drafts to review, signed reports |
 | Keys | key status, recovery key check, lock |
-| Settings | templates, hotwords, avatar options |
+| Settings | profile picture, avatar reactions, microphone; later templates, hotwords |
 
-Session screen: large record button, timer, sync badge, live transcript (muted, labelled "Vorschau"), chips panel, bookmark button. Avatar still or hidden.
+Session screen: large record button (first time on a device: 5 s mic test first), timer, mic health (level meter + voice on/off), sync badge, live transcript (muted, labelled "Vorschau"), chips panel, bookmark button. Avatar paused in its ring; the red dot + "Aufnahme läuft" stays separate from the ring.
 
-## Avatar: image grid
+## Avatar: Rive character (plan 0011, ADR 0010)
 
-Realistic or illustrated face rendered as pre-generated frames (e.g. LivePortrait). Only use a face we hold rights to (AI-generated person or signed release).
+One illustrated, rigged Rive character (designer-made, rights held). It reacts **only to app state**
+— never to what is said or how anyone sounds. No emotion recognition.
 
-Assets:
-```
-public/avatar/attentive/r{0-8}_c{0-8}.webp      # 9x9 look-around grid (default state)
-public/avatar/{emotion}/r{0-2}_c{0-2}.webp      # 3x3 per other emotion
-public/avatar/transitions/{from}-to-{to}/{00-11}.webp
-```
+Files: `src/avatar/` — `mood.ts` (state machine, tested), `events.ts` (payload-free app events),
+`useAvatarMood.ts`, `rive.ts` (contract), `RiveAvatar.tsx` (placeholder / lazy character),
+`RiveCanvas.tsx` (Rive hooks, code-split), `AvatarRing.tsx` + `ring.ts`, `AppAvatar.tsx`
+(`UserAvatar` = chosen kind, `AppAvatar` = avatar + ring for non-recording screens), `settings.ts`.
 
-Emotions (app state only): `attentive`, `welcome`, `thinking`, `encouraging`, `pleased`, `concern`, `still`.
+Assets: `public/avatar/sessio-avatar.riv` (not delivered yet) and `public/avatar/placeholder.png`.
+`RiveAvatar` fetches the .riv once; if it is missing or doesn't start with `RIVE`, the placeholder
+image is shown with the same props and no Rive code/WASM is loaded. The Rive WASM is bundled and
+served from our origin (`RuntimeLoader.setWasmUrl` + `setWasmFallbackUrl`) — never the CDN default.
 
-| App event | Emotion |
-|---|---|
-| login / Today idle | `welcome` → `attentive` |
-| report processing | `thinking` |
-| onboarding step done, first client added | `encouraging` |
-| report signed, all synced | `pleased` |
-| offline, error, consent missing | `concern` (soft) |
-| recording active | `still` (no tracking, no reactions) |
-| `capture.noted` (only if therapist enabled) | 1 s glance, then back |
+### State machine contract (keep names identical)
 
-**Never** derive avatar state from what the client or therapist says or how they sound. No emotion recognition.
+Artboard `Avatar`, state machine `Avatar`.
 
-Component contract:
-```tsx
-<Avatar emotion={emotion} trackPointer={!recording} size={160} />
-```
-- Map pointer position to the nearest grid cell, throttled with `requestAnimationFrame`.
-- Preload `attentive` on first paint; lazy-load other sets after login.
-- Transitions: play the frame sequence (≈30 fps) or crossfade 200 ms if missing.
-- `prefers-reduced-motion`: show a single front-facing frame, no tracking, no transitions.
-- Pause everything while recording to free CPU for audio, encryption and WASM STT.
-- Decorative: `aria-hidden`, all state also communicated in text.
+| Input | Type | Values / effect |
+|---|---|---|
+| `lookX` | Number | −100…100, pointer x (head + eyes follow) |
+| `lookY` | Number | −100…100, pointer y |
+| `emotion` | Number | 0 attentive · 1 welcome · 2 thinking · 3 encouraging · 4 pleased · 5 concern · 6 still |
+| `recording` | Boolean | true → no tracking, calm still pose |
+| `noted` | Trigger | ≤1 s glance/nod for a new capture chip (only if the therapist enabled reactions) |
+
+Phase 2 (avatar builder, not now): Number inputs `hair`, `hairColor`, `skin`, `glasses`, `beard`, `top`.
+
+### App event → emotion
+
+| App event | Emotion | Code |
+|---|---|---|
+| login / Today idle | `welcome` → `attentive` after 3 s | `WELCOME_MS` |
+| report drafting, transcript processing | `thinking` | `processing` |
+| name step done, client added | `encouraging` (3 s) | `onboarding.step`, `client.created` |
+| report approved, upload done, transcript ready | `pleased` → `attentive` after 3 s | `report.signed`, `upload.done`, `transcript.ready` |
+| offline, upload/processing error, consent missing | `concern` | `online`, `problem` |
+| recording active | `still` + `recording = true` | active recorder |
+| new capture chip (opt-in) | fire `noted` | `capture.noted` |
+
+Moods come only from `useAvatarMood` (app state + `emitAvatarEvent`). Components never set
+emotions ad hoc. Events carry no payload — nothing from a session can reach the avatar.
+
+Component rules:
+- `prefers-reduced-motion`: no pointer tracking; emotions still switch.
+- While recording: `recording = true`, then `rive.pause()` after 600 ms (frees CPU for audio,
+  crypto and WASM STT). A `noted` glance plays briefly, then pauses again.
+- `aria-hidden`; every state is also shown as text on screen.
+
+## Listening ring
+
+`AvatarRing` wraps any avatar (character, initials, later photo). Pure CSS, only
+`transform`/`opacity` animate.
+
+| Ring state | When | Look |
+|---|---|---|
+| `idle` | not recording | 2px olive-300 border |
+| `silent` | recording, no voice | 3px olive-500 border |
+| `listening` | recording, voice detected | two staggered ripples, 2.4 s |
+| `processing` | report drafting / transcript processing | rotating olive arc, 2.8 s |
+
+`ringState({ recording, voiceActive, processing })` maps state. Badges: check (`done`: note
+approved / upload synced — neutral colour, olive is not "success"), cloud-off (`offline`,
+warning colour). Status text always next to it.
+
+Ring rules:
+- Binary voice state only — **never** scale the animation with loudness.
+- No difference between therapist and client voices.
+- Driven only by the voice activity signal (`useVoiceState`, `offline-recorder` skill); voice
+  activity is shown only on the recording screen.
+
+## Profile picture (Settings)
+
+| Option | Status | Notes |
+|---|---|---|
+| Illustrated avatar (Rive) | built (default) | animated, all emotions |
+| Initials | built | olive-100 circle, olive-800 text (`Initials` with `size`) |
+| My photo | plan 0012 | static photo in the ring; optional ±4° tilt toward the pointer, off while recording; crop + 512×512 WebP re-encode (strips EXIF); access-controlled object; deleted with the account |
+| Build my avatar | later | Rive part variants; store only a config like `{ "hair":3,"hairColor":2,"skin":4,"glasses":1 }`; every trait picked manually, never detected from a photo |
+| Avatar from my photo | later | check EU availability + zero retention first |
+
+Settings are per device for now (`settings.ts`, localStorage `sessio.avatar`); they move to the
+account with plan 0012. Clients never get photo uploads; client avatars stay initials.
 
 ## Accessibility
 

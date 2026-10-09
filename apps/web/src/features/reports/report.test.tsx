@@ -153,9 +153,10 @@ describe('session note', () => {
       if (url.endsWith('/report')) return { status: 200, body: report(status, { ai_assisted: false }) }
       return undefined
     })
-    renderApp('/sessions/s1/report')
+    const { container } = renderApp('/sessions/s1/report')
     fireEvent.click(await screen.findByRole('button', { name: 'Draft with AI' }))
     expect(await screen.findByText('Writing the draft…')).toBeInTheDocument()
+    expect(container.querySelector('.avatar-ring')).toHaveClass('is-processing')
     expect(calls.find((c) => c.url.endsWith('/report/draft'))?.body).toEqual({ field: null })
     expect(screen.queryByRole('button', { name: 'Write manually' })).not.toBeInTheDocument()
   })
@@ -180,8 +181,9 @@ describe('session note', () => {
       if (url.endsWith('/report')) return { status: 200, body: approved }
       return undefined
     })
-    renderApp('/sessions/s1/report')
+    const { container } = renderApp('/sessions/s1/report')
     expect(await screen.findByText(/Read-only/)).toBeInTheDocument()
+    expect(container.querySelector('.ring-badge')).toHaveAttribute('data-badge', 'done')
     expect(screen.queryByRole('button', { name: 'Approve' })).not.toBeInTheDocument()
     fireEvent.change(screen.getByRole('textbox', { name: 'New addendum' }), { target: { value: 'Termin verschoben' } })
     fireEvent.click(screen.getByRole('button', { name: 'Add addendum' }))

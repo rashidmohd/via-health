@@ -4,8 +4,7 @@ import { useTranslation } from 'react-i18next'
 import { Link } from 'react-router-dom'
 import { useMe } from '../../api/auth'
 import { useSessions } from '../../api/sessions'
-import { Avatar } from '../../avatar/Avatar'
-import { useAvatarMood } from '../../avatar/useAvatarMood'
+import { AppAvatar } from '../../avatar/AppAvatar'
 import { useLocalSyncState } from '../../recorder/useLocal'
 import { formatLongDate, isSameDay } from '../format'
 import { NotesToReview } from './NotesToReview'
@@ -15,7 +14,6 @@ export function TodayPage() {
   const { t, i18n } = useTranslation()
   const { data: me } = useMe()
   const [now] = useState(() => new Date())
-  const { mood, nod } = useAvatarMood()
   const hour = now.getHours()
   const greeting = hour < 12 ? 'today.morning' : hour < 18 ? 'today.afternoon' : 'today.evening'
 
@@ -30,7 +28,7 @@ export function TodayPage() {
   return (
     <section className="page today">
       <div className="today-hero">
-        <Avatar mood={mood} nod={nod} size={120} trackPointer />
+        <AppAvatar size={120} />
         <div className="today-hero-text">
           <p className="eyebrow">{formatLongDate(now, i18n.language)}</p>
           <h1>{t(greeting, { name: me?.display_name ?? '' })}</h1>

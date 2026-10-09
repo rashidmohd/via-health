@@ -663,24 +663,13 @@
   display: inline-block;
 }
 
-.timer-ring {
-  display: grid;
-  place-items: center;
-  width: 220px;
-  height: 220px;
-  border-radius: 50%;
-  border: 2px solid #efc2b8;
-  box-shadow:
-    0 0 0 12px rgb(194 65 45 / 5%),
-    inset 0 0 0 10px var(--surface-muted);
+.avatar-ring + .timer {
+  margin-top: var(--space-2);
 }
 
 @media (prefers-reduced-motion: no-preference) {
   .recording-indicator .dot {
     animation: pulse 1.6s ease-in-out infinite;
-  }
-  .timer-ring {
-    animation: ring 3.2s ease-in-out infinite;
   }
 }
 
@@ -690,12 +679,63 @@
   }
 }
 
-@keyframes ring {
-  50% {
-    box-shadow:
-      0 0 0 20px rgb(194 65 45 / 3%),
-      inset 0 0 0 10px var(--surface-muted);
-  }
+/* Mic health (plan 0011): level meter + binary voice indicator, warning, first-time test. */
+.mic-health {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  color: var(--text-muted);
+}
+
+.level-meter {
+  width: 64px;
+  height: 6px;
+  border-radius: 999px;
+  background: var(--olive-100);
+  overflow: hidden;
+}
+
+.level-fill {
+  display: block;
+  height: 100%;
+  background: var(--olive-500);
+  transform: scaleX(0);
+  transform-origin: left;
+  transition: transform 80ms linear;
+}
+
+.voice-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  border: 1.5px solid var(--olive-500);
+}
+
+.voice-dot.on {
+  background: var(--olive-500);
+}
+
+.mic-warning,
+.mic-test .banner {
+  display: grid;
+  gap: var(--space-2);
+}
+
+.mic-picker {
+  display: grid;
+  gap: var(--space-1);
+}
+
+.mic-test {
+  display: grid;
+  justify-items: center;
+  gap: var(--space-3);
+  max-width: 46ch;
+}
+
+.mic-test h2 {
+  margin: 0;
+  font-size: var(--text-lg);
 }
 
 .timer {
@@ -933,104 +973,108 @@
   text-decoration: line-through;
 }
 
-/* Avatar (illustrated placeholder) */
-.avatar {
-  display: block;
-  overflow: visible;
-}
-
+/* Ring around the avatar: voice activity while recording, processing otherwise (plan 0011).
+   Only transform and opacity animate. */
 .avatar-ring {
-  fill: none;
-  stroke: var(--olive-500);
-  stroke-width: 2;
+  position: relative;
+  display: inline-grid;
+  place-items: center;
+  flex: none;
+  border-radius: 50%;
+  box-shadow: 0 0 0 2px var(--olive-300);
+  transition: box-shadow 0.4s;
 }
 
-.avatar-head {
-  fill: var(--olive-100);
+.avatar-ring > :first-child {
+  border-radius: 50%;
 }
 
-.avatar-eye {
-  fill: #fff;
+.avatar-ring.is-silent,
+.avatar-ring.is-listening {
+  box-shadow: 0 0 0 3px var(--olive-500);
 }
 
-.avatar-pupil,
-.avatar-dots circle {
-  fill: var(--charcoal);
+.avatar-ring::before,
+.avatar-ring::after {
+  content: '';
+  position: absolute;
+  inset: -4px;
+  border-radius: 50%;
+  pointer-events: none;
+  opacity: 0;
 }
 
-.avatar-pupil {
-  transition: cx 120ms ease-out, cy 120ms ease-out;
+.avatar-ring.is-listening::before,
+.avatar-ring.is-listening::after {
+  border: 2px solid var(--olive-500);
 }
 
-.avatar-brow,
-.avatar-lid,
-.avatar-mouth {
-  fill: none;
-  stroke: var(--olive-700);
-  stroke-width: 2.4;
-  stroke-linecap: round;
-}
-
-.avatar-mouth,
-.avatar-brow {
-  transition: d 300ms ease;
+.avatar-ring.is-processing::before {
+  inset: -6px;
+  border: 3px solid transparent;
+  border-top-color: var(--olive-700);
+  border-right-color: var(--olive-500);
 }
 
 @media (prefers-reduced-motion: no-preference) {
-  .avatar:not(.reduced):not(.mood-still) .avatar-eyes {
-    transform-origin: 50px 46px;
-    animation: blink 5s infinite;
+  .avatar-ring.is-listening::before {
+    animation: ring-ripple 2.4s ease-out infinite;
   }
-  .avatar:not(.reduced):not(.mood-still) .avatar-face {
-    transform-origin: 50px 90px;
-    animation: breathe 6s ease-in-out infinite;
+  .avatar-ring.is-listening::after {
+    animation: ring-ripple 2.4s ease-out 1.2s infinite;
   }
-  .avatar.mood-welcome:not(.reduced) .avatar-face {
-    animation: greet 1.2s ease-out 1;
-  }
-  .avatar.mood-thinking:not(.reduced) .avatar-dots circle {
-    animation: dot 1.4s ease-in-out infinite;
-  }
-  .avatar.mood-thinking:not(.reduced) .avatar-dots circle:nth-child(2) {
-    animation-delay: 0.2s;
-  }
-  .avatar.mood-thinking:not(.reduced) .avatar-dots circle:nth-child(3) {
-    animation-delay: 0.4s;
-  }
-  .avatar.nod:not(.reduced) .avatar-face {
-    transform-origin: 50px 90px;
-    animation: nod 0.8s ease-in-out 1;
+  .avatar-ring.is-processing::before {
+    opacity: 1;
+    animation: ring-spin 2.8s linear infinite;
   }
 }
 
-@keyframes blink {
-  0%, 94%, 100% { transform: scaleY(1); }
-  97% { transform: scaleY(0.1); }
+@media (prefers-reduced-motion: reduce) {
+  .avatar-ring.is-processing::before {
+    opacity: 1;
+  }
 }
 
-@keyframes breathe {
-  50% { transform: translateY(-0.8px); }
+@keyframes ring-ripple {
+  0% {
+    transform: scale(1);
+    opacity: 0.6;
+  }
+  100% {
+    transform: scale(1.22);
+    opacity: 0;
+  }
 }
 
-@keyframes greet {
-  30% { transform: rotate(-4deg); }
-  60% { transform: rotate(3deg); }
+@keyframes ring-spin {
+  to {
+    transform: rotate(360deg);
+  }
 }
 
-@keyframes dot {
-  50% { opacity: 0.25; }
-}
-
-@keyframes nod {
-  40% { transform: rotate(4deg) translateY(1px); }
-}
-
-.today .avatar-wrap {
+/* Olive is brand, not success: the check badge is neutral, offline uses the warning colour. */
+.ring-badge {
+  position: absolute;
+  right: 2%;
+  bottom: 2%;
   display: grid;
-  justify-items: center;
-  gap: 16px;
-  width: 100%;
-  padding: 24px 0;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  color: var(--charcoal);
+  box-shadow: var(--shadow-xs);
+}
+
+.ring-badge.offline {
+  color: var(--warning);
+}
+
+.ring-badge .icon {
+  width: 14px;
+  height: 14px;
 }
 
 .transcript.live li.source-device,
@@ -1886,4 +1930,54 @@
 .notification-icon.attention {
   background: #f8ece6;
   color: #8a4e33;
+}
+
+/* Settings: profile picture choice (plan 0011) */
+.avatar-choice {
+  display: grid;
+  gap: var(--space-3);
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.avatar-choice legend {
+  padding: 0;
+  margin-bottom: var(--space-1);
+}
+
+.avatar-choice h2 {
+  margin: 0;
+}
+
+.avatar-option {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-3);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  cursor: pointer;
+}
+
+.avatar-option.selected {
+  border-color: var(--olive-500);
+  background: var(--olive-50);
+}
+
+.avatar-option input {
+  width: 18px;
+  height: 18px;
+  accent-color: var(--olive-700);
+}
+
+.avatar-option > span:last-child {
+  display: grid;
+  gap: 2px;
+}
+
+.avatar-image {
+  display: block;
+  border-radius: 50%;
+  object-fit: cover;
 }

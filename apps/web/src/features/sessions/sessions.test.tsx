@@ -1,7 +1,8 @@
-import { fireEvent, screen, waitFor } from '@testing-library/react'
+import { act, fireEvent, screen, waitFor } from '@testing-library/react'
 import i18n from '../../i18n'
 import { createSessionKey } from '../../recorder/crypto'
 import { db } from '../../recorder/db'
+import { setVoiceStateForTest } from '../../recorder/micMonitor'
 import { installFakeMicrophone } from '../../recorder/testing'
 import { ME, mockApi, renderApp } from '../../test-utils'
 
@@ -87,6 +88,13 @@ describe('start session flow', () => {
     fireEvent.click(await screen.findByRole('button', { name: 'Start recording' }))
     expect(await screen.findByRole('status')).toHaveTextContent('Recording')
     expect(screen.getByLabelText('Recording time')).toHaveTextContent('00:00')
+
+    // Voice activity: binary, shown by the ring around the paused avatar, and as text.
+    const ring = document.querySelector('.record-stage .avatar-ring')!
+    expect(ring).toHaveClass('is-silent')
+    act(() => setVoiceStateForTest({ status: 'on', active: true, lastVoiceAt: Date.now() }))
+    expect(ring).toHaveClass('is-listening')
+    expect(screen.getByText('Voice detected')).toBeInTheDocument()
 
     fireEvent.click(screen.getByRole('button', { name: 'Stop recording' }))
     expect(await screen.findByText('Recording saved.')).toBeInTheDocument()

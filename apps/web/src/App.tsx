@@ -16,6 +16,7 @@ import { RecordPage } from './features/sessions/RecordPage'
 import { SessionPage } from './features/sessions/SessionPage'
 import { RecoveryBanner } from './features/sessions/RecoveryBanner'
 import { SessionsPage } from './features/sessions/SessionsPage'
+import { SettingsPage } from './features/settings/SettingsPage'
 import { StartSessionPage } from './features/sessions/StartSessionPage'
 import { Sidebar } from './features/shell/Sidebar'
 import { Topbar } from './features/shell/Topbar'
@@ -76,7 +77,8 @@ export default function App() {
             <Route path="/sessions/record/:clientId" element={<RecordPage />} />
             <Route path="/sessions/:id" element={<SessionPage />} />
             <Route path="/sessions/:id/report" element={<ReportPage />} />
-            {NAV_ITEMS.filter((item) => !['today', 'notifications', 'clients', 'sessions'].includes(item.key)).map((item) => (
+            <Route path="/settings" element={<SettingsPage />} />
+            {NAV_ITEMS.filter((item) => !['today', 'notifications', 'clients', 'sessions', 'settings'].includes(item.key)).map((item) => (
               <Route key={item.key} path={item.path} element={<PlaceholderPage navKey={item.key} />} />
             ))}
             <Route path="/clients" element={<ClientsPage />} />

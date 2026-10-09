@@ -6,9 +6,10 @@ function initialsOf(name: string | undefined): string {
 }
 
 /** Round initials badge. Decorative: the name is always shown next to it. */
-export function Initials({ name }: { name: string }) {
+export function Initials({ name, size }: { name: string; size?: number }) {
+  const style = size ? { width: size, height: size, fontSize: size * 0.36 } : undefined
   return (
-    <span className="initials" aria-hidden="true">
+    <span className="initials" aria-hidden="true" style={style}>
       {initialsOf(name)}
     </span>
   )

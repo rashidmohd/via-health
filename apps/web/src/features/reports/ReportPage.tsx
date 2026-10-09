@@ -4,6 +4,7 @@ import { Link, useParams } from 'react-router-dom'
 import { ApiError } from '../../api/client'
 import { useReport, useRequestDraft, useSaveReport } from '../../api/reports'
 import { useSession, useTranscript } from '../../api/sessions'
+import { AppAvatar } from '../../avatar/AppAvatar'
 import { Initials } from '../../design/Initials'
 import { ListSkeleton } from '../../design/ListSkeleton'
 import { errorMessage } from '../../i18n/errors'
@@ -58,11 +59,14 @@ export function ReportPage() {
             </p>
           </div>
         </div>
-        {(report.status === 'draft' || report.status === 'approved') && (
-          <span className={`badge ${report.status === 'draft' ? 'attention' : 'neutral'}`}>
-            {t(`report.status.${report.status}`)}
-          </span>
-        )}
+        <div className="row">
+          {(report.status === 'draft' || report.status === 'approved') && (
+            <span className={`badge ${report.status === 'draft' ? 'attention' : 'neutral'}`}>
+              {t(`report.status.${report.status}`)}
+            </span>
+          )}
+          <AppAvatar size={56} processing={busy} problem={report.status === 'failed'} done={report.status === 'approved'} />
+        </div>
       </header>
 
       {busy && (

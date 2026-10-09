@@ -1,15 +1,22 @@
 import { AudioLines, Bookmark, ChevronLeft, CircleCheck, Mic, ShieldCheck, Square } from 'lucide-react'
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Link, useParams } from 'react-router-dom'
 import { useClient } from '../../api/clients'
 import { useSession } from '../../api/sessions'
+import { AppAvatar, UserAvatar } from '../../avatar/AppAvatar'
+import { AvatarRing } from '../../avatar/AvatarRing'
+import { ringState } from '../../avatar/ring'
+import { useAvatarMood } from '../../avatar/useAvatarMood'
 import { Initials } from '../../design/Initials'
 import { getActiveRecorder, setActiveRecorder, useActiveRecorder } from '../../recorder/active'
 import { db } from '../../recorder/db'
+import { micTested } from '../../recorder/micDevice'
+import { useVoiceState } from '../../recorder/micMonitor'
 import { RecorderError, SessionRecorder, type RecorderProblem } from '../../recorder/recorder'
 import { useLocal } from '../../recorder/useLocal'
 import { LivePanel } from './LivePanel'
+import { MicHealth, MicTest } from './MicHealth'
 
 function formatElapsed(ms: number): string {
   const total = Math.floor(ms / 1000)
@@ -43,6 +50,9 @@ export function RecordPage() {
   const [problem, setProblem] = useState<RecorderProblem | null>(null)
   const [stoppedSessionId, setStoppedSessionId] = useState<string | null>(null)
   const [bookmarks, setBookmarks] = useState(0)
+  const [tested, setTested] = useState(micTested)
+  const onMicPassed = useCallback(() => setTested(true), [])
+  const voice = useVoiceState()
   const stoppedSession = useLocal(
     () => (stoppedSessionId ? db.sessions.get(stoppedSessionId) : Promise.resolve(undefined)),
     stoppedSessionId ?? '',
@@ -59,6 +69,7 @@ export function RecordPage() {
   // Online: the server's answer. Offline: the last known consent status on this device.
   const ready = client ? client.ready_to_record : isError ? (cached?.ready ?? false) : false
   const recordingHere = active !== null && (client?.id ?? clientId) === clientId
+  const { mood, nod } = useAvatarMood()
 
   useEffect(() => {
     if (!active) return
@@ -100,16 +111,19 @@ export function RecordPage() {
         <ChevronLeft className="icon" aria-hidden="true" />
         {t('sessions.start')}
       </Link>
-      <header className="record-header">
-        <Initials name={name} />
-        <div>
-          <h1>{name}</h1>
-          {client && (
-            <p className="muted small">
-              {t('clients.fields.language')}: {client.preferred_language.toUpperCase()}
-            </p>
-          )}
+      <header className="page-header">
+        <div className="record-header">
+          <Initials name={name} />
+          <div>
+            <h1>{name}</h1>
+            {client && (
+              <p className="muted small">
+                {t('clients.fields.language')}: {client.preferred_language.toUpperCase()}
+              </p>
+            )}
+          </div>
         </div>
+        {!recordingHere && <AppAvatar size={56} problem={!ready} done={stoppedSession?.status === 'synced'} />}
       </header>
 
       {problem && (
@@ -126,11 +140,13 @@ export function RecordPage() {
             <span className="dot" aria-hidden="true" />
             {t('record.recording')}
           </p>
-          <div className="timer-ring">
-            <p className="timer" aria-label={t('record.elapsed')}>
-              {formatElapsed(elapsed)}
-            </p>
-          </div>
+          <AvatarRing state={ringState({ recording: true, voiceActive: voice.active })}>
+            <UserAvatar mood={mood} nod={nod} recording size={120} />
+          </AvatarRing>
+          <p className="timer" aria-label={t('record.elapsed')}>
+            {formatElapsed(elapsed)}
+          </p>
+          <MicHealth />
           <div className="actions record-actions">
             <button
               className="secondary"
@@ -201,16 +217,20 @@ export function RecordPage() {
               {t('consent.missingShort')} · <Link to={`/clients/${clientId}/consent`}>{t('consent.record')}</Link>
             </p>
           )}
-          <button
-            className="record-orb"
-            onClick={() => void start()}
-            disabled={!ready || starting || active !== null}
-          >
-            <span className="orb" aria-hidden="true">
-              <Mic className="icon" />
-            </span>
-            <span className="orb-label">{t('record.start')}</span>
-          </button>
+          {!tested ? (
+            <MicTest onPassed={onMicPassed} />
+          ) : (
+            <button
+              className="record-orb"
+              onClick={() => void start()}
+              disabled={!ready || starting || active !== null}
+            >
+              <span className="orb" aria-hidden="true">
+                <Mic className="icon" />
+              </span>
+              <span className="orb-label">{t('record.start')}</span>
+            </button>
+          )}
           <p className="muted small record-hint">
             <ShieldCheck className="icon" aria-hidden="true" />
             {t('record.hint')}

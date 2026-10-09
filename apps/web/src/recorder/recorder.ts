@@ -1,5 +1,7 @@
 import { createSessionKey, encryptChunk, sha256Hex, toBase64 } from './crypto'
 import { db } from './db'
+import { audioConstraints } from './micDevice'
+import { startVoiceMonitor, stopVoiceMonitor } from './micMonitor'
 import { kickSync } from './sync'
 import { uuidv7 } from './uuidv7'
 
@@ -82,9 +84,7 @@ export class SessionRecorder {
 
     let stream: MediaStream
     try {
-      stream = await navigator.mediaDevices.getUserMedia({
-        audio: { echoCancellation: false, noiseSuppression: false, autoGainControl: true, channelCount: 1 },
-      })
+      stream = await navigator.mediaDevices.getUserMedia({ audio: audioConstraints() })
     } catch {
       throw new RecorderError('mic_denied')
     }
@@ -116,6 +116,7 @@ export class SessionRecorder {
     }
     await recorder.holdWakeLock()
     media.start(SLICE_MS)
+    void startVoiceMonitor(stream) // voice activity + mic health; failures never affect recording
     kickSync()
     return recorder
   }
@@ -179,6 +180,7 @@ export class SessionRecorder {
         this.media.stop()
       })
     }
+    stopVoiceMonitor()
     await this.writes
     this.stream.getTracks().forEach((track) => track.stop())
     await this.wakeLock?.release().catch(() => {})
