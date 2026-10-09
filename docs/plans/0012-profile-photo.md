@@ -5,11 +5,13 @@ instead of the object store (ADR 0011).
 Source: `docs/avatar-rive-update.md` section 8. Follows plan 0011.
 
 ## Goal
+
 The therapist can use their own photo instead of the illustrated avatar. Static photo in the
 ring, optional ±4° perspective tilt toward the pointer (off while recording and with reduced
 motion), no face animation. Clients never get photo uploads; client avatars stay initials.
 
 ## Browser
+
 - Crop in the browser (circle, zoom/drag), re-encode to 512×512 WebP via canvas. Re-encoding
   drops all metadata, including EXIF/GPS (test: a JPEG with GPS EXIF comes out without it).
 - Shown through `UserAvatar` (kind `photo`) inside `AvatarRing`.
@@ -18,6 +20,7 @@ motion), no face animation. Clients never get photo uploads; client avatars stay
   the photo shown as a `data:` URL, because the CSP allows no `blob:` images.
 
 ## Backend
+
 - `users`: additive columns `avatar_kind` (`illustrated` | `initials` | `photo`, default
   `illustrated`), `avatar_reactions`, `avatar_tilt` (bool, default false), `avatar_photo_enc`
   (AES-GCM under the server data key, AAD `user:<id>:avatar-photo`).
@@ -28,10 +31,12 @@ motion), no face animation. Clients never get photo uploads; client avatars stay
   account row. Audit log: `avatar_photo_set`, `avatar_photo_removed` (ids only).
 
 ## Tests
+
 Upload is the canvas output, never the original file; server rejects EXIF/XMP/IPTC, other types
 and > 300 KB; another user cannot read the photo (RLS); delete removes it; photo kind needs a
 photo; tilt off while recording and with reduced motion.
 
 ## Dropped (2026-10-09)
+
 No step-by-step "build my avatar" questions. Instead: three ready-made presets (ADR 0012) and
 a drawn avatar suggested from the user's photo, then corrected by the user (ADR 0013).
