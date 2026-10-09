@@ -9,6 +9,8 @@ import { emitAvatarEvent } from '../../avatar/events'
 import { Initials } from '../../design/Initials'
 import { ListSkeleton } from '../../design/ListSkeleton'
 import { errorMessage } from '../../i18n/errors'
+import { db } from '../../recorder/db'
+import { useLocal } from '../../recorder/useLocal'
 import { formatDate } from '../format'
 import { ReportCard } from '../reports/ReportCard'
 import { CaptureReview } from './CaptureReview'
@@ -19,7 +21,12 @@ import { TranscribingAnimation } from './TranscribingAnimation'
 export function SessionPage() {
   const { id = '' } = useParams()
   const { t, i18n } = useTranslation()
-  const { data: session, error } = useSession(id)
+  const { data: session, error, refetch } = useSession(id)
+  // Not on the server yet: the recording may still be on this device (offline-first upload).
+  const local = useLocal(() => db.sessions.get(id), id)
+  const localParts = useLocal(() => db.chunks.where('sessionId').equals(id).count(), id) ?? 0
+  const notFound = error instanceof ApiError && error.code === 'session_not_found'
+  const uploadingHere = notFound && local !== undefined && local.status !== 'failed'
   const hasTranscript = session?.status === 'transcribed'
   const signed = session?.status === 'signed'
   const { data: transcript } = useTranscript(id, hasTranscript)
@@ -36,6 +43,12 @@ export function SessionPage() {
     }
   }, [session?.status])
 
+  useEffect(() => {
+    if (!uploadingHere) return
+    const timer = setInterval(() => void refetch(), 5_000)
+    return () => clearInterval(timer)
+  }, [uploadingHere, refetch])
+
   if (error) {
     return (
       <section className="page">
@@ -43,9 +56,23 @@ export function SessionPage() {
           <ChevronLeft className="icon" aria-hidden="true" />
           {t('nav.sessions')}
         </Link>
-        <p className="form-error" role="alert">
-          {errorMessage(t, error instanceof ApiError ? error.code : 'unknown')}
-        </p>
+        {notFound && local ? (
+          local.status === 'failed' ? (
+            <div className="banner danger" role="alert">
+              {t('session.localFailed')}
+              <p>{errorMessage(t, local.error ?? 'unknown')}</p>
+              <p className="small">{t('session.errorCode', { code: local.error ?? 'unknown' })}</p>
+            </div>
+          ) : (
+            <p className="banner warning" role="status">
+              {t('session.localUploading', { count: localParts })}
+            </p>
+          )
+        ) : (
+          <p className="form-error" role="alert">
+            {errorMessage(t, error instanceof ApiError ? error.code : 'unknown')}
+          </p>
+        )}
       </section>
     )
   }

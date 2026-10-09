@@ -1,5 +1,7 @@
 import { fireEvent, screen } from '@testing-library/react'
 import i18n from '../../i18n'
+import { createSessionKey } from '../../recorder/crypto'
+import { db } from '../../recorder/db'
 import { ME, mockApi, renderApp } from '../../test-utils'
 
 function session(status: string, extra: Record<string, unknown> = {}) {
@@ -25,6 +27,43 @@ describe('session page', () => {
     await i18n.changeLanguage('en')
   })
   afterEach(() => vi.unstubAllGlobals())
+
+  describe('a recording the server does not have yet', () => {
+    async function addLocal(status: 'stopped' | 'failed', error?: string) {
+      const { key } = await createSessionKey()
+      await db.sessions.put({
+        id: 's1', clientId: 'c1', clientName: 'Anna Weber', status, startedAt: '2026-10-09T11:22:49Z',
+        mimeType: 'audio/mp4', nextSeq: 2, key, serverCreated: false, keyUploaded: false, finished: false, error,
+      })
+    }
+    function serverWithoutIt() {
+      mockApi((url, init) => {
+        if (url.endsWith('/auth/me')) return { status: 200, body: ME }
+        if ((init.method ?? 'GET') === 'GET') return { status: 404, body: { code: 'session_not_found' } }
+        return { status: 503 } // uploads keep retrying
+      })
+    }
+    afterEach(async () => {
+      await db.sessions.clear()
+      await db.chunks.clear()
+    })
+
+    it('says it is still uploading from this device', async () => {
+      await addLocal('stopped')
+      serverWithoutIt()
+      renderApp('/sessions/s1')
+      expect(await screen.findByText(/still on this device and is being uploaded/)).toBeInTheDocument()
+      expect(screen.queryByText('This session could not be found.')).not.toBeInTheDocument()
+    })
+
+    it('shows why the upload failed, with the code', async () => {
+      await addLocal('failed', 'consent_missing')
+      serverWithoutIt()
+      renderApp('/sessions/s1')
+      expect(await screen.findByText(/could not be uploaded/)).toBeInTheDocument()
+      expect(screen.getByText('Error code: consent_missing')).toBeInTheDocument()
+    })
+  })
 
   it('shows progress while transcribing', async () => {
     mockApi((url) => (url.endsWith('/auth/me') ? { status: 200, body: ME } : { status: 200, body: session('processing') }))

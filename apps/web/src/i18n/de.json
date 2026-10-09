@@ -308,6 +308,9 @@
     }
   },
   "session": {
+    "localUploading": "Diese Aufnahme ist noch auf diesem Gerät und wird hochgeladen (noch {{count}} Teile). Lassen Sie diesen Tab offen; die Sitzung erscheint hier, sobald der Server sie hat.",
+    "localFailed": "Diese Aufnahme konnte nicht hochgeladen werden. Sie ist weiterhin auf diesem Gerät gespeichert.",
+    "errorCode": "Fehlercode: {{code}}",
     "title": "Sitzung am {{date}}",
     "waitingForUpload": "Es fehlen noch Audiodaten vom Aufnahmegerät ({{done}} von {{total}} Teilen). Öffnen Sie die App auf diesem Gerät, damit der Upload abgeschlossen wird.",
     "transcribing": "Wird transkribiert…",

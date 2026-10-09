@@ -308,6 +308,9 @@
     }
   },
   "session": {
+    "localUploading": "This recording is still on this device and is being uploaded ({{count}} parts left). Keep this tab open; the session appears here once the server has it.",
+    "localFailed": "This recording could not be uploaded. It is still saved on this device.",
+    "errorCode": "Error code: {{code}}",
     "title": "Session on {{date}}",
     "waitingForUpload": "Waiting for the rest of the audio from the recording device ({{done}} of {{total}} parts). Open the app on that device so it can finish uploading.",
     "transcribing": "Transcribing…",
