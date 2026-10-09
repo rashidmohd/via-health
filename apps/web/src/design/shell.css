@@ -157,6 +157,11 @@
   min-width: 0;
 }
 
+/* Avatar (photo, character or initials) keeps its size next to a long name */
+.user-ident > :first-child {
+  flex: none;
+}
+
 .initials {
   display: grid;
   place-items: center;

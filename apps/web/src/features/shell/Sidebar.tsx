@@ -3,8 +3,8 @@ import { useTranslation } from 'react-i18next'
 import { Link, NavLink } from 'react-router-dom'
 import { useLogout, type Me } from '../../api/auth'
 import { useNotifications } from '../../api/notifications'
+import { UserBadge } from '../../avatar/AppAvatar'
 import { confirmDialog } from '../../design/confirm'
-import { Initials } from '../../design/Initials'
 import { Logo } from '../../design/Logo'
 import { getActiveRecorder, stopActiveRecording } from '../../recorder/active'
 import { LanguageSwitch } from '../LanguageSwitch'
@@ -71,7 +71,8 @@ export function Sidebar({ me, onClose }: { me: Me; onClose: () => void }) {
         </div>
         <div className="user-card">
           <div className="user-ident">
-            <Initials name={me.display_name} />
+            {/* The avatar chosen in Settings, small and still (never Rive here). */}
+            <UserBadge size={36} />
             <div className="user-text">
               <span className="user-name">{me.display_name}</span>
               <span className="user-email">{me.email}</span>
