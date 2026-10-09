@@ -377,10 +377,12 @@ label > select {
   gap: var(--space-3);
 }
 
+/* Same white surface as .card, so empty states sit with the rest of the page */
 .empty {
-  background: var(--surface-muted);
-  border: 1px dashed var(--border-strong);
+  background: var(--surface);
+  border: 1px solid var(--border);
   border-radius: var(--radius-card);
+  box-shadow: var(--shadow-sm);
   padding: var(--space-10) var(--space-8);
   display: grid;
   gap: var(--space-3);
