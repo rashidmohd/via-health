@@ -19,7 +19,7 @@ import { useVoiceState } from '../../recorder/micMonitor'
 import { RecorderError, SessionRecorder, type RecorderProblem } from '../../recorder/recorder'
 import { useLocal } from '../../recorder/useLocal'
 import { useDeviceSetting } from '../settings/deviceSettings'
-import { LiveCaption, LivePanel } from './LivePanel'
+import { LivePanel } from './LivePanel'
 import { MicHealth, MicTest } from './MicHealth'
 import { useLivePreview } from './useLivePreview'
 
@@ -165,7 +165,6 @@ export function RecordPage() {
             {formatElapsed(elapsed)}
           </p>
           <MicHealth />
-          <LiveCaption live={live} />
           <div className="actions record-actions">
             <button
               className="secondary"

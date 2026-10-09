@@ -2305,32 +2305,6 @@
   max-height: 260px;
 }
 
-/* Live caption under the voice bar: two lines, fixed height so the card does not jump. */
-.live-caption {
-  width: 100%;
-  max-width: 560px;
-  min-height: calc(2 * 1.5em + 4px);
-  display: grid;
-  align-content: end;
-  gap: 4px;
-  font-size: var(--text-md);
-  line-height: 1.5;
-}
-
-.live-caption p {
-  margin: 0;
-  overflow-wrap: anywhere;
-}
-
-.live-caption .before {
-  color: var(--text-muted);
-  font-size: var(--text-base);
-}
-
-.live-caption .muted.small {
-  align-self: center;
-}
-
 /* Transcript as a conversation: avatar + name per line, client left, user right */
 .transcript.chat li {
   display: flex;

@@ -16,50 +16,20 @@ function statusText(t: TFunction, live: LivePreviewState): string {
     : t(`live.status.${live.status}`)
 }
 
-/** Keeps the end of a long sentence so the caption stays two lines high. */
-function tail(text: string, max: number): string {
-  if (text.length <= max) return text
-  const cut = text.slice(-max)
-  const space = cut.indexOf(' ')
-  return `…${space > 0 && space < 20 ? cut.slice(space + 1) : cut}`
-}
-
 /**
- * What is being said right now, under the voice bar (ADR 0014): the sentence in progress and the
- * one before, nothing older. Rough device text; the transcript below has the better version.
- * Not announced to screen readers (it changes several times a second); the transcript is.
- */
-export function LiveCaption({ live }: { live: LivePreviewState }) {
-  const { t } = useTranslation()
-  const texts = [...live.finals.slice(-2).map((line) => line.text), ...(live.partial?.text ? [live.partial.text] : [])]
-  const shown = texts.slice(-2)
-  return (
-    <div className="live-caption" aria-hidden="true">
-      {shown.length > 0 ? (
-        shown.map((text, index) => (
-          <p key={`${live.finals.length}-${index}`} className={index === shown.length - 1 ? 'now' : 'before'}>
-            {tail(text, index === shown.length - 1 ? 140 : 90)}
-          </p>
-        ))
-      ) : (
-        <p className="muted small">{live.status === 'live' ? t('live.listening') : statusText(t, live)}</p>
-      )}
-    </div>
-  )
-}
-
-/**
- * Transcript at the bottom of the recording card (ADR 0014): server text with speakers, plus
- * finished device lines the server has not covered yet. The sentence in progress is only in
- * the caption.
+ * Transcript in the recording card (ADR 0014): server text with speakers, then device lines the
+ * server has not covered yet, then the sentence in progress.
  */
 export function LivePanel({ sessionId, live }: { sessionId: string; live: LivePreviewState }) {
   const { t } = useTranslation()
   const { data: server } = useLiveText(sessionId, true)
   const list = useRef<HTMLOListElement>(null)
 
-  const lines = mergeLive(server?.segments ?? [], server?.covered_ms ?? 0, live.finals, null)
-  const captures = detectCaptures(lines.map((l) => ({ text: l.text, start_ms: l.startMs })))
+  const lines = mergeLive(server?.segments ?? [], server?.covered_ms ?? 0, live.finals, live.partial)
+  // Chips only from finished lines: the sentence in progress still changes.
+  const captures = detectCaptures(
+    lines.filter((l) => l.source !== 'partial').map((l) => ({ text: l.text, start_ms: l.startMs })),
+  )
 
   // A new chip from a finished line: the avatar may glance (only if the therapist enabled it).
   // The event carries nothing from the session.
@@ -94,7 +64,7 @@ export function LivePanel({ sessionId, live }: { sessionId: string; live: LivePr
         {statusText(t, live)}
       </p>
       {lines.length === 0 ? (
-        <p className="muted">{t('live.empty')}</p>
+        <p className="muted">{t(live.status === 'live' ? 'live.listening' : 'live.empty')}</p>
       ) : (
         <>
           <CaptureChips captures={captures} />
@@ -108,7 +78,12 @@ export function LivePanel({ sessionId, live }: { sessionId: string; live: LivePr
             }}
           >
             {lines.map((line, index) => (
-              <li key={`${line.source}-${line.startMs}-${index}`} className={`source-${line.source}`}>
+              // The sentence in progress changes several times a second: not announced, only shown.
+              <li
+                key={`${line.source}-${line.startMs}-${index}`}
+                className={`source-${line.source}`}
+                aria-hidden={line.source === 'partial' || undefined}
+              >
                 {/* Static marker of where the line came from; never shows who is speaking now. */}
                 {line.speaker !== null ? (
                   <span className="speaker-tag" aria-hidden="true">

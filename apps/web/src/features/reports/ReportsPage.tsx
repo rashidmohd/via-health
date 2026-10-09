@@ -4,7 +4,7 @@ import { useTranslation } from 'react-i18next'
 import { Link } from 'react-router-dom'
 import { useApprovedReports, type ApprovedReport } from '../../api/reports'
 import { Initials } from '../../design/Initials'
-import noteListIllustration from '../../design/illustrations/note-list.svg'
+import notedIllustration from '../../design/illustrations/noted.svg'
 import { ListSkeleton } from '../../design/ListSkeleton'
 import { formatDate, formatTime } from '../format'
 
@@ -43,7 +43,7 @@ export function ReportsPage() {
           <ListSkeleton rows={4} />
         ) : !reports?.length ? (
           <div className="table-empty muted table-empty-first">
-            <img className="empty-illustration" src={noteListIllustration} alt="" aria-hidden="true" />
+            <img className="empty-illustration" src={notedIllustration} alt="" aria-hidden="true" />
             <p>{t('reports.none')}</p>
             <p className="small">{t('reports.noneHint')}</p>
           </div>
