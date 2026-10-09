@@ -317,7 +317,8 @@ main {
 }
 
 main > .banner {
-  margin-bottom: var(--space-5);
+  max-width: 1040px;
+  margin: 0 auto var(--space-5);
 }
 
 .scrim {

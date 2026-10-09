@@ -231,6 +231,13 @@ textarea {
   resize: vertical;
 }
 
+/* Fields inside a label fill their column and may shrink below their content width. */
+label > input:not([type='checkbox']):not([type='radio']),
+label > select {
+  width: 100%;
+  min-width: 0;
+}
+
 .form-error {
   color: var(--danger);
   margin: 0;
@@ -278,6 +285,7 @@ textarea {
   gap: var(--space-6);
   align-content: start;
   max-width: 1040px;
+  margin-inline: auto;
 }
 
 .page.narrow {
